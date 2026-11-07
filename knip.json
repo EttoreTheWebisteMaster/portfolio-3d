@@ -1,5 +1,6 @@
 {
   "$schema": "https://unpkg.com/knip@latest/schema.json",
   "entry": ["scripts/*.mjs", ".claude/**/*.mjs"],
-  "project": ["src/**/*.{ts,tsx,css}", "scripts/*.mjs"]
+  "project": ["src/**/*.{ts,tsx,css}", "scripts/*.mjs"],
+  "ignoreDependencies": ["@tailwindcss/turbopack"]
 }
