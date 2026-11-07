@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRef } from "react";
 
+import HeroScene from "@/components/three/HeroScene";
 import { gsap, useGSAP } from "@/lib/gsap";
 
 const stack = [
@@ -10,7 +11,7 @@ const stack = [
   "Swift · Python · Figma · Generative AI",
 ];
 
-/** Home hero: text layer only. The 3D set (name + ROB-092) mounts behind it later. */
+/** Home hero: gold name, 3D set (ROB-092, light, dust) and the copy on top. */
 export default function Hero() {
   const root = useRef<HTMLElement>(null);
 
@@ -36,6 +37,8 @@ export default function Hero() {
       <p aria-hidden className="hero-name">
         Ettore Serra
       </p>
+
+      <HeroScene />
 
       <div className="hero-copy">
         <h2 data-reveal className="hero-tagline">
