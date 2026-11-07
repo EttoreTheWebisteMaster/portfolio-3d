@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Contact · copied</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alumni+Sans:wght@500;600;700;800;900&amp;family=Instrument+Sans:wght@400;500;600&amp;family=Tac+One&amp;display=swap">
+<style>
+.rob-logo .last{transition:color 260ms cubic-bezier(.2,.7,0,1)}.rob-logo:hover .last{color:#F2EDDA}
+body{margin:0;background:#000}
+a{color:#FFD84D}a:hover{color:#FFE680}
+.ct-btn{transition:box-shadow 160ms cubic-bezier(.2,.7,0,1),background-color 160ms cubic-bezier(.2,.7,0,1)}
+.ct-btn:focus-visible{outline:2px solid #FFD84D;outline-offset:3px}
+.ct-primary:hover{box-shadow:0 0 44px rgba(255,216,77,0.55),0 0 2px rgba(255,216,77,0.9)}
+.ct-primary:active{background-color:#F2C93A}
+.ct-secondary:hover{background-color:rgba(242,237,218,0.18)}
+.ct-secondary:active{background-color:rgba(242,237,218,0.24)}
+</style>
+</helmet>
+<div style="position: relative; width: 1440px; height: 900px; overflow: hidden; background: #0B0A09; font-family: 'Instrument Sans', system-ui, sans-serif; color: #F2EDDA">
+
+  <img src="{{render}}" alt="" aria-hidden="true" style="position: absolute; left: 0; top: 0; width: 1440px; height: 900px; display: block">
+
+  <div aria-hidden="true" style="position: absolute; left: 0; top: 0; width: 1440px; height: 900px; pointer-events: none; opacity: {{beam}}; filter: blur(26px); mix-blend-mode: screen">
+    <div style="position: absolute; left: 0; top: 0; width: 1440px; height: 900px; clip-path: polygon(80px 0px, 220px 0px, {{beamR}}px 780px, {{beamL}}px 780px); background: linear-gradient(160deg, rgba(236,242,244,0.15) 0%, rgba(236,242,244,0.07) 35%, rgba(236,242,244,0.03) 70%, rgba(236,242,244,0) 100%)"></div>
+  </div>
+
+  <div style="position: absolute; left: 0; top: 0; width: 1440px; height: 900px; background: radial-gradient(ellipse 78% 82% at 50% 46%, rgba(0,0,0,0) 52%, rgba(0,0,0,0.72) 100%); pointer-events: none"></div>
+  <div style="position: absolute; left: 0; top: 0; width: 1440px; height: 900px; background: rgba(18,48,46,0.22); mix-blend-mode: multiply; pointer-events: none"></div>
+  <svg aria-hidden="true" width="1440" height="900" style="position: absolute; left: 0; top: 0; opacity: 0.15; mix-blend-mode: overlay; pointer-events: none">
+    <filter id="grainC"><feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="2" stitchTiles="stitch"></feTurbulence><feColorMatrix type="saturate" values="0"></feColorMatrix></filter>
+    <rect width="1440" height="900" filter="url(#grainC)"></rect>
+  </svg>
+
+  <h1 style="position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0">Contact Ettore Serra</h1>
+
+
+  <div style="position: absolute; left: 0; top: 322px; width: 1440px; display: flex; flex-direction: column; align-items: center; gap: 36px">
+    <p style="margin: 0; font-size: 20px; line-height: 1.5; color: #CFC8B8; text-align: center">Open to frontend and full-stack roles. Turin or remote, employee or freelance.</p>
+    <div style="display: flex; gap: 16px">
+      <button type="button" class="ct-btn ct-primary" style="display: inline-flex; align-items: center; gap: 10px; height: 80px; margin: 0; padding: 0 48px; border: 0; border-radius: 0; background: #FFD84D; color: #15120F; cursor: pointer; font-family: 'Alumni Sans', sans-serif; font-weight: 700; font-size: 26px; letter-spacing: 0.08em; text-transform: uppercase; box-shadow: {{primaryGlow}}"><sc-if value="{{copied}}"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 16 16" style="display: block"><polyline points="2.5,8.5 6.5,12 13.5,4" fill="none" stroke="#15120F" style="stroke-width: 2px; stroke-linecap: square"></polyline></svg></sc-if>{{primaryLabel}}</button>
+      <a href="https://www.linkedin.com/in/ettore-serra-developer" class="ct-btn ct-secondary" style="display: inline-flex; align-items: center; height: 80px; padding: 0 44px; background: rgba(242,237,218,0.12); color: #F2EDDA; text-decoration: none; font-family: 'Alumni Sans', sans-serif; font-weight: 700; font-size: 26px; letter-spacing: 0.08em; text-transform: uppercase">LinkedIn</a>
+      <a href="https://github.com/EttoreTheWebisteMaster" class="ct-btn ct-secondary" style="display: inline-flex; align-items: center; height: 80px; padding: 0 44px; background: rgba(242,237,218,0.12); color: #F2EDDA; text-decoration: none; font-family: 'Alumni Sans', sans-serif; font-weight: 700; font-size: 26px; letter-spacing: 0.08em; text-transform: uppercase">GitHub</a>
+    </div>
+    <p role="status" style="margin: -16px 0 0; height: 20px; font-family: 'Alumni Sans', sans-serif; font-weight: 600; font-size: 13px; line-height: 20px; letter-spacing: 0.14em; text-transform: uppercase; color: #A9A296">{{status}}</p>
+  </div>
+
+  <header style="position: absolute; left: 0; top: 0; width: 1440px; height: 72px; box-sizing: border-box; padding: 0 64px; background: transparent; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center">
+    <a href="#" class="rob-logo" aria-label="Ettore Serra, home" style="display: flex; align-items: baseline; gap: 0.5em; text-decoration: none; font-family: 'Alumni Sans', sans-serif; font-size: 16px; line-height: 1; letter-spacing: 0.24em; text-transform: uppercase">
+      <span style="font-weight: 800; color: #F2EDDA">Ettore</span><span class="last" style="font-weight: 600; color: #8C8576">Serra</span>
+    </a>
+    <nav aria-label="Main" style="display: flex; gap: 44px">
+      <a href="#projects" style="position: relative; display: inline-flex; height: 44px; align-items: center; text-decoration: none; font-family: 'Alumni Sans', sans-serif; font-weight: 600; font-size: 18px; letter-spacing: 0.1em; text-transform: uppercase; color: #8C8576; font-variant-numeric: tabular-nums">Projects<sup style="position: relative; top: -0.55em; margin-left: 4px; font-family: 'Alumni Sans', sans-serif; font-weight: 600; font-size: 13px; letter-spacing: 0.06em; color: #6E675B; font-variant-numeric: tabular-nums">09</sup></a><a href="#about" style="position: relative; display: inline-flex; height: 44px; align-items: center; text-decoration: none; font-family: 'Alumni Sans', sans-serif; font-weight: 600; font-size: 18px; letter-spacing: 0.1em; text-transform: uppercase; color: #8C8576">About</a><a href="#contact" aria-current="page" style="position: relative; display: inline-flex; height: 44px; align-items: center; text-decoration: none; font-family: 'Alumni Sans', sans-serif; font-weight: 600; font-size: 18px; letter-spacing: 0.1em; text-transform: uppercase; color: #F2EDDA"><span aria-hidden="true" style="position: absolute; left: -14px; top: 50%; width: 5px; height: 5px; margin-top: -3px; border-radius: 50%; background: #FFD84D; box-shadow: 0 0 8px 1px rgba(255,216,77,0.75)"></span>Contact</a>
+    </nav>
+    <div style="justify-self: end; display: flex; align-items: center; gap: 20px">
+      <div style="display: flex; align-items: center; gap: 10px">
+        <span style="font-family: 'Alumni Sans', sans-serif; font-weight: 600; font-size: 13px; letter-spacing: 0.14em; text-transform: uppercase; color: #6E675B; font-variant-numeric: tabular-nums">TC</span>
+        <span style="font-family: 'Alumni Sans', sans-serif; font-weight: 600; font-size: 13px; letter-spacing: 0.12em; text-transform: uppercase; color: #F2EDDA; font-variant-numeric: tabular-nums">{{timecode}}<span style="color: #8C8576">:{{tcf}}</span></span>
+        <span aria-hidden="true" style="position: relative; display: block; width: 44px; height: 1px; background: rgba(242,237,218,0.22)"><span style="position: absolute; left: 76%; top: -3px; width: 1px; height: 7px; background: #FFD84D; box-shadow: 0 0 6px rgba(255,216,77,0.8)"></span></span>
+      </div>
+      <span aria-hidden="true" style="display: block; width: 1px; height: 16px; background: rgba(242,237,218,0.18)"></span>
+      <button type="button" aria-pressed="true" aria-label="Sound" style="display: flex; align-items: center; justify-content: center; width: 44px; height: 44px; margin: 0 -5px 0 0; padding: 0; border: 0; border-radius: 0; background: transparent; cursor: pointer"><svg aria-hidden="true" width="34" height="14" viewBox="0 0 34 14" style="display: block"><polyline points="0,7.00 1,6.83 2,6.38 3,5.78 4,5.20 5,4.86 6,4.90 7,5.41 8,6.38 9,7.68 10,9.10 11,10.39 12,11.30 13,11.64 14,11.30 15,10.31 16,8.80 17,7.00 18,5.20 19,3.69 20,2.70 21,2.36 22,2.70 23,3.61 24,4.90 25,6.32 26,7.62 27,8.59 28,9.10 29,9.14 30,8.80 31,8.22 32,7.62 33,7.17 34,7.00" fill="none" stroke="#FFD84D" style="stroke-width: 1.5px; stroke-linecap: round; stroke-linejoin: round; filter: drop-shadow(0 0 3px rgba(255,216,77,0.6))"></polyline></svg></button>
+    </div>
+  </header>
+
+  <footer style="position: absolute; left: 0; bottom: 0; width: 1440px; height: 72px; box-sizing: border-box; padding: 0 64px; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; font-family: 'Alumni Sans', sans-serif; font-weight: 600; font-size: 13px; letter-spacing: 0.14em; text-transform: uppercase; color: #A9A296; font-variant-numeric: tabular-nums">
+    <span>04 · Contact</span>
+    <span></span>
+    <div style="justify-self: end; display: flex; align-items: center; gap: 16px">
+      <span>04 / 04</span>
+      <span aria-hidden="true" style="display: flex; gap: 6px"><span style="display: block; width: 18px; height: 2px; background: rgba(242,237,218,0.28)"></span><span style="display: block; width: 18px; height: 2px; background: rgba(242,237,218,0.28)"></span><span style="display: block; width: 18px; height: 2px; background: rgba(242,237,218,0.28)"></span><span style="display: block; width: 18px; height: 2px; background: #FFD84D; box-shadow: 0 0 10px rgba(255,216,77,0.5)"></span></span>
+    </div>
+  </footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"moment":{"editor":"enum","options":["settled","hit","copied"],"default":"copied"},"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    var m = this.props.moment ?? 'copied';
+    var hit = m === 'hit', copied = m === 'copied';
+    var renders = { settled: '/_blob/31a70f080f8fd3305dcba072c4f3feda', hit: '/_blob/946f902fe7c2de41c861959ac5d7ec2f' };
+    var still = 'linear-gradient(90deg, #BDB4A0 0%, #E6DDC6 22%, #FFF4DA 50%, #E6DDC6 78%, #BDB4A0 100%)';
+    var sweep = 'linear-gradient(90deg, #9E967F 0%, #C9C0A8 30%, #F2E9D2 58%, #FFF8E4 72%, #F2E9D2 84%, #C9C0A8 100%)';
+    var hot = 'linear-gradient(90deg, #C8BFA9 0%, #F0E7CF 22%, #FFF8E6 50%, #F0E7CF 78%, #C8BFA9 100%)';
+    return {
+      render: hit ? renders.hit : renders.settled,
+      emailLight: hit ? sweep : (copied ? hot : still),
+      lineLight: hit ? 'linear-gradient(90deg, rgba(215,38,30,0.55), #D7261E 70%, rgba(215,38,30,0.8))' : 'linear-gradient(90deg, rgba(215,38,30,0.6), #D7261E 50%, rgba(215,38,30,0.6))',
+      beam: hit ? 0.9 : (copied ? 1.25 : 1),
+      beamL: 300, beamR: 1260,
+      copied: copied,
+      primaryLabel: copied ? 'Copied' : 'Copy email',
+      primaryGlow: copied ? '0 0 44px rgba(255,216,77,0.55), 0 0 2px rgba(255,216,77,0.9)' : '0 0 28px rgba(255,216,77,0.32), 0 0 2px rgba(255,216,77,0.9)',
+      status: copied ? 'serra.ettore.es@gmail.com is on your clipboard' : '',
+      timecode: hit ? '00:00:19' : '00:00:21', tcf: hit ? '08' : '14'
+    };
+  }
+}
+</script>
+</body>
+</html>

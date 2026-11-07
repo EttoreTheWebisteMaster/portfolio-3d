@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Home · scroll, turning toward Projects</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alumni+Sans:wght@500;600;700;800;900&amp;family=Caveat:wght@700&amp;family=Instrument+Sans:wght@400;500;600&amp;family=Tac+One&amp;display=swap">
+<style>
+.rob-logo .last{transition:color 260ms cubic-bezier(.2,.7,0,1)}.rob-logo:hover .last,.rob-logo.is-hover .last{color:#F2EDDA}
+body{margin:0;background:#000}
+</style>
+</helmet>
+<div style="width: 1440px; height: 900px">
+<dc-import name="Hero" shot="turn" hint-size="1440px,900px"></dc-import>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

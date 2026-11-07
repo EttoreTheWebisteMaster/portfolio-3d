@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>About · mobile · interview</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alumni+Sans:wght@500;600;700;800;900&amp;family=Instrument+Sans:ital,wght@0,400;0,500;0,600;1,400&amp;family=Tac+One&amp;display=swap">
+<style>
+body{margin:0;background:#F2EDDA}
+a{color:#15120F}a:hover{color:#B81F18}
+.line{caret-color:#15120F}
+.line::placeholder{color:#5C5549;opacity:1}
+.line:focus{outline:none}
+.line:focus ~ .caret{display:none}
+.caret{animation:blink 1.05s steps(1) infinite}@keyframes blink{50%{opacity:0}}
+.enter{transition:color 160ms ease,transform 160ms cubic-bezier(.23,1,.32,1)}.enter:active{transform:scale(0.97)}
+.enter .arr{display:inline-block;transition:transform 220ms cubic-bezier(.2,.7,0,1)}
+@media (hover:hover) and (pointer:fine){.enter:hover .arr{transform:translateX(4px)}}
+.enter:focus-visible,.navl:focus-visible{outline:2px solid #15120F;outline-offset:3px}
+@media (prefers-reduced-motion:reduce){.caret{animation:none}}
+</style>
+</helmet>
+<div style="position: relative; width: 402px; height: 874px; overflow: hidden; background: #F2EDDA; font-family: 'Instrument Sans', system-ui, sans-serif; color: #15120F">
+  <img src="/_blob/19388e428aaabc82796736e27a5291b9" alt="ROB-092 leans on the edge of the triangle, listening" style="position: absolute; left: -2px; top: 8px; width: 461px; height: 288px; display: block; -webkit-mask-image: linear-gradient(180deg, rgba(0,0,0,0) 0%, #000 12%, #000 82%, rgba(0,0,0,0) 100%), linear-gradient(90deg, rgba(0,0,0,0) 0%, #000 8%, #000 92%, rgba(0,0,0,0) 100%); -webkit-mask-composite: source-in; mask-image: linear-gradient(180deg, rgba(0,0,0,0) 0%, #000 12%, #000 82%, rgba(0,0,0,0) 100%), linear-gradient(90deg, rgba(0,0,0,0) 0%, #000 8%, #000 92%, rgba(0,0,0,0) 100%); mask-composite: intersect">
+  <button type="button" class="enter" aria-label="Close the interview" style="position: absolute; right: 8px; top: 6px; display: flex; align-items: center; justify-content: center; width: 44px; height: 44px; margin: 0; padding: 0; border: 0; background: transparent; cursor: pointer"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 14 14"><path d="M1 1 L13 13 M13 1 L1 13" stroke="#15120F" stroke-width="1.5"></path></svg></button>
+  <svg aria-hidden="true" width="402" height="874" style="position: absolute; left: 0; top: 0; opacity: 0.05; mix-blend-mode: multiply; pointer-events: none">
+    <filter id="grainMI"><feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="2" stitchTiles="stitch"></feTurbulence><feColorMatrix type="saturate" values="0"></feColorMatrix></filter>
+    <rect width="402" height="874" filter="url(#grainMI)"></rect>
+  </svg>
+
+  <section aria-labelledby="robLine" style="position: absolute; left: 20px; top: 318px; width: 362px">
+    <h2 style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Interview with the robot</h2>
+    <p style="margin: 0 0 16px; font-size: 15px; line-height: 1.5; color: #5C5549"><span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">You asked: </span>“What did he build at INFN?”</p>
+    <div id="robLine" aria-live="polite">
+      <p style="margin: 0; font-family: 'Alumni Sans', sans-serif; text-transform: uppercase; font-weight: 800; font-size: 32px; line-height: 0.88; letter-spacing: 0.005em; color: #15120F">Research software<br>for nuclear physicists.</p>
+      <p style="margin: 12px 0 0; max-width: 30ch; font-size: 15px; line-height: 1.6; color: #5C5549">Built and presented by him alone.</p>
+    </div>
+  </section>
+  <div style="position: absolute; left: 20px; top: 522px; width: 362px; padding-top: 8px; border-top: 1px solid rgba(21,18,15,0.18)">
+    <form style="position: relative; margin: 0px 0 0; display: flex; align-items: center; gap: 16px; height: 44px">
+      <label for="say" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Your question for ROB-092</label>
+      <span aria-hidden="true" style="flex: 1; min-width: 0; font-family: 'Instrument Sans', sans-serif; font-size: 16px; color: #15120F">Does he do freelance?<span style="display: inline-block; width: 2px; height: 20px; margin-left: 2px; vertical-align: -4px; background: #15120F"></span></span><input id="say" class="line" type="text" value="Does he do freelance?" autocomplete="off" style="position: absolute; width: 1px; height: 1px; opacity: 0">
+      <button type="submit" class="enter" style="flex: none; display: inline-flex; align-items: center; height: 44px; margin: 0; padding: 0; border: 0; border-radius: 0; cursor: pointer; font-family: 'Alumni Sans', sans-serif; text-transform: uppercase; font-weight: 700; font-size: 16px; letter-spacing: 0.16em; color: #15120F; background: transparent"><span style="display: inline-flex; align-items: center; gap: 8px; height: 32px; padding: 0 12px 0 14px; background: #FFD84D">Ask <span class="arr" aria-hidden="true" style="font-size: 20px; letter-spacing: 0">→</span></span></button>
+    </form>
+  </div>
+  <div aria-hidden="true" style="position: absolute; left: 0; top: 583px; width: 402px; height: 291px; background: #D3CCB8; display: flex; align-items: center; justify-content: center">
+    <span style="font-family: 'Alumni Sans', sans-serif; text-transform: uppercase; font-weight: 600; font-size: 13px; letter-spacing: 0.14em; color: #5C5549">System keyboard</span>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":402,"height":874}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

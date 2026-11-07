@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Loading · mobile</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alumni+Sans:wght@500;600;700;800;900&amp;family=Caveat:wght@700&amp;family=Instrument+Sans:wght@400;500;600&amp;family=Tac+One&amp;display=swap">
+<style>
+.rob-logo .last{transition:color 260ms cubic-bezier(.2,.7,0,1)}.rob-logo:hover .last,.rob-logo.is-hover .last{color:#F2EDDA}
+body{margin:0;background:#000}
+</style>
+</helmet>
+<div style="position: relative; width: 402px; height: 874px; overflow: hidden; background: #0B0A09; font-family: 'Instrument Sans', system-ui, sans-serif; color: #F2EDDA">
+  <div style="position: absolute; inset: 0; background: radial-gradient(ellipse 90% 55% at 50% 38%, #3D372E 0%, #27221D 48%, #141110 100%)"></div>
+  <div style="position: absolute; right: -160px; top: -140px; width: 420px; height: 380px; border-radius: 50%; background: radial-gradient(closest-side, rgba(242,120,38,0.34), rgba(242,120,38,0) 100%)"></div>
+  <div style="position: absolute; left: -170px; bottom: -150px; width: 400px; height: 360px; border-radius: 50%; background: radial-gradient(closest-side, rgba(215,60,30,0.24), rgba(215,60,30,0) 100%)"></div>
+
+  <div style="position: absolute; left: 0; top: 330px; width: 402px; height: 1px; background: rgba(242,237,218,0.30)"></div>
+  <div style="position: absolute; left: 201px; top: 0; width: 1px; height: 874px; background: rgba(242,237,218,0.30)"></div>
+  <div style="position: absolute; left: 51px; top: 180px; width: 300px; height: 300px; box-sizing: border-box; border-radius: 50%; border: 1.5px solid rgba(242,237,218,0.62); overflow: hidden">
+    <div style="position: absolute; inset: 0; border-radius: 50%; background: {{sweep}}"></div>
+  </div>
+  <div style="position: absolute; left: 75px; top: 204px; width: 252px; height: 252px; box-sizing: border-box; border-radius: 50%; border: 1px solid rgba(242,237,218,0.42)"></div>
+  <div style="position: absolute; left: 0; top: 180px; width: 402px; height: 300px; display: flex; align-items: center; justify-content: center">
+    <div style="font-family: 'Tac One', sans-serif; font-size: 168px; line-height: 1; color: #FFD84D; text-shadow: 0 0 28px rgba(255,216,77,0.45), 0 0 90px rgba(255,216,77,0.22); transform: translateY(5px)">{{num}}</div>
+  </div>
+
+  <div style="position: absolute; inset: 0; background: radial-gradient(ellipse 90% 80% at 50% 45%, rgba(0,0,0,0) 50%, rgba(0,0,0,0.6) 100%)"></div>
+  <svg aria-hidden="true" width="402" height="874" style="position: absolute; left: 0; top: 0; opacity: 0.16; mix-blend-mode: overlay; pointer-events: none">
+    <filter id="grainML"><feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="2" stitchTiles="stitch"></feTurbulence><feColorMatrix type="saturate" values="0"></feColorMatrix></filter>
+    <rect width="402" height="874" filter="url(#grainML)"></rect>
+  </svg>
+
+  <div style="position: absolute; left: 20px; right: 20px; bottom: 76px; display: flex; flex-direction: column; gap: 10px">
+    <div style="display: flex; align-items: center; gap: 14px">
+      <span style="font-family: 'Alumni Sans', sans-serif; font-weight: 600; font-size: 13px; letter-spacing: 0.14em; text-transform: uppercase; color: #A9A296; font-variant-numeric: tabular-nums; white-space: nowrap">Loading · {{pct}}%</span>
+      <span style="position: relative; display: block; flex-grow: 1; height: 2px; background: rgba(242,237,218,0.16)"><span style="position: absolute; left: 0; top: 0; height: 2px; width: {{pct}}%; background: #FFD84D; box-shadow: 0 0 8px rgba(255,216,77,0.6)"></span></span>
+    </div>
+    <h1 style="margin: 6px 0 0; font-family: 'Alumni Sans', sans-serif; font-weight: 800; font-size: 36px; line-height: 0.95; letter-spacing: 0.02em; text-transform: uppercase; color: #F2EDDA">Ettore Serra</h1>
+    <p style="margin: 0; font-size: 15px; line-height: 1.5; color: #CFC8B8">Designer &amp; engineer · Turin, or remote</p>
+    <span style="align-self: flex-end; margin: 8px 6px 2px 0; font-family: 'Caveat', cursive; font-weight: 700; font-size: 24px; line-height: 1; color: #F2A93B; transform: rotate(-3deg)">best with sound on</span>
+    <button type="button" style="display: flex; align-items: center; justify-content: center; gap: 12px; height: 52px; width: 100%; border: 0; border-radius: 0; background: #FFD84D; color: #15120F; font-family: 'Alumni Sans', sans-serif; font-weight: 700; font-size: 18px; letter-spacing: 0.1em; text-transform: uppercase; box-shadow: 0 0 24px rgba(255,216,77,0.3); cursor: pointer">
+      <span style="display: flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 50%; background: #15120F; color: #FFD84D"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24"><path d="M3 9h4l6-5v16l-6-5H3z" fill="currentColor"></path><path d="M16.5 8.5a5 5 0 0 1 0 7" fill="none" stroke="currentColor" style="stroke-width: 2px; stroke-linecap: square"></path></svg></span>
+      Enter with sound
+    </button>
+    <button type="button" style="height: 52px; width: 100%; border: 0; border-radius: 0; background: rgba(242,237,218,0.12); color: #F2EDDA; font-family: 'Alumni Sans', sans-serif; font-weight: 700; font-size: 18px; letter-spacing: 0.1em; text-transform: uppercase; cursor: pointer">Enter in silence</button>
+  </div>
+
+  <div style="position: absolute; left: 0; top: 0; width: 402px; height: {{bar}}px; background: #000"></div>
+  <div style="position: absolute; left: 0; bottom: 0; width: 402px; height: {{bar}}px; background: #000"></div>
+
+  <div style="position: absolute; left: 0; top: 0; width: 402px; height: 56px; box-sizing: border-box; padding: 0 8px 0 20px; display: flex; align-items: center; justify-content: space-between">
+    <a href="#" class="rob-logo" aria-label="Ettore Serra, home" style="display: flex; align-items: baseline; gap: 0.5em; text-decoration: none; font-family: 'Alumni Sans', sans-serif; font-size: 14px; line-height: 1; letter-spacing: 0.24em; text-transform: uppercase">
+      <span style="font-weight: 800; color: #F2EDDA">Ettore</span><span class="last" style="font-weight: 600; color: #8C8576">Serra</span>
+    </a>
+    <button type="button" aria-pressed="false" aria-label="Sound" style="display: flex; align-items: center; justify-content: center; width: 44px; height: 44px; margin: 0 -5px 0 0; padding: 0; border: 0; border-radius: 0; background: transparent; cursor: pointer"><svg aria-hidden="true" width="34" height="14" viewBox="0 0 34 14" style="display: block"><line x1="0" y1="7" x2="34" y2="7" stroke="#A9A296" style="stroke-width: 1.5px; stroke-dasharray: 2 3"></line></svg></button>
+  </div>
+
+  <div style="position: absolute; left: 0; bottom: 0; width: 402px; height: 56px; box-sizing: border-box; padding: 0 20px; display: flex; align-items: center; justify-content: space-between; font-family: 'Alumni Sans', sans-serif; font-weight: 600; font-size: 13px; letter-spacing: 0.14em; text-transform: uppercase; color: #A9A296">
+    <span>Portfolio · 2026</span>
+    <span>Turin, Italy</span>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"progress":{"editor":"range","min":0,"max":100,"step":1,"unit":"%","default":64},"$preview":{"width":402,"height":874}}'>
+class Component extends DCLogic {
+  renderVals() {
+    var p = this.props.progress ?? 64;
+    p = Math.max(0, Math.min(100, Math.round(p)));
+    var num = Math.max(1, 5 - Math.floor(p / 20));
+    var deg = (p / 100) * 360;
+    var sweep = 'conic-gradient(rgba(242,237,218,0.22) 0deg ' + deg + 'deg, rgba(242,237,218,0) ' + deg + 'deg 360deg)';
+    var t = p <= 80 ? 0 : (p - 80) / 20;
+    var bar = Math.round((1 - Math.pow(1 - t, 3)) * 56);
+    return { pct: p, num: num, sweep: sweep, bar: bar };
+  }
+}
+</script>
+</body>
+</html>

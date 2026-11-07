@@ -1,0 +1,17 @@
+# Reviewer #2 (optional) — CodeRabbit, free on public repos. Install the GitHub app to activate.
+language: en-US
+reviews:
+  profile: chill
+  high_level_summary: true
+  poem: false
+  auto_review:
+    enabled: true
+    drafts: false
+  path_filters: ["!package-lock.json", "!CHANGELOG.md", "!**/*.png"]
+  path_instructions:
+    - path: "src/**/*.tsx"
+      instructions: "JSX className may contain only layout utilities and classes defined in src/app/globals.css. Flag duplicated components and missing hover/focus/disabled states."
+    - path: "src/app/globals.css"
+      instructions: "Raw colors only inside @theme. One @utility group per component. Flag unused or duplicate utilities."
+chat:
+  auto_reply: true

@@ -1,0 +1,9 @@
+{
+  "path": ["src"],
+  "format": ["tsx", "typescript", "css"],
+  "minTokens": 50,
+  "threshold": 0,
+  "gitignore": true,
+  "reporters": ["console"],
+  "exitCode": 1
+}

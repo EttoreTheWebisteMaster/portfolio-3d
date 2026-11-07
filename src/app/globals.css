@@ -1,0 +1,91 @@
+/*
+ * The ONLY stylesheet. Order: tokens → base → components (one @utility block per component).
+ * Raw colors live only in @theme. Components use tokens. JSX uses these classes + layout utilities.
+ */
+
+@import "tailwindcss";
+
+/* ─── Tokens ─────────────────────────────────────────────── */
+@theme {
+  --color-bg: #0b0b0c;
+  --color-surface: #141416;
+  --color-surface-2: #1c1c1f;
+  --color-text: #f5f5f4;
+  --color-muted: #a1a1aa;
+  --color-accent: #c6ff3d;
+  --color-accent-hover: #b4ec2a;
+  --color-border: #26262a;
+  --color-danger: #ff5c5c;
+
+  /* next/font exposes --font-sans-src / --font-display-src on <html> (see layout.tsx) */
+  --font-sans: var(--font-sans-src), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-display-src), var(--font-sans);
+
+  --radius-card: 1.25rem;
+  --shadow-card: 0 8px 24px -12px rgb(0 0 0 / 0.5);
+
+  --tracking-eyebrow: 0.2em;
+  --ease-out-expo: cubic-bezier(0.22, 1, 0.36, 1);
+  --breakpoint-3xl: 120rem;
+}
+
+/* ─── Base ───────────────────────────────────────────────── */
+@layer base {
+  html {
+    @apply bg-bg font-sans text-text antialiased;
+  }
+  h1 {
+    @apply font-display text-5xl font-bold tracking-tight md:text-7xl;
+  }
+  h2 {
+    @apply font-display text-3xl font-bold md:text-5xl;
+  }
+  h3 {
+    @apply text-xl font-semibold;
+  }
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-accent;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      @apply transition-none;
+      animation: none !important;
+    }
+  }
+}
+
+/* ─── Components ─────────────────────────────────────────── */
+
+/* Button — variants: primary | ghost · sizes: btn-sm */
+@utility btn {
+  @apply inline-flex cursor-pointer items-center justify-center gap-2 rounded-full px-5 py-2 font-medium text-nowrap transition duration-200 ease-out-expo disabled:cursor-not-allowed disabled:opacity-50;
+}
+@utility btn-primary {
+  @apply btn bg-accent text-bg hover:bg-accent-hover active:scale-98;
+}
+@utility btn-ghost {
+  @apply btn border border-border text-text hover:bg-surface-2;
+}
+@utility btn-sm {
+  @apply px-3 py-1 text-sm;
+}
+
+/* Card */
+@utility card {
+  @apply rounded-card border border-border bg-surface p-6 shadow-card;
+}
+
+/* Headless UI menu — states via data-* */
+@utility menu-items {
+  @apply rounded-xl border border-border bg-surface-2 p-1 transition duration-150 data-closed:scale-95 data-closed:opacity-0;
+}
+@utility menu-item {
+  @apply rounded-lg px-3 py-2 text-muted data-focus:bg-surface data-focus:text-text;
+}
+
+/* Text helpers */
+@utility eyebrow {
+  @apply text-xs font-semibold tracking-eyebrow text-muted uppercase;
+}

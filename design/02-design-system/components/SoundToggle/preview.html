@@ -1,0 +1,12 @@
+<!-- @dsCard group="Frame" height=110 subtitle="Waveform on · dashed line off" -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>SoundToggle — preview</title><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alumni+Sans:wght@500;600;700;800;900&family=Caveat:wght@700&family=Instrument+Sans:wght@400;500;600&family=Tac+One&display=swap"></head>
+<body class="es-preview">
+<div class="es-row" style="gap:48px">
+  <button class="es-sound" aria-pressed="true" aria-label="Sound"><svg viewBox="0 0 34 14" aria-hidden="true"><polyline class="wave" points="0,7 2,6.3 4,4.8 6,3.4 8,3 10,4 12,6.1 14,8.6 16,10.6 17,11 18,10.6 20,8.6 22,6.1 24,4 26,3 28,3.4 30,4.8 32,6.3 34,7"/><line class="flat" x1="0" y1="7" x2="34" y2="7"/></svg></button>
+  <button class="es-sound" aria-pressed="false" aria-label="Sound"><svg viewBox="0 0 34 14" aria-hidden="true"><polyline class="wave" points="0,7 2,6.3 4,4.8 6,3.4 8,3 10,4 12,6.1 14,8.6 16,10.6 17,11 18,10.6 20,8.6 22,6.1 24,4 26,3 28,3.4 30,4.8 32,6.3 34,7"/><line class="flat" x1="0" y1="7" x2="34" y2="7"/></svg></button>
+</div>
+<script>document.querySelectorAll('.es-sound').forEach(function (b) { b.addEventListener('click', function () { b.setAttribute('aria-pressed', b.getAttribute('aria-pressed') === 'true' ? 'false' : 'true'); }); });</script>
+</body>
+</html>

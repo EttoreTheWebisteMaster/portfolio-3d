@@ -1,0 +1,51 @@
+# Reviewer #1 — Gemini on Google AI Studio's free tier. Auto-reviews every non-draft PR.
+# Secret: GEMINI_API_KEY (https://aistudio.google.com/apikey)
+name: AI review
+on:
+  pull_request:
+    types: [opened, ready_for_review, synchronize, reopened]
+    paths: ["src/**", "scripts/**", "*.json", "*.mjs", "*.ts"]
+concurrency:
+  group: ai-review-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  gemini:
+    if: github.event.pull_request.draft == false && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build prompt
+        id: ctx
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          {
+            echo "prompt<<__EOF__"
+            echo "You are a strict senior reviewer for a Next.js 16 + Tailwind v4 + Headless UI + GSAP + R3F site."
+            echo "Project rules:"; sed -n '/^## Rules/,/^## Workflow/p' CLAUDE.md
+            echo "Review ONLY the diff below. Report at most 8 findings as a markdown table:"
+            echo "| sev (P0/P1/P2) | file:line | issue | fix |. Skip style nits Prettier/ESLint already catch."
+            echo "If nothing blocking: reply exactly 'LGTM ✅'. No intro, no summary."
+            echo '```diff'; gh pr diff "$PR" | head -c 120000; echo '```'
+            echo "__EOF__"
+          } >> "$GITHUB_OUTPUT"
+      - uses: google-github-actions/run-gemini-cli@v0
+        id: gemini
+        with:
+          gemini_api_key: ${{ secrets.GEMINI_API_KEY }}
+          prompt: ${{ steps.ctx.outputs.prompt }}
+      - name: Post review (edits previous one)
+        if: always() && steps.gemini.outputs.summary != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
+          BODY: ${{ steps.gemini.outputs.summary }}
+        run: |
+          printf '### 🤖 Gemini review\n\n%s\n' "$BODY" > review.md
+          gh pr comment "$PR" --edit-last --body-file review.md 2>/dev/null || gh pr comment "$PR" --body-file review.md

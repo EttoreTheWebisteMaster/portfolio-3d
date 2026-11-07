@@ -1,0 +1,25 @@
+{
+  "v": 3,
+  "assetGroups": {},
+  "blobs": {},
+  "createdOnFiles": {
+    "at": "2026-11-03T12:00:00Z",
+    "v": 1
+  },
+  "docs": {
+    "readme": "project/README.md",
+    "sections": []
+  },
+  "groups": [],
+  "lastChange": {
+    "at": "2026-11-06T12:00:00Z",
+    "by": "Ettore Serra",
+    "via": "Claude",
+    "note": "Synced with the current project: About v23 in scenes.md and README (bars, triangular cut, hybrid ask line); bars per page logged; stale film-word samples and usages removed from tokens; marquee-wordmark replaced by a logo style; Viewfinder, FilterTabs and Screenplay retired, DanceTooltip on hold; ProgrammeList rewritten as the Projects index; Button, MarqueeTitle, GenreTag, Letterbox, Annotation, RobotSubtitle notes updated."
+  },
+  "layout": "files",
+  "libraries": [],
+  "namespace": "EttoreSerra",
+  "sections": {},
+  "title": "Ettore Serra"
+}

@@ -1,0 +1,236 @@
+{
+  "v": 3,
+  "attachments": {},
+  "boards": {
+    "About-Iris.dc.html": {
+      "h": 900,
+      "title": "About — 1 · Iris: the room through a hole in the wall, bars about to slide out",
+      "w": 1440,
+      "x": 0,
+      "y": 4080
+    },
+    "About.dc.html": {
+      "h": 900,
+      "is_interactive": true,
+      "title": "About — 2 · ROB-092 portrait + interview panel · poster frame",
+      "w": 1440,
+      "x": 1520,
+      "y": 4080
+    },
+    "Contact-Copied.dc.html": {
+      "h": 900,
+      "title": "Contact — 3 · Copy email pressed: beam pulses, button confirms",
+      "w": 1440,
+      "x": 3040,
+      "y": 5440
+    },
+    "Contact-Hit.dc.html": {
+      "h": 900,
+      "title": "Contact — 1 · A robot lands in the light: sparks",
+      "w": 1440,
+      "x": 0,
+      "y": 5440
+    },
+    "Contact.dc.html": {
+      "h": 900,
+      "title": "Contact — 2 · Robots falling around the actions · poster frame",
+      "w": 1440,
+      "x": 1520,
+      "y": 5440
+    },
+    "Footer-Strip.dc.html": {
+      "h": 272,
+      "title": "Contact — 4 · Footer strip below the scene (the lamp dims as you leave)",
+      "w": 1440,
+      "x": 1520,
+      "y": 6460
+    },
+    "Hero-Open.dc.html": {
+      "h": 900,
+      "title": "Home — 1 · Opening shot, wide (0s)",
+      "w": 1440,
+      "x": 0,
+      "y": 1360
+    },
+    "Hero-Turn.dc.html": {
+      "h": 900,
+      "title": "Home — 3 · Scrolling: copy fades, ROB-092 turns",
+      "w": 1440,
+      "x": 3040,
+      "y": 1360
+    },
+    "Hero.dc.html": {
+      "h": 900,
+      "title": "Home — 2 · Close-up, after the push-in (5s) · poster frame",
+      "w": 1440,
+      "x": 1520,
+      "y": 1360
+    },
+    "Leader-Ready.dc.html": {
+      "h": 900,
+      "title": "Loading — 2 · Loaded, waiting for a choice",
+      "w": 1440,
+      "x": 1520,
+      "y": 0
+    },
+    "Leader-Return.dc.html": {
+      "h": 900,
+      "title": "Loading — 3 · Return visit, 0.6s",
+      "w": 1440,
+      "x": 3040,
+      "y": 0
+    },
+    "M-About-Interview.dc.html": {
+      "h": 874,
+      "title": "About · mobile — 2 · Full-screen interview, keyboard open",
+      "w": 402,
+      "x": 3522,
+      "y": 4080
+    },
+    "M-About.dc.html": {
+      "h": 874,
+      "title": "About · mobile — 1 · Portrait + panel",
+      "w": 402,
+      "x": 3040,
+      "y": 4080
+    },
+    "M-Hero-Open.dc.html": {
+      "h": 874,
+      "title": "Home · mobile — 1 · Opening shot",
+      "w": 402,
+      "x": 4600,
+      "y": 1360
+    },
+    "M-Hero.dc.html": {
+      "h": 874,
+      "title": "Home · mobile — 2 · Close-up",
+      "w": 402,
+      "x": 5082,
+      "y": 1360
+    },
+    "M-Loading.dc.html": {
+      "h": 874,
+      "title": "Loading · mobile",
+      "w": 402,
+      "x": 4600,
+      "y": 0
+    },
+    "Main.dc.html": {
+      "h": 900,
+      "title": "Loading — 1 · First visit",
+      "w": 1440,
+      "x": 0,
+      "y": 0
+    },
+    "Projects-Ignite.dc.html": {
+      "h": 900,
+      "title": "Projects — 1 · Lights off, the screen switches on",
+      "w": 1440,
+      "x": 0,
+      "y": 2720
+    },
+    "Projects-Long.dc.html": {
+      "h": 900,
+      "title": "Projects — 3 · Long content test: The Morning Ledger",
+      "w": 1440,
+      "x": 3040,
+      "y": 2720
+    },
+    "Projects.dc.html": {
+      "h": 900,
+      "title": "Projects — 2 · Playing Pausa, hovering Chef AI",
+      "w": 1440,
+      "x": 1520,
+      "y": 2720
+    }
+  },
+  "createdOnFiles": {
+    "at": "2026-11-03T12:00:00Z",
+    "v": 1
+  },
+  "designSystems": [
+    {
+      "artifact": "https://claude.ai/code/artifact/d2e821b8-d0d7-4024-9d42-087e7a9d9e4a",
+      "copiedAt": "2026-11-03T12:00:00Z",
+      "namespace": "ettore-serra",
+      "title": "Ettore Serra Portfolio",
+      "version": null
+    }
+  ],
+  "launch": {
+    "view": "canvas"
+  },
+  "noteOrder": [
+    "leaderTitle",
+    "heroTitle",
+    "projectsTitle",
+    "aboutTitle",
+    "contactTitle"
+  ],
+  "notes": {
+    "aboutTitle": {
+      "kind": "title1",
+      "maxW": 3924,
+      "text": "About",
+      "w": 240,
+      "x": 0,
+      "y": 3780
+    },
+    "contactTitle": {
+      "kind": "title1",
+      "maxW": 4480,
+      "text": "Contact",
+      "w": 240,
+      "x": 0,
+      "y": 5140
+    },
+    "heroTitle": {
+      "kind": "title1",
+      "maxW": 5484,
+      "text": "Home",
+      "w": 240,
+      "x": 0,
+      "y": 1060
+    },
+    "leaderTitle": {
+      "kind": "title1",
+      "maxW": 5484,
+      "text": "Loading",
+      "w": 240,
+      "x": 0,
+      "y": -300
+    },
+    "projectsTitle": {
+      "kind": "title1",
+      "maxW": 4480,
+      "text": "Projects",
+      "w": 240,
+      "x": 0,
+      "y": 2420
+    }
+  },
+  "order": [
+    "Main.dc.html",
+    "Leader-Ready.dc.html",
+    "Leader-Return.dc.html",
+    "M-Loading.dc.html",
+    "Hero-Open.dc.html",
+    "Hero.dc.html",
+    "Hero-Turn.dc.html",
+    "M-Hero-Open.dc.html",
+    "M-Hero.dc.html",
+    "Projects-Ignite.dc.html",
+    "Projects.dc.html",
+    "Projects-Long.dc.html",
+    "About-Iris.dc.html",
+    "About.dc.html",
+    "M-About.dc.html",
+    "M-About-Interview.dc.html",
+    "Contact-Hit.dc.html",
+    "Contact.dc.html",
+    "Contact-Copied.dc.html",
+    "Footer-Strip.dc.html"
+  ],
+  "pages": [],
+  "title": "Ettore Serra · Portfolio"
+}

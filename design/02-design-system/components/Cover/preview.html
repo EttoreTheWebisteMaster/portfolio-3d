@@ -1,0 +1,47 @@
+<!-- @dsCard height=320 -->
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>Cover</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alumni+Sans:wght@600&family=Instrument+Sans:wght@400;500&family=Tac+One&display=swap">
+<style>
+  html, body { margin: 0; }
+  body { width: 960px; height: 320px; position: relative; overflow: hidden; background: var(--bg-base); }
+  svg { position: absolute; inset: 0; }
+  .slab { fill: var(--smoke); }
+  .yellow { fill: var(--yellow); }
+  .red { fill: var(--red); }
+  .orange { fill: var(--orange); }
+  .relief { fill: var(--text-primary); }
+  .sweep { fill: var(--yellow); opacity: .9; }
+  .ring { fill: none; stroke: var(--cream); stroke-width: 1.5; opacity: .75; }
+  .cross { stroke: var(--ash); stroke-width: 1; }
+  .block { rx: var(--radius-0); }
+  .text { position: absolute; left: 48px; bottom: 48px; width: 420px; }
+  h1 { margin: 0; font-family: var(--font-marquee); font-weight: 400; font-size: 112px; line-height: .95; color: var(--text-accent); text-transform: uppercase; }
+  p { margin: 16px 0 0; font-family: var(--font-reading); font-size: 14px; line-height: 1.4; color: var(--text-secondary); }
+</style></head>
+<body>
+<svg width="960" height="320" viewBox="0 0 960 320" aria-hidden="true">
+  <!--
+    blocks: smoke slab 256×256 (space-10×2), yellow 128×320 (space-10 wide, bleeds top+bottom), red 80×64, text-primary relief 80×128, orange 80×128 (bleeds right+bottom)
+    arrangement: one square slab with a tall yellow slab beside it and a stack of three satellites bleeding off the right edge
+    pattern: literal motif → the film-leader rings, crosshair and load sweep; chosen because the system opens on a countdown leader and every scene is "a reel"
+    steps & radii: space-5 (24) gaps from the zone edge, space-6 (32) top inset, space-10 (128) yellow width; radius-0 everywhere (poster-like)
+  -->
+  <rect class="slab block" x="496" y="32" width="256" height="256"/>
+  <path class="sweep" d="M624 160 L624 48 A112 112 0 0 1 721 216 Z"/>
+  <circle class="ring" cx="624" cy="160" r="112"/>
+  <circle class="ring" cx="624" cy="160" r="88"/>
+  <line class="cross" x1="496" y1="160" x2="752" y2="160"/>
+  <line class="cross" x1="624" y1="32" x2="624" y2="288"/>
+  <rect class="yellow block" x="752" y="0" width="128" height="320"/>
+  <rect class="red block" x="880" y="0" width="80" height="64"/>
+  <rect class="relief block" x="880" y="64" width="80" height="128"/>
+  <rect class="orange block" x="880" y="192" width="80" height="128"/>
+</svg>
+<div class="text">
+  <h1>Ettore<br>Serra</h1>
+  <p>Designer &amp; engineer. One person. Every section lit by one light at a time.</p>
+</div>
+</body>
+</html>
