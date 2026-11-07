@@ -37,7 +37,7 @@ export default function Hero() {
         <h1 data-reveal>Made by Ettore</h1>
         <div data-reveal className="flex flex-wrap gap-3">
           <Button>Primary</Button>
-          <Button variant="ghost" size="sm">
+          <Button variant="secondary" size="sm">
             Ghost
           </Button>
           <Dropdown label="Menu" items={links} />

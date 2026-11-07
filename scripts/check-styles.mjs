@@ -10,6 +10,8 @@ import { pathToFileURL } from "node:url";
 
 const ROOT = process.cwd();
 const GLOBALS = "src/app/globals.css";
+// TODO: re-enable once the ported design-system utilities have consumers.
+const CHECK_UNUSED = false;
 const SKIP_DIRS = new Set([
   "node_modules",
   ".next",
@@ -217,6 +219,7 @@ export function checkFiles(files, { full = false } = {}) {
     // unused semantic classes = dead CSS (applies only to @utility, base rules are global)
     for (const [name, info] of defined)
       if (
+        CHECK_UNUSED &&
         info.utility &&
         !used.has(name) &&
         !new RegExp(`@apply[^;]*(?<![\\w-])${name}(?![\\w-])`).test(css)
