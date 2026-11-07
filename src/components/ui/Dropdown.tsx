@@ -12,7 +12,7 @@ type Props = Readonly<{
 export default function Dropdown({ label, items }: Props) {
   return (
     <Menu>
-      <MenuButton className="btn-secondary">{label}</MenuButton>
+      <MenuButton className="btn-secondary btn-sm">{label}</MenuButton>
       <MenuItems transition anchor="bottom end" className="menu-items">
         {items.map(item => (
           <MenuItem key={item.href}>

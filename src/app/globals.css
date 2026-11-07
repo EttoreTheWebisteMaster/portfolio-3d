@@ -571,22 +571,10 @@
   }
 }
 
-/* Sound toggle — a waveform, no label. Children: svg > polyline.wave + line.flat */
-@keyframes wave {
-  0% {
-    transform: scaleY(1);
-  }
-  25% {
-    transform: scaleY(0.55);
-  }
-  50% {
-    transform: scaleY(0.9);
-  }
-  75% {
-    transform: scaleY(0.4);
-  }
-  100% {
-    transform: scaleY(1);
+/* Sound toggle — a waveform, no label. Children: svg > g.travel > polyline.wave (pure sine, edge-faded). Hover: the wave travels sideways. Click: the wave flattens into a straight yellow line (and back). */
+@keyframes wave-travel {
+  to {
+    transform: translateX(22.6667px);
   }
 }
 @utility sound-toggle {
@@ -603,7 +591,10 @@
   & svg {
     width: 34px;
     height: 14px;
-    overflow: visible;
+    overflow: hidden;
+    filter: drop-shadow(
+      0 0 3px color-mix(in srgb, var(--color-yellow) 60%, transparent)
+    );
   }
   & .wave {
     fill: none;
@@ -611,31 +602,26 @@
     stroke-width: 1.5px;
     stroke-linecap: round;
     stroke-linejoin: round;
-    filter: drop-shadow(
-      0 0 3px color-mix(in srgb, var(--color-yellow) 60%, transparent)
-    );
-    animation: wave 1s steps(8) infinite;
+    vector-effect: non-scaling-stroke;
     transform-origin: 17px 7px;
-  }
-  & .flat {
-    stroke: var(--color-ash);
-    stroke-width: 1.5px;
-    stroke-dasharray: 2 3;
-    display: none;
+    transition: transform 420ms var(--ease-cinema);
   }
   &[aria-pressed="false"] .wave {
-    display: none;
+    transform: scaleY(0.01);
   }
-  &[aria-pressed="false"] .flat {
-    display: inline;
-  }
-  &:hover .wave {
+  &:hover svg,
+  &:focus-visible svg {
     filter: drop-shadow(
       0 0 6px color-mix(in srgb, var(--color-yellow) 90%, transparent)
     );
   }
-  &:hover .flat {
-    stroke: var(--color-cream);
+  @media (prefers-reduced-motion: no-preference) {
+    & .travel {
+      animation: wave-travel 1200ms linear infinite paused;
+    }
+    &:hover .travel {
+      animation-play-state: running;
+    }
   }
 }
 
