@@ -1,51 +1,72 @@
 "use client";
 
+import Link from "next/link";
 import { useRef } from "react";
 
-import Scene from "@/components/three/Scene";
-import Button from "@/components/ui/Button";
-import Dropdown from "@/components/ui/Dropdown";
 import { gsap, useGSAP } from "@/lib/gsap";
 
-const links = [
-  { href: "#work", label: "Work" },
-  { href: "#about", label: "About" },
+const stack = [
+  "React · Next.js · Three.js · GSAP · TypeScript",
+  "Swift · Python · Figma · Generative AI",
 ];
 
-/** Reference section: composes primitives, animates with GSAP, embeds an R3F scene. */
+/** Home hero: text layer only. The 3D set (name + ROB-092) mounts behind it later. */
 export default function Hero() {
   const root = useRef<HTMLElement>(null);
 
   useGSAP(
     () => {
       gsap.matchMedia().add("(prefers-reduced-motion: no-preference)", () => {
-        gsap.from("[data-reveal]", { y: 24, opacity: 0, stagger: 0.08 });
+        gsap.from("[data-reveal]", {
+          y: 16,
+          opacity: 0,
+          duration: 0.8,
+          ease: "power3.out",
+          stagger: 0.1,
+          delay: 0.2,
+        });
       });
     },
     { scope: root }
   );
 
   return (
-    <section
-      ref={root}
-      className="mx-auto grid min-h-dvh max-w-6xl items-center gap-10 px-6 md:grid-cols-2"
-    >
-      <div className="flex flex-col gap-6">
-        <p data-reveal className="eyebrow">
-          Starter
+    <section ref={root} className="scene hero">
+      <h1 className="sr-only">Ettore Serra, designer and engineer</h1>
+      <p aria-hidden className="hero-name">
+        Ettore Serra
+      </p>
+
+      <div className="hero-copy">
+        <h2 data-reveal className="hero-tagline">
+          Designer &amp; engineer.
+          <br />
+          One person.
+        </h2>
+        <p data-reveal className="hero-body">
+          Six years turning ideas into interfaces people remember. Full stack,
+          with a designer&apos;s eye: React, Next.js and Three.js, from Turin to
+          anywhere.
         </p>
-        <h1 data-reveal>Made by Ettore</h1>
-        <div data-reveal className="flex flex-wrap gap-3">
-          <Button>Primary</Button>
-          <Button variant="secondary" size="sm">
-            Ghost
-          </Button>
-          <Dropdown label="Menu" items={links} />
+        <div data-reveal className="hero-actions">
+          <Link href="/projects" className="btn-primary">
+            See the projects
+          </Link>
+          <Link href="/about" className="btn-secondary">
+            Ask the robot
+          </Link>
         </div>
       </div>
-      <div className="card">
-        <Scene />
-      </div>
+
+      <p data-reveal className="hero-billing">
+        <span>Design &amp; development</span> <strong>Ettore Serra</strong>{" "}
+        <span>with</span> <em>ROB-092</em>
+        {stack.map(line => (
+          <span key={line} className="hero-billing-line">
+            {line}
+          </span>
+        ))}
+      </p>
     </section>
   );
 }

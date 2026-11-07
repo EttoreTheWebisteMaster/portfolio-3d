@@ -37,7 +37,7 @@ export default function Navbar() {
         </div>
       </nav>
       <div className="col-start-3 bar-meta">
-        <div className="hidden md:contents">
+        <div className="hidden lg:contents">
           <Timecode />
           <span className="bar-divider" />
         </div>
