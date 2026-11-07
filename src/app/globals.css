@@ -1026,3 +1026,102 @@
   @apply type-label-s uppercase;
   color: var(--text-secondary);
 }
+
+/* Hero — text layer of Home (3D set mounts behind) */
+@utility hero {
+  min-height: max(100dvh, 800px);
+  padding: 0 var(--page-margin);
+  background: radial-gradient(
+    ellipse 70% 60% at 30% 18%,
+    var(--color-smoke) 0%,
+    var(--color-night) 45%,
+    var(--color-black) 100%
+  );
+}
+@utility hero-name {
+  @apply type-marquee-xl uppercase;
+  position: absolute;
+  top: calc(var(--bar-height) + var(--space-9));
+  inset-inline: var(--page-margin);
+  font-size: min(
+    var(--text-marquee-xl),
+    calc((100vw - 2 * var(--page-margin)) / 5)
+  );
+  text-align: center;
+  white-space: nowrap;
+  background: linear-gradient(
+    100deg,
+    var(--color-gold-hi) 0%,
+    var(--color-gold) 38%,
+    var(--color-gold-lo) 80%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(
+    0 0 30px color-mix(in srgb, var(--color-gold) 26%, transparent)
+  );
+  @media (max-width: 639px) {
+    top: calc(var(--bar-height) + var(--space-7));
+    font-size: 28vw;
+    white-space: normal;
+  }
+}
+@utility hero-copy {
+  position: absolute;
+  inset-inline-start: var(--page-margin);
+  inset-inline-end: var(--page-margin);
+  bottom: calc(var(--bar-height) + var(--space-8));
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  max-width: 468px;
+}
+@utility hero-tagline {
+  @apply type-poster-m uppercase;
+  font-family: var(--font-poster);
+  font-weight: 800;
+  color: var(--color-cream);
+}
+@utility hero-body {
+  @apply type-body;
+  max-width: 40ch;
+  color: var(--color-ash);
+}
+@utility hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+@utility hero-billing {
+  @apply type-label uppercase;
+  position: absolute;
+  inset-inline-end: var(--page-margin);
+  bottom: calc(var(--bar-height) + var(--space-8));
+  max-width: 420px;
+  text-align: end;
+  line-height: 1.75;
+  color: var(--color-ash);
+  & span {
+    @apply type-label-s;
+    color: var(--color-fog);
+  }
+  & strong {
+    color: var(--color-cream);
+    font-weight: 700;
+  }
+  & em {
+    color: var(--color-orange);
+    font-style: normal;
+    font-weight: 700;
+  }
+  & .hero-billing-line {
+    display: block;
+    font-size: inherit;
+    letter-spacing: inherit;
+    color: inherit;
+  }
+  @media (max-width: 1023px) {
+    display: none;
+  }
+}

@@ -2,5 +2,16 @@
   "$schema": "https://unpkg.com/knip@latest/schema.json",
   "entry": ["scripts/*.mjs", ".claude/**/*.mjs"],
   "project": ["src/**/*.{ts,tsx,css}", "scripts/*.mjs"],
-  "ignoreDependencies": ["@tailwindcss/turbopack"]
+  "ignore": [
+    "src/components/three/**",
+    "src/components/ui/Button.tsx",
+    "src/lib/cn.ts"
+  ],
+  "ignoreDependencies": [
+    "@tailwindcss/turbopack",
+    "@react-three/fiber",
+    "@types/three",
+    "clsx",
+    "three"
+  ]
 }
