@@ -2,7 +2,10 @@ import { Button as HeadlessButton, type ButtonProps } from "@headlessui/react";
 
 import { cn } from "@/lib/cn";
 
-const variants = { primary: "btn-primary", ghost: "btn-ghost" } as const;
+const variants = {
+  primary: "btn-primary",
+  secondary: "btn-secondary",
+} as const;
 
 type Props = Readonly<
   ButtonProps & { variant?: keyof typeof variants; size?: "md" | "sm" }

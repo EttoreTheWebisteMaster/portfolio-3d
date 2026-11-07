@@ -1,23 +1,40 @@
 import type { Metadata } from "next";
-import { Inter_Tight, Space_Grotesk } from "next/font/google";
+import {
+  Alumni_Sans,
+  Caveat,
+  Instrument_Sans,
+  Tac_One,
+} from "next/font/google";
 import "./globals.css";
 
-const sans = Inter_Tight({ subsets: ["latin"], variable: "--font-sans-src" });
-const display = Space_Grotesk({
+const marquee = Tac_One({
   subsets: ["latin"],
-  variable: "--font-display-src",
+  weight: "400",
+  variable: "--font-marquee-src",
 });
+const poster = Alumni_Sans({
+  subsets: ["latin"],
+  variable: "--font-poster-src",
+});
+const reading = Instrument_Sans({
+  subsets: ["latin"],
+  variable: "--font-reading-src",
+});
+const pencil = Caveat({ subsets: ["latin"], variable: "--font-pencil-src" });
 
 export const metadata: Metadata = {
-  title: { default: "Made by Ettore", template: "%s · Made by Ettore" },
-  description: "",
+  title: { default: "Ettore Serra", template: "%s · Ettore Serra" },
+  description: "Ettore Serra's personal website and portfolio.",
 };
 
 export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="it" className={`${sans.variable} ${display.variable}`}>
+    <html
+      lang="it"
+      className={`${marquee.variable} ${poster.variable} ${reading.variable} ${pencil.variable}`}
+    >
       <body>{children}</body>
     </html>
   );
