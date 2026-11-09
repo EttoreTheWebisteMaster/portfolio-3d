@@ -1,38 +1,115 @@
+"use client";
+
 import Link from "next/link";
+import { useRef } from "react";
 
-type Props = Readonly<{
-  label: string;
-  index: number;
-  total: number;
-  nextHref: string;
-  nextLabel: string;
-}>;
+import { gsap, useGSAP } from "@/lib/gsap";
+import { journey } from "@/lib/journey";
+import { PAGES, pad } from "@/lib/pages";
 
-const pad = (n: number) => String(n).padStart(2, "0");
+/** The cue points at the next page that exists; on the last one it points back to the top. */
+function cueFor(i: number) {
+  const next = PAGES[i + 1];
+  if (next && document.getElementById(next.id))
+    return { href: `#${next.id}`, text: `${next.label} ↓` };
+  return { href: `#${PAGES[0].id}`, text: `${PAGES[0].label} ↑` };
+}
 
-export default function BottomBar({
-  label,
-  index,
-  total,
-  nextHref,
-  nextLabel,
-}: Props) {
+/** Rolls a bar field out, swaps its text, and rolls the new text in. */
+function swap(el: HTMLElement, text: string) {
+  gsap
+    .timeline({ overwrite: "auto" })
+    .to(el, { yPercent: -70, opacity: 0, duration: 0.18, ease: "power2.in" })
+    .call(() => {
+      el.textContent = text;
+    })
+    .fromTo(
+      el,
+      { yPercent: 70 },
+      { yPercent: 0, opacity: 1, duration: 0.45, ease: "power3.out" }
+    );
+}
+
+/** Fixed footer. Its content follows the journey: label, cue, counter and ticks swap as the page changes. */
+export default function BottomBar() {
+  const root = useRef<HTMLElement>(null);
+
+  useGSAP(
+    () => {
+      const bar = root.current;
+      if (!bar) return;
+      const field = (name: string) =>
+        bar.querySelector<HTMLElement>(`[data-bar="${name}"]`);
+      const cue = bar.querySelector<HTMLAnchorElement>("[data-bar-cue]");
+      const ticks = bar.querySelectorAll("[data-tick]");
+      const reduced = window.matchMedia("(prefers-reduced-motion: reduce)");
+      let shown = 0;
+
+      const show = (i: number, animate: boolean) => {
+        const next = cueFor(i);
+        const set = (name: string, text: string) => {
+          const el = field(name);
+          if (!el) return;
+          if (animate && !reduced.matches) swap(el, text);
+          else el.textContent = text;
+        };
+        set("index", pad(i + 1));
+        set("label", PAGES[i].label);
+        set("count", `${pad(i + 1)} / ${pad(PAGES.length)}`);
+        if (cue) {
+          cue.href = next.href;
+          if (animate && !reduced.matches) swap(cue, next.text);
+          else cue.textContent = next.text;
+        }
+        ticks.forEach((tick, n) => {
+          if (n === i) tick.setAttribute("aria-current", "true");
+          else tick.removeAttribute("aria-current");
+        });
+      };
+
+      show(0, false);
+      const tick = () => {
+        const i = gsap.utils.clamp(
+          0,
+          PAGES.length - 1,
+          Math.round(journey.current)
+        );
+        if (i === shown) return;
+        shown = i;
+        show(i, true);
+      };
+      gsap.ticker.add(tick);
+      return () => gsap.ticker.remove(tick);
+    },
+    { scope: root }
+  );
+
   return (
-    <footer className="absolute inset-x-0 bottom-0 z-10 bar bar-solid">
+    <footer ref={root} className="fixed inset-x-0 bottom-0 z-10 bar bar-solid">
       <p className="bar-label whitespace-nowrap">
-        {pad(index)} · {label}
+        <span className="bar-field" data-bar="index">
+          {pad(1)}
+        </span>
+        {" · "}
+        <span className="bar-field" data-bar="label">
+          {PAGES[0].label}
+        </span>
       </p>
-      <Link href={nextHref} className="bar-cue">
-        {nextLabel} ↓
+      <Link href={`#${PAGES[1].id}`} className="bar-field bar-cue" data-bar-cue>
+        {PAGES[1].label} ↓
       </Link>
       <p className="bar-progress whitespace-nowrap">
-        <span>
-          {pad(index)} / {pad(total)}
+        <span className="bar-field" data-bar="count">
+          {pad(1)} / {pad(PAGES.length)}
         </span>
         <span className="hidden md:block">
           <span className="bar-ticks" aria-hidden="true">
-            {Array.from({ length: total }, (_, i) => (
-              <i key={i} aria-current={i + 1 === index ? "true" : undefined} />
+            {PAGES.map((page, i) => (
+              <i
+                key={page.id}
+                data-tick
+                aria-current={i === 0 ? "true" : undefined}
+              />
             ))}
           </span>
         </span>

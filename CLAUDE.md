@@ -39,6 +39,18 @@ While editing, prefer the next-devtools MCP `get_compilation_issues` over `npm r
 Non-trivial → plan mode first. One task at a time. `/handoff` then `/clear` between unrelated tasks.
 Commits: Conventional Commits (`feat:`, `fix:`, `chore:`…). Ship with `/ship`.
 
+## Working with Ettore (learned from past sessions)
+
+- Prompts are short, lowercase, often a bullet list of tweaks. Do every bullet; end with one line per bullet saying what changed. Don't ask about details the design package or a screenshot already answers.
+- Screenshots in the prompt are the spec. Read them and the matching `design/` frame first; if the design disagrees with the request, say so in one line, then follow the request.
+- "Expert / awwwards judge / motion designer" = high bar. Audit first (flaws list, brief), then fix all of it in one pass. Explicit "ask me questions" → ask, otherwise act.
+- Visual work is iterative ("less", "too dark", "a bit lower"). Make small calibrated moves, run `npm run shot`, look at it before reporting. Adjust by the smallest step that satisfies the note.
+- Motion/3D taste lives in `.claude/rules/motion.md`. Follow it by default.
+- Flow per task: implement → `npm run check` → `/ship` → Ettore usually says "merge the PR". After `/ship`, offer the merge in one line.
+- "quick", "skip X for now" = cut ceremony: no plan mode, no extra checks beyond `check`, minimal report.
+- Reuse over new: they said "same as the design" for navbar/loader. Port from the design component README, don't reinvent.
+- Folder confusion happened (`app` vs `src/app`). Only `src/app` exists; never create a root `app/`.
+
 ## Gotchas
 
 - R3F `<Canvas>` only inside a client component loaded with `next/dynamic` + `ssr: false`.

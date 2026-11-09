@@ -1,17 +1,21 @@
 "use client";
 
 import { useFrame } from "@react-three/fiber";
-import { useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 
-export const LIGHT_POS = new THREE.Vector3(-6, 9, 5);
+import { heroLight, introFlash, introKey, type Progress } from "@/lib/journey";
+import { pointer } from "@/lib/pointer";
+
+import { Beam, type Cone, litByCone } from "./HeroBeam";
+
+export const LIGHT_POS = new THREE.Vector3(-2.5, 4, 10);
 export const FLOOR_Y = -2;
 
-const LIGHT_COLOR = "#ffe2a8";
-const BEAM_LENGTH = 15;
+const LIGHT_COLOR = "#ffd9a0";
 
 /** Deterministic PRNG so the dust layout is pure and stable across renders. */
-function mulberry32(seed: number) {
+export function mulberry32(seed: number) {
   let a = seed;
   return () => {
     a = (a + 0x6d2b79f5) | 0;
@@ -21,51 +25,32 @@ function mulberry32(seed: number) {
   };
 }
 
-/** Visible cone of light from the spot to the floor. */
-function Beam({ radius, alpha }: Readonly<{ radius: number; alpha: number }>) {
-  const { geometry, quaternion } = useMemo(() => {
-    const dir = new THREE.Vector3(0, FLOOR_Y, 0).sub(LIGHT_POS).normalize();
-    const geo = new THREE.ConeGeometry(radius, BEAM_LENGTH, 48, 1, true);
-    geo.translate(0, -BEAM_LENGTH / 2, 0);
-    const pos = geo.getAttribute("position");
-    const colors = new Float32Array(pos.count * 4);
-    for (let i = 0; i < pos.count; i++) {
-      const fade = 1 - Math.abs(pos.getY(i)) / BEAM_LENGTH;
-      colors.set([1, 1, 1, alpha * fade], i * 4);
-    }
-    geo.setAttribute("color", new THREE.BufferAttribute(colors, 4));
-    return {
-      geometry: geo,
-      quaternion: new THREE.Quaternion().setFromUnitVectors(
-        new THREE.Vector3(0, -1, 0),
-        dir
-      ),
-    };
-  }, [radius, alpha]);
-
-  return (
-    <mesh geometry={geometry} position={LIGHT_POS} quaternion={quaternion}>
-      <meshBasicMaterial
-        color={LIGHT_COLOR}
-        vertexColors
-        transparent
-        depthWrite={false}
-        side={THREE.DoubleSide}
-        blending={THREE.AdditiveBlending}
-      />
-    </mesh>
-  );
+/** Soft round mote sprite shared by the hero and cinema dust. */
+export function dustTexture() {
+  const canvas = document.createElement("canvas");
+  canvas.width = canvas.height = 32;
+  const ctx = canvas.getContext("2d");
+  if (ctx) {
+    const g = ctx.createRadialGradient(16, 16, 0, 16, 16, 16);
+    g.addColorStop(0, "rgba(255,255,255,1)");
+    g.addColorStop(1, "rgba(255,255,255,0)");
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, 32, 32);
+  }
+  return new THREE.CanvasTexture(canvas);
 }
 
-/** Dust motes drifting inside the beam. */
+/** Dust motes hanging in the room. They drift on their own; the light passing through them is what shows them. */
 function Dust({
   reduced,
+  cone,
   count,
   size,
   opacity,
   seed,
 }: Readonly<{
   reduced: boolean;
+  cone: Cone;
   count: number;
   size: number;
   opacity: number;
@@ -84,20 +69,10 @@ function Dust({
       pts[i * 3 + 2] = LIGHT_POS.z + axis.z * t + (rand() - 0.5) * spread * 2;
       spd[i] = 0.03 + rand() * 0.07;
     }
-    const canvas = document.createElement("canvas");
-    canvas.width = canvas.height = 32;
-    const ctx = canvas.getContext("2d");
-    if (ctx) {
-      const g = ctx.createRadialGradient(16, 16, 0, 16, 16, 16);
-      g.addColorStop(0, "rgba(255,255,255,1)");
-      g.addColorStop(1, "rgba(255,255,255,0)");
-      ctx.fillStyle = g;
-      ctx.fillRect(0, 0, 32, 32);
-    }
     return {
       positions: pts,
       speeds: spd,
-      texture: new THREE.CanvasTexture(canvas),
+      texture: dustTexture(),
     };
   }, [count, seed]);
 
@@ -133,33 +108,111 @@ function Dust({
         opacity={opacity}
         depthWrite={false}
         blending={THREE.AdditiveBlending}
+        onBeforeCompile={litByCone(cone)}
       />
     </points>
   );
 }
 
-/** Spot, beam and dust. The light is fixed in the world; only the camera moves. */
-export default function HeroLight({ reduced }: Readonly<{ reduced: boolean }>) {
+const SPOT_INTENSITY = 80;
+const AIM = new THREE.Vector3(0, 0.8, 0);
+const DOWN = new THREE.Vector3(0, -1, 0);
+
+/** Spot, beam and dust. The lamp hangs fixed in front of him, just above the lens and is aimed by the pointer, like a real follow-spot; the dust stays put. It dies as the scroll reaches the cinema. */
+export default function HeroLight({
+  reduced,
+  low,
+  progress,
+}: Readonly<{ reduced: boolean; low: boolean; progress: Progress }>) {
+  const root = useRef<THREE.Group>(null);
+  const beams = useRef<THREE.Group>(null);
+  const spot = useRef<THREE.SpotLight>(null);
+  const target = useMemo(() => new THREE.Object3D(), []);
+  const aim = useRef(AIM.clone());
+  const cone = useMemo<Cone>(
+    () => ({
+      pos: { value: LIGHT_POS.clone() },
+      dir: { value: new THREE.Vector3(0, -1, 0) },
+    }),
+    []
+  );
+  const dir = useMemo(() => new THREE.Vector3(), []);
+  // Beams and dust, found once instead of walking the group every frame.
+  const fades = useRef<
+    { obj: THREE.Mesh | THREE.Points; mat: THREE.Material; base: number }[]
+  >([]);
+
+  useEffect(() => {
+    if (spot.current) spot.current.target = target;
+  }, [target]);
+
+  useFrame(({ clock }, dt) => {
+    if (fades.current.length === 0)
+      root.current?.traverse(obj => {
+        if (!(obj instanceof THREE.Mesh || obj instanceof THREE.Points)) return;
+        const mat = obj.material;
+        if (mat instanceof THREE.Material)
+          fades.current.push({ obj, mat, base: mat.opacity });
+      });
+    const fade = heroLight(progress.current);
+    // Dark until the slam, then a flash that settles on the real key. A faint breath keeps the lamp alive.
+    const breath = reduced ? 1 : 1 + 0.015 * Math.sin(clock.elapsedTime * 2.1);
+    const key = fade * (introKey() + introFlash());
+    if (spot.current) spot.current.intensity = SPOT_INTENSITY * key * breath;
+    for (const { obj, mat, base } of fades.current) {
+      mat.opacity = base * Math.min(key, 1);
+      obj.visible = key > 0.001;
+    }
+    // The hand aims the lamp; the lamp has weight, so it trails the pointer and settles.
+    const goalX = reduced ? 0 : pointer.x * 1.1 * fade;
+    const goalY = reduced ? AIM.y : AIM.y - pointer.y * 0.5 * fade;
+    const k = 1 - Math.exp(-dt * 3);
+    aim.current.x += (goalX - aim.current.x) * k;
+    aim.current.y += (goalY - aim.current.y) * k;
+    target.position.copy(aim.current);
+    dir.copy(aim.current).sub(LIGHT_POS).normalize();
+    beams.current?.quaternion.setFromUnitVectors(DOWN, dir);
+    cone.dir.value.copy(dir);
+  });
+
   return (
-    <group>
+    <group ref={root}>
+      <primitive object={target} />
       <spotLight
+        ref={spot}
         position={LIGHT_POS}
         color={LIGHT_COLOR}
-        intensity={560}
-        angle={0.34}
-        penumbra={0.55}
+        intensity={0}
+        angle={0.62}
+        penumbra={0.85}
         distance={40}
         castShadow
-        shadow-mapSize={[2048, 2048]}
-        shadow-bias={-0.0004}
-        shadow-normalBias={0.03}
-        shadow-radius={6}
+        shadow-mapSize={low ? [1024, 1024] : [2048, 2048]}
+        shadow-bias={-0.001}
+        shadow-normalBias={0.1}
+        shadow-radius={8}
       />
-      <Beam radius={2.6} alpha={0.02} />
-      <Beam radius={3.8} alpha={0.018} />
-      <Beam radius={5.2} alpha={0.012} />
-      <Dust reduced={reduced} count={200} size={0.05} opacity={0.8} seed={92} />
-      <Dust reduced={reduced} count={36} size={0.2} opacity={0.16} seed={7} />
+      <group ref={beams} position={LIGHT_POS}>
+        <Beam radius={4.2} alpha={0.008} />
+        <Beam radius={6} alpha={0.007} />
+        <Beam radius={8} alpha={0.005} />
+      </group>
+      <Dust
+        reduced={reduced}
+        cone={cone}
+        count={200}
+        size={0.05}
+        opacity={0.9}
+        seed={92}
+      />
+      <Dust
+        reduced={reduced}
+        cone={cone}
+        count={36}
+        size={0.2}
+        opacity={0.2}
+        seed={7}
+      />
     </group>
   );
 }

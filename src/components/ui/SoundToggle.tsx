@@ -1,8 +1,8 @@
 "use client";
 
-import { useId, useSyncExternalStore } from "react";
+import { useId } from "react";
 
-const KEY = "sound";
+import { setSound, useSound } from "@/lib/sound";
 
 // A pure sine, 1.5 cycles across the 34-unit box: it starts and ends on the
 // midline and mirrors around the centre. Drawn one period beyond each edge so
@@ -13,31 +13,10 @@ const POINTS = Array.from({ length: 160 }, (_, i) => {
   const y = 7 - 4 * Math.sin((2 * Math.PI * x) / PERIOD);
   return `${x.toFixed(2)},${y.toFixed(2)}`;
 }).join(" ");
-const listeners = new Set<() => void>();
-
-const subscribe = (cb: () => void) => {
-  listeners.add(cb);
-  return () => void listeners.delete(cb);
-};
-const read = () => {
-  try {
-    return localStorage.getItem(KEY) !== "off";
-  } catch {
-    return true;
-  }
-};
-
 /** Global mute as a waveform; state persists across visits. */
 export default function SoundToggle() {
   const fade = useId();
-  const on = useSyncExternalStore(subscribe, read, () => true);
-
-  const toggle = () => {
-    try {
-      localStorage.setItem(KEY, on ? "off" : "on");
-    } catch {}
-    listeners.forEach(cb => cb());
-  };
+  const on = useSound();
 
   return (
     <button
@@ -45,7 +24,7 @@ export default function SoundToggle() {
       className="sound-toggle"
       aria-pressed={on}
       aria-label="Sound"
-      onClick={toggle}
+      onClick={() => setSound(!on)}
     >
       <svg viewBox="0 0 34 14" aria-hidden="true">
         <defs>
