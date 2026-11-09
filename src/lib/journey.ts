@@ -1,0 +1,85 @@
+/** One position for the whole site, shared by the DOM layer and the 3D rig. */
+export type Progress = { current: number };
+
+/** Page position as a float page index: 0 on Home, 1 on Projects, 0.5 halfway between. Written by the page snapper. */
+export const journey: Progress = { current: 0 };
+
+export function setJourney(p: number) {
+  journey.current = p;
+}
+
+/** Mirrors the journey into `target`, clamped to the Home → Projects range the 3D rig uses. */
+export function syncRig(target: Progress) {
+  target.current = clamp01(journey.current);
+}
+
+const clamp01 = (v: number) => Math.min(Math.max(v, 0), 1);
+
+/** Position of p inside a [from, to] beat, 0–1. */
+export const seg = (p: number, [from, to]: readonly [number, number]) =>
+  clamp01((p - from) / (to - from));
+
+/** Smootherstep: zero velocity and acceleration at both ends. Used for fades, never for travel. */
+export const ease = (t: number) => t * t * t * (t * (t * 6 - 15) + 10);
+
+/** Seconds one page change takes. Longer hops take proportionally longer, so speed never changes. */
+export const TRANSITION_SECONDS = 3.2;
+
+/**
+ * Travel curve of a page change: a short ramp up, a long stretch at one constant speed, a short ramp down.
+ * No slow start, no rushed finish.
+ */
+export function cruise(t: number, ramp = 0.1) {
+  const v = 1 / (1 - ramp);
+  if (t <= 0) return 0;
+  if (t >= 1) return 1;
+  if (t < ramp) return (v * t * t) / (2 * ramp);
+  if (t > 1 - ramp) return 1 - (v * (1 - t) * (1 - t)) / (2 * ramp);
+  return v * (t - ramp / 2);
+}
+
+/**
+ * Home → Projects as beats of one 0–1 travel. They overlap on purpose so something is always moving
+ * and one light is always rising while another falls.
+ */
+export const BEAT = {
+  /** The camera pushes in, arcs round his shoulder, then cranes up and back over his head. */
+  crane: [0, 1],
+  /** He winds up, then turns to face the screen. */
+  turn: [0.03, 0.5],
+  /** Eyes leave the robot and settle on the screen. */
+  look: [0.3, 1],
+  /** Focus racks from the robot to the screen. */
+  rack: [0.35, 1],
+  /** The hero key, beam and dust hand over to the cinema. */
+  key: [0.1, 0.8],
+  /** The cinema's own light (fill and screen) comes up while the key goes down. */
+  cinema: [0.05, 0.7],
+  /** The room surfaces out of the dark: floor first, then the warm house light. */
+  floor: [0, 0.2],
+  reveal: [0.04, 0.5],
+  /** The screen draws as a line, then opens into the picture. */
+  line: [0.4, 0.52],
+  picture: [0.48, 0.85],
+  /** The crowd comes in from the sides and settles. */
+  walk: [0.08, 0.92],
+} as const;
+
+/** Hero key light: 1 at the top of Home, 0 once the cinema has taken over. */
+export const heroLight = (p: number) => 1 - ease(seg(p, BEAT.key));
+
+/** Cinema light: 0 on Home, 1 on Projects. */
+export const cinemaLight = (p: number) => ease(seg(p, BEAT.cinema));
+
+/** Where the camera ends, level, in the middle rows. */
+export const CAM_END = [0, 4.6, 7] as const;
+export const SCREEN_DIST = 22;
+/** His head, the first thing in focus. */
+export const HEAD = [0, 1.8, 0] as const;
+
+/** Publishes the position to CSS (`--pos` raw, `--p` Home→Projects 0–1) so the DOM layer moves with the 3D one. */
+export function publish(pos: number) {
+  const style = document.documentElement.style;
+  style.setProperty("--pos", pos.toFixed(4));
+  style.setProperty("--p", clamp01(pos).toFixed(4));
+}

@@ -17,7 +17,7 @@ export default function Navbar() {
   const pathname = usePathname();
 
   return (
-    <header className="absolute inset-x-0 top-0 z-10 bar bar-solid">
+    <header className="fixed inset-x-0 top-0 z-10 bar bar-solid">
       <Link href="/" className="logo" aria-label="Ettore Serra, home">
         <span>Ettore</span>
         <span>Serra</span>

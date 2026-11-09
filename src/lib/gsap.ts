@@ -2,11 +2,19 @@
 
 import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { Observer } from "gsap/Observer";
+import { ScrambleTextPlugin } from "gsap/ScrambleTextPlugin";
+import { ScrollToPlugin } from "gsap/ScrollToPlugin";
+import { SplitText } from "gsap/SplitText";
 
 // Register once. Import gsap/plugins only from here.
-gsap.registerPlugin(useGSAP, ScrollTrigger);
+gsap.registerPlugin(
+  useGSAP,
+  Observer,
+  ScrollToPlugin,
+  SplitText,
+  ScrambleTextPlugin
+);
 gsap.defaults({ duration: 0.8, ease: "power3.out" });
 
-// Export ScrollTrigger here too once a component needs ScrollTrigger.refresh() etc.
-export { gsap, useGSAP };
+export { gsap, Observer, SplitText, useGSAP };

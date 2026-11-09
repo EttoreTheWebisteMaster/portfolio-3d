@@ -4,6 +4,8 @@ import { useFrame } from "@react-three/fiber";
 import { useMemo, useRef } from "react";
 import * as THREE from "three";
 
+import { heroLight, type Progress } from "@/lib/journey";
+
 export const LIGHT_POS = new THREE.Vector3(-6, 9, 5);
 export const FLOOR_Y = -2;
 
@@ -11,7 +13,7 @@ const LIGHT_COLOR = "#ffe2a8";
 const BEAM_LENGTH = 15;
 
 /** Deterministic PRNG so the dust layout is pure and stable across renders. */
-function mulberry32(seed: number) {
+export function mulberry32(seed: number) {
   let a = seed;
   return () => {
     a = (a + 0x6d2b79f5) | 0;
@@ -19,6 +21,21 @@ function mulberry32(seed: number) {
     t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   };
+}
+
+/** Soft round mote sprite shared by the hero and cinema dust. */
+export function dustTexture() {
+  const canvas = document.createElement("canvas");
+  canvas.width = canvas.height = 32;
+  const ctx = canvas.getContext("2d");
+  if (ctx) {
+    const g = ctx.createRadialGradient(16, 16, 0, 16, 16, 16);
+    g.addColorStop(0, "rgba(255,255,255,1)");
+    g.addColorStop(1, "rgba(255,255,255,0)");
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, 32, 32);
+  }
+  return new THREE.CanvasTexture(canvas);
 }
 
 /** Visible cone of light from the spot to the floor. */
@@ -84,20 +101,10 @@ function Dust({
       pts[i * 3 + 2] = LIGHT_POS.z + axis.z * t + (rand() - 0.5) * spread * 2;
       spd[i] = 0.03 + rand() * 0.07;
     }
-    const canvas = document.createElement("canvas");
-    canvas.width = canvas.height = 32;
-    const ctx = canvas.getContext("2d");
-    if (ctx) {
-      const g = ctx.createRadialGradient(16, 16, 0, 16, 16, 16);
-      g.addColorStop(0, "rgba(255,255,255,1)");
-      g.addColorStop(1, "rgba(255,255,255,0)");
-      ctx.fillStyle = g;
-      ctx.fillRect(0, 0, 32, 32);
-    }
     return {
       positions: pts,
       speeds: spd,
-      texture: new THREE.CanvasTexture(canvas),
+      texture: dustTexture(),
     };
   }, [count, seed]);
 
@@ -138,14 +145,36 @@ function Dust({
   );
 }
 
-/** Spot, beam and dust. The light is fixed in the world; only the camera moves. */
-export default function HeroLight({ reduced }: Readonly<{ reduced: boolean }>) {
+const SPOT_INTENSITY = 560;
+
+/** Spot, beam and dust. The light is fixed in the world; only the camera moves. It dies as the scroll reaches the cinema. */
+export default function HeroLight({
+  reduced,
+  progress,
+}: Readonly<{ reduced: boolean; progress: Progress }>) {
+  const group = useRef<THREE.Group>(null);
+  const spot = useRef<THREE.SpotLight>(null);
+
+  useFrame(() => {
+    const fade = heroLight(progress.current);
+    if (spot.current) spot.current.intensity = SPOT_INTENSITY * fade;
+    group.current?.traverse(obj => {
+      if (!(obj instanceof THREE.Mesh || obj instanceof THREE.Points)) return;
+      const mat = obj.material;
+      if (!(mat instanceof THREE.Material)) return;
+      mat.userData.base ??= mat.opacity;
+      mat.opacity = mat.userData.base * fade;
+      obj.visible = fade > 0.001;
+    });
+  });
+
   return (
-    <group>
+    <group ref={group}>
       <spotLight
+        ref={spot}
         position={LIGHT_POS}
         color={LIGHT_COLOR}
-        intensity={560}
+        intensity={SPOT_INTENSITY}
         angle={0.34}
         penumbra={0.55}
         distance={40}

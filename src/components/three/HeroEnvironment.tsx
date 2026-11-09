@@ -1,8 +1,10 @@
 "use client";
 
-import { useThree } from "@react-three/fiber";
-import { useEffect, useMemo } from "react";
+import { useFrame, useThree } from "@react-three/fiber";
+import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
+
+import { heroLight, type Progress } from "@/lib/journey";
 
 import { FLOOR_Y } from "./HeroLight";
 
@@ -50,7 +52,13 @@ function glowTexture() {
 }
 
 /** Reflections, teal rim, warm bounce and the pool of light on the floor. */
-export default function HeroEnvironment() {
+export default function HeroEnvironment({
+  progress,
+}: Readonly<{ progress: Progress }>) {
+  const rim = useRef<THREE.SpotLight>(null);
+  const bounce = useRef<THREE.PointLight>(null);
+  const sky = useRef<THREE.HemisphereLight>(null);
+  const pool = useRef<THREE.MeshBasicMaterial>(null);
   const gl = useThree(s => s.gl);
   const glow = useMemo(() => glowTexture(), []);
   const env = useMemo(() => {
@@ -62,10 +70,22 @@ export default function HeroEnvironment() {
 
   useEffect(() => () => env.dispose(), [env]);
 
+  // No hero light survives on the Projects side: reflections, rim, bounce, sky and the floor pool all go to zero.
+  useFrame(({ scene }) => {
+    const k = heroLight(progress.current);
+    scene.environmentIntensity = k;
+    if (rim.current) rim.current.intensity = 240 * k;
+    if (bounce.current) bounce.current.intensity = 16 * k;
+    if (sky.current) sky.current.intensity = 0.18 * k;
+    if (pool.current) pool.current.opacity = 0.14 * k;
+  });
+
   return (
     <>
+      <hemisphereLight ref={sky} args={["#8fa6ad", "#1a1410", 0.18]} />
       <primitive object={env.texture} attach="environment" />
       <spotLight
+        ref={rim}
         position={[7, 4, -6]}
         color="#6fc3d4"
         intensity={240}
@@ -74,6 +94,7 @@ export default function HeroEnvironment() {
         distance={40}
       />
       <pointLight
+        ref={bounce}
         position={[2, -1.2, 6]}
         color="#f29a26"
         intensity={16}
@@ -85,6 +106,7 @@ export default function HeroEnvironment() {
       >
         <planeGeometry args={[14, 14]} />
         <meshBasicMaterial
+          ref={pool}
           map={glow}
           transparent
           opacity={0.14}

@@ -1,14 +1,16 @@
 "use client";
 
 import { useFrame, useLoader } from "@react-three/fiber";
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
+
+import { BEAT, ease, type Progress, seg } from "@/lib/journey";
 
 import { FLOOR_Y } from "./HeroLight";
 
 /** ROB-092: matte paint with a lacquer sheen (design system palette). */
-const PALETTE: Record<
+export const PALETTE: Record<
   string,
   { color: string; metalness: number; roughness: number; clearcoat: number }
 > = {
@@ -17,8 +19,11 @@ const PALETTE: Record<
   Black: { color: "#3D3D3D", metalness: 0.15, roughness: 0.28, clearcoat: 0.6 },
 };
 
-export default function HeroRobot() {
+export default function HeroRobot({
+  progress,
+}: Readonly<{ progress: Progress }>) {
   const gltf = useLoader(GLTFLoader, "/models/RobotExpressive.glb");
+  const turn = useRef<THREE.Group>(null);
   const mixer = useMemo(() => new THREE.AnimationMixer(gltf.scene), [gltf]);
 
   useEffect(() => {
@@ -55,7 +60,19 @@ export default function HeroRobot() {
     };
   }, [gltf, mixer]);
 
-  useFrame((_, dt) => mixer.update(dt));
+  useFrame((_, dt) => {
+    mixer.update(dt);
+    if (turn.current) {
+      // A small wind-up against the turn, then round to face the screen.
+      const t = seg(progress.current, BEAT.turn);
+      turn.current.rotation.y =
+        Math.PI * ease(t) - 0.12 * Math.sin(Math.PI * seg(t, [0, 0.25]));
+    }
+  });
 
-  return <primitive object={gltf.scene} position={[0, FLOOR_Y, 0]} />;
+  return (
+    <group ref={turn} position={[0, FLOOR_Y, 0]}>
+      <primitive object={gltf.scene} />
+    </group>
+  );
 }

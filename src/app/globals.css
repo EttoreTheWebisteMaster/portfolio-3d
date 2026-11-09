@@ -425,6 +425,10 @@
   @apply type-label-s uppercase;
   color: var(--color-fog);
 }
+/* A bar field whose text rolls out and in when the page changes. */
+@utility bar-field {
+  display: inline-block;
+}
 @utility bar-cue {
   @apply type-label-s uppercase;
   color: var(--color-yellow);
@@ -1015,10 +1019,25 @@
   inset: 0;
   pointer-events: none;
 }
-@utility hero {
+/* Copy that PageMotion animates. Hidden until it has been split and posed, so nothing flashes. */
+@utility fx {
+  visibility: hidden;
+  @media (scripting: none) {
+    visibility: visible;
+  }
+}
+/* The fixed 3D set behind every page. --p (0 Home, 1 Projects) and --pos (page index) come from the rig. */
+@utility stage {
   --light-strength: 16%;
-  min-height: max(100dvh, 800px);
-  padding: 0 var(--page-margin);
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+}
+@utility stage-bg {
+  position: absolute;
+  inset: 0;
+  opacity: clamp(0, calc(1 - var(--p, 0) * 1.4), 1);
   background: radial-gradient(
     ellipse 70% 60% at 30% 18%,
     color-mix(in srgb, var(--color-smoke) 45%, var(--color-black)) 0%,
@@ -1026,8 +1045,23 @@
     var(--color-black) 100%
   );
 }
+/* One full-screen page. Pages sit above the stage and snap one gesture at a time. */
+@utility page {
+  position: relative;
+  z-index: 2;
+  min-height: 100dvh;
+}
+/* The name lifts away over the first third of the journey. */
+@utility hero-out {
+  opacity: clamp(0, calc(1 - var(--p, 0) * 3.2), 1);
+  translate: 0 calc(var(--p, 0) * -96px);
+  scale: calc(1 + var(--p, 0) * 0.08);
+}
+@utility hero {
+  padding: 0 var(--page-margin);
+}
 @utility hero-name {
-  @apply type-marquee-xl uppercase;
+  @apply hero-out type-marquee-xl uppercase;
   position: absolute;
   top: calc(var(--bar-height) + var(--space-9));
   inset-inline: var(--page-margin);
