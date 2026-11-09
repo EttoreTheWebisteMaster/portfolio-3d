@@ -77,6 +77,33 @@ export const SCREEN_DIST = 22;
 /** His head, the first thing in focus. */
 export const HEAD = [0, 1.8, 0] as const;
 
+/** Opening shot after Enter, in seconds: black, the light slams on, the camera flies in, the title assembles. */
+export const INTRO = {
+  total: 5.5,
+  slam: 0.6,
+  fly: 4.4,
+  /** The title starts decoding just after the light hits. */
+  text: 0.9,
+} as const;
+
+/** 0 before Enter, 1 once the opening shot has played. Tweened once by the canvas. */
+export const intro: Progress = { current: 0 };
+
+const introTime = () => intro.current * INTRO.total;
+
+/** Camera travel of the opening shot, 0–1, fast out of the dark and long to settle. */
+export const introFly = () => 1 - (1 - clamp01(introTime() / INTRO.fly)) ** 4;
+
+/** 0 → 1 as a light snaps on `delay` seconds after the slam. */
+export const introKey = (delay = 0) =>
+  clamp01((introTime() - INTRO.slam - delay) / 0.12);
+
+/** The brief overshoot as the key slams on: 0, a spike, then back to 0. Feeds the key and the bloom. */
+export function introFlash() {
+  const t = introTime() - INTRO.slam;
+  return t < 0 ? 0 : Math.exp(-t * 4) * Math.min(t / 0.06, 1);
+}
+
 /** Publishes the position to CSS (`--pos` raw, `--p` Home→Projects 0–1) so the DOM layer moves with the 3D one. */
 export function publish(pos: number) {
   const style = document.documentElement.style;

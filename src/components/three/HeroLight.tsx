@@ -4,7 +4,8 @@ import { useFrame } from "@react-three/fiber";
 import { useMemo, useRef } from "react";
 import * as THREE from "three";
 
-import { heroLight, type Progress } from "@/lib/journey";
+import { heroLight, introFlash, introKey, type Progress } from "@/lib/journey";
+import { pointer } from "@/lib/pointer";
 
 export const LIGHT_POS = new THREE.Vector3(-6, 9, 5);
 export const FLOOR_Y = -2;
@@ -150,22 +151,37 @@ const SPOT_INTENSITY = 560;
 /** Spot, beam and dust. The light is fixed in the world; only the camera moves. It dies as the scroll reaches the cinema. */
 export default function HeroLight({
   reduced,
+  low,
   progress,
-}: Readonly<{ reduced: boolean; progress: Progress }>) {
+}: Readonly<{ reduced: boolean; low: boolean; progress: Progress }>) {
   const group = useRef<THREE.Group>(null);
   const spot = useRef<THREE.SpotLight>(null);
+  // Beams and dust, found once instead of walking the group every frame.
+  const fades = useRef<
+    { obj: THREE.Mesh | THREE.Points; mat: THREE.Material; base: number }[]
+  >([]);
 
   useFrame(() => {
+    if (fades.current.length === 0)
+      group.current?.traverse(obj => {
+        if (!(obj instanceof THREE.Mesh || obj instanceof THREE.Points)) return;
+        const mat = obj.material;
+        if (mat instanceof THREE.Material)
+          fades.current.push({ obj, mat, base: mat.opacity });
+      });
     const fade = heroLight(progress.current);
-    if (spot.current) spot.current.intensity = SPOT_INTENSITY * fade;
-    group.current?.traverse(obj => {
-      if (!(obj instanceof THREE.Mesh || obj instanceof THREE.Points)) return;
-      const mat = obj.material;
-      if (!(mat instanceof THREE.Material)) return;
-      mat.userData.base ??= mat.opacity;
-      mat.opacity = mat.userData.base * fade;
-      obj.visible = fade > 0.001;
-    });
+    // Dark until the slam, then a flash that settles on the real key.
+    const key = fade * (introKey() + introFlash());
+    if (spot.current) spot.current.intensity = SPOT_INTENSITY * key;
+    for (const { obj, mat, base } of fades.current) {
+      mat.opacity = base * Math.min(key, 1);
+      obj.visible = key > 0.001;
+    }
+    // The pointer swings the light a little; it stills as the journey leaves Home.
+    if (group.current && !reduced) {
+      group.current.position.x = pointer.x * 1.4 * fade;
+      group.current.position.z = pointer.y * 0.7 * fade;
+    }
   });
 
   return (
@@ -174,12 +190,12 @@ export default function HeroLight({
         ref={spot}
         position={LIGHT_POS}
         color={LIGHT_COLOR}
-        intensity={SPOT_INTENSITY}
+        intensity={0}
         angle={0.34}
         penumbra={0.55}
         distance={40}
         castShadow
-        shadow-mapSize={[2048, 2048]}
+        shadow-mapSize={low ? [1024, 1024] : [2048, 2048]}
         shadow-bias={-0.0004}
         shadow-normalBias={0.03}
         shadow-radius={6}

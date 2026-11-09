@@ -11,7 +11,7 @@ export default function Hero() {
     <section id="home" data-page className="page hero">
       <h1 className="sr-only">Ettore Serra, designer and engineer</h1>
 
-      <div className="hero-copy">
+      <div className="hero-copy" data-depth="0.45">
         <h2 data-fx="title" className="fx hero-tagline">
           Designer &amp; engineer.
           <br />
@@ -25,9 +25,6 @@ export default function Hero() {
         <div data-fx="item" className="fx hero-actions">
           <Link href="#projects" className="btn-primary">
             See the projects
-          </Link>
-          <Link href="/about" className="btn-secondary">
-            Ask the robot
           </Link>
         </div>
       </div>

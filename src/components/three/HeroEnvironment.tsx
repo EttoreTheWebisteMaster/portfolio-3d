@@ -4,7 +4,7 @@ import { useFrame, useThree } from "@react-three/fiber";
 import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 
-import { heroLight, type Progress } from "@/lib/journey";
+import { heroLight, introKey, type Progress } from "@/lib/journey";
 
 import { FLOOR_Y } from "./HeroLight";
 
@@ -73,11 +73,14 @@ export default function HeroEnvironment({
   // No hero light survives on the Projects side: reflections, rim, bounce, sky and the floor pool all go to zero.
   useFrame(({ scene }) => {
     const k = heroLight(progress.current);
-    scene.environmentIntensity = k;
-    if (rim.current) rim.current.intensity = 240 * k;
-    if (bounce.current) bounce.current.intensity = 16 * k;
-    if (sky.current) sky.current.intensity = 0.18 * k;
-    if (pool.current) pool.current.opacity = 0.14 * k;
+    // The key slams first; reflections and the pool follow, then the cold rim lands last.
+    const key = k * introKey(0.1);
+    const kRim = k * introKey(0.5);
+    scene.environmentIntensity = key;
+    if (rim.current) rim.current.intensity = 240 * kRim;
+    if (bounce.current) bounce.current.intensity = 16 * key;
+    if (sky.current) sky.current.intensity = 0.18 * key;
+    if (pool.current) pool.current.opacity = 0.14 * key;
   });
 
   return (

@@ -21,8 +21,9 @@ export const PALETTE: Record<
 
 export default function HeroRobot({
   progress,
-}: Readonly<{ progress: Progress }>) {
-  const gltf = useLoader(GLTFLoader, "/models/RobotExpressive.glb");
+  url,
+}: Readonly<{ progress: Progress; url: string }>) {
+  const gltf = useLoader(GLTFLoader, url);
   const turn = useRef<THREE.Group>(null);
   const mixer = useMemo(() => new THREE.AnimationMixer(gltf.scene), [gltf]);
 

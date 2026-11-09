@@ -14,6 +14,8 @@ import {
   seg,
 } from "@/lib/journey";
 
+import { view } from "@/lib/projects";
+
 import { dustTexture } from "./HeroLight";
 
 /** Cold-white, slightly cyan: a projected picture, not a neon sign. */
@@ -21,26 +23,34 @@ const SCREEN_LIGHT = "#b4dbe6";
 
 /** Screen frame on the page grid: columns 1–6, 680px wide, 16:9, top 112px. */
 const FRAME = { x: 64, y: 112, w: 680 };
+
+/** Below 1024px there are no columns to share: the screen takes the width, under the top bar. */
+function frameFor(width: number) {
+  if (width >= 1024) return FRAME;
+  const w = Math.min(680, width * 0.9);
+  return { x: (width - w) / 2, y: 88, w };
+}
 const HALF_FOV = THREE.MathUtils.degToRad(34) / 2;
 
-/** Placeholder picture: a colour wheel on warm dark, so the screen lights the room with colour. */
+/** Placeholder picture per project: a colour wheel on a tinted dark, so the screen lights the room in that project's colour. */
 function pictureTexture() {
   const canvas = document.createElement("canvas");
   canvas.width = 512;
   canvas.height = 288;
-  const ctx = canvas.getContext("2d");
-  if (ctx) {
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  const paint = (index: number) => {
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    const base = (index * 47) % 360;
     const bg = ctx.createRadialGradient(150, 60, 0, 150, 60, 420);
-    bg.addColorStop(0, "#4a3a2c");
-    bg.addColorStop(1, "#0f0b08");
+    bg.addColorStop(0, `hsl(${base} 30% 22%)`);
+    bg.addColorStop(1, `hsl(${base} 40% 5%)`);
     ctx.fillStyle = bg;
     ctx.fillRect(0, 0, 512, 288);
     const hues = [
       "#f4ecdc",
-      "#d83a32",
-      "#f29a26",
-      "#f4c542",
-      "#e88e75",
+      ...[1, 2, 3, 4].map(k => `hsl(${(base + k * 24) % 360} 75% 55%)`),
       "#f4ecdc",
     ];
     hues.forEach((hue, i) => {
@@ -56,10 +66,10 @@ function pictureTexture() {
       ctx.fillStyle = hue;
       ctx.fill();
     });
-  }
-  const tex = new THREE.CanvasTexture(canvas);
-  tex.colorSpace = THREE.SRGBColorSpace;
-  return tex;
+    tex.needsUpdate = true;
+  };
+  paint(0);
+  return { tex, paint };
 }
 
 /**
@@ -77,20 +87,27 @@ export default function ProjectsScreen({
   const mat = useRef<THREE.MeshBasicMaterial>(null);
   const streakMat = useRef<THREE.MeshBasicMaterial>(null);
   const light = useRef<THREE.RectAreaLight>(null);
-  const picture = useMemo(() => pictureTexture(), []);
+  const { tex: picture, paint } = useMemo(() => pictureTexture(), []);
+  const shown = useRef(0);
   const glow = useMemo(() => dustTexture(), []);
   useMemo(() => RectAreaLightUniformsLib.init(), []);
 
   useFrame(({ size, clock }) => {
+    // The panel picked another project: cut to its picture.
+    if (shown.current !== view.index) {
+      shown.current = view.index;
+      paint(view.index);
+    }
     const draw = ease(seg(progress.current, BEAT.line));
     const open = ease(seg(progress.current, BEAT.picture));
+    const frame = frameFor(size.width);
     const halfH = Math.tan(HALF_FOV) * SCREEN_DIST;
     const halfW = (halfH * size.width) / size.height;
-    const w = (FRAME.w / size.width) * 2 * halfW;
+    const w = (frame.w / size.width) * 2 * halfW;
     const h = (w * 9) / 16;
     const x =
-      CAM_END[0] + (((FRAME.x + FRAME.w / 2) / size.width) * 2 - 1) * halfW;
-    const cy = FRAME.y + (FRAME.w * 9) / 32;
+      CAM_END[0] + (((frame.x + frame.w / 2) / size.width) * 2 - 1) * halfW;
+    const cy = frame.y + (frame.w * 9) / 32;
     const y = CAM_END[1] + (1 - (cy / size.height) * 2) * halfH;
     const z = CAM_END[2] - SCREEN_DIST;
     // The projector's slight unsteadiness, once the picture is up.

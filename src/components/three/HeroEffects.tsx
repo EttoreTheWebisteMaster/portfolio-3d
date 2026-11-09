@@ -4,13 +4,19 @@ import { useFrame } from "@react-three/fiber";
 import {
   Bloom,
   BrightnessContrast,
+  ChromaticAberration,
   DepthOfField,
   EffectComposer,
   HueSaturation,
+  Noise,
   ToneMapping,
   Vignette,
 } from "@react-three/postprocessing";
-import { type DepthOfFieldEffect, ToneMappingMode } from "postprocessing";
+import {
+  type BloomEffect,
+  type DepthOfFieldEffect,
+  ToneMappingMode,
+} from "postprocessing";
 import { useRef } from "react";
 import * as THREE from "three";
 
@@ -19,12 +25,15 @@ import {
   CAM_END,
   ease,
   HEAD,
+  introFlash,
   type Progress,
   SCREEN_DIST,
   seg,
 } from "@/lib/journey";
 
 const forward = new THREE.Vector3();
+const scratch = new THREE.Vector3();
+const FRINGE = new THREE.Vector2(0.0009, 0.0009);
 const head = new THREE.Vector3(...HEAD);
 const screen = new THREE.Vector3(
   CAM_END[0] - 4.7,
@@ -34,11 +43,15 @@ const screen = new THREE.Vector3(
 
 /** Dark Knight grade: crushed blacks, cold desaturated mids, hard highlights that bloom, heavy vignette. Focus racks from him to the screen. */
 export default function HeroEffects({
+  low,
   progress,
-}: Readonly<{ progress: Progress }>) {
+}: Readonly<{ low: boolean; progress: Progress }>) {
   const dof = useRef<DepthOfFieldEffect>(null);
+  const bloom = useRef<BloomEffect>(null);
 
   useFrame(({ camera }) => {
+    // The light slam blows the highlights out, then they settle back to the grade.
+    if (bloom.current) bloom.current.intensity = 0.5 + 1.8 * introFlash();
     const fx = dof.current;
     if (!fx) return;
     const p = progress.current;
@@ -46,7 +59,7 @@ export default function HeroEffects({
     camera.getWorldDirection(forward);
     // Focus is a depth along the lens axis, not a radial distance.
     const depth = (at: THREE.Vector3) =>
-      at.clone().sub(camera.position).dot(forward);
+      scratch.copy(at).sub(camera.position).dot(forward);
     fx.cocMaterial.focusDistance = THREE.MathUtils.lerp(
       depth(head),
       depth(screen),
@@ -59,9 +72,10 @@ export default function HeroEffects({
   });
 
   return (
-    <EffectComposer multisampling={4}>
+    <EffectComposer multisampling={low ? 0 : 4}>
       <DepthOfField ref={dof} bokehScale={0} />
       <Bloom
+        ref={bloom}
         mipmapBlur
         luminanceThreshold={0.8}
         luminanceSmoothing={0.2}
@@ -72,6 +86,15 @@ export default function HeroEffects({
       <BrightnessContrast brightness={0.02} contrast={0.25} />
       <ToneMapping mode={ToneMappingMode.ACES_FILMIC} />
       <Vignette offset={0.2} darkness={0.75} />
+      {/* Lens fringe at the edges and film grain: the glass and the stock. Skipped on weak GPUs. */}
+      {!low && (
+        <ChromaticAberration
+          offset={FRINGE}
+          radialModulation
+          modulationOffset={0.3}
+        />
+      )}
+      {!low && <Noise premultiply opacity={0.07} />}
     </EffectComposer>
   );
 }

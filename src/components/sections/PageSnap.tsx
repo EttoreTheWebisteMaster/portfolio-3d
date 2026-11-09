@@ -1,6 +1,7 @@
 "use client";
 
 import { gsap, Observer, useGSAP } from "@/lib/gsap";
+import { getLoading } from "@/lib/loading";
 import { cruise, setJourney, TRANSITION_SECONDS } from "@/lib/journey";
 
 const KEYS_NEXT = new Set(["ArrowDown", "PageDown", " "]);
@@ -36,7 +37,7 @@ export default function PageSnap() {
 
     const go = (to: number) => {
       const next = gsap.utils.clamp(0, pages.length - 1, to);
-      if (busy || next === index) return;
+      if (busy || next === index || !getLoading().entered) return;
       const hops = Math.abs(next - index);
       busy = true;
       index = next;
