@@ -13,6 +13,7 @@ import {
   INTRO,
   intro as introClock,
   introFly,
+  introSettle,
   journey,
   type Progress,
   publish,
@@ -21,6 +22,8 @@ import {
 } from "@/lib/journey";
 import { onEnter, report, useLoading } from "@/lib/loading";
 import { pointer, stepPointer, trackPointer } from "@/lib/pointer";
+
+import CursorTip from "@/components/ui/CursorTip";
 
 import HeroEffects from "./HeroEffects";
 import HeroEnvironment from "./HeroEnvironment";
@@ -34,8 +37,10 @@ report("scene", 1);
 const PATH = new THREE.CatmullRomCurve3(
   [
     new THREE.Vector3(0, 1.6, 7.4),
-    new THREE.Vector3(2.4, 1.3, 5.6),
-    new THREE.Vector3(2.6, 2.8, 5.4),
+    new THREE.Vector3(1.2, 1.6, 7.8),
+    // The turn lands here (halfway): close behind his head, centred, as in the Hero-Turn frame.
+    new THREE.Vector3(0, 2, 7.4),
+    new THREE.Vector3(0, 3.4, 7.6),
     new THREE.Vector3(...CAM_END),
   ],
   false,
@@ -74,7 +79,7 @@ function AdaptiveDpr() {
   return null;
 }
 
-/** Opening fly-through, then the scroll move: arc round his shoulder, crane over his head, land level on the screen. */
+/** Opening drop from high above onto the hero close-up, then the scroll move: arc round his shoulder, crane over his head, land level on the screen. */
 function Rig({
   reduced,
   progress,
@@ -93,12 +98,14 @@ function Rig({
     const push = 1 - (1 - seg(progress.current, [0, 0.3])) ** 2;
     const sway = reduced ? 0 : 1;
 
-    // The fly-through: high and wide on his left, sweeping down and round to the hero frame.
-    const swing = (1 - e) * 0.95;
-    const radius = THREE.MathUtils.lerp(17, 7.4, e) * narrow;
+    // The drop: high above him, the whole robot in view, sweeping down and in to the hero frame.
+    const swing = (1 - e) * 0.9;
+    // Home is a wide shot that shows him full length; it dollies in over the first scroll and the original move takes over.
+    const home = 1 - ease(seg(progress.current, [0, 0.3]));
+    const radius = THREE.MathUtils.lerp(9, 7.2 + 0.9 * home, e) * narrow;
     intro.set(
       -Math.sin(swing) * radius,
-      THREE.MathUtils.lerp(6.2, 1.6, e),
+      THREE.MathUtils.lerp(15, 1.5 + 0.3 * home, e),
       Math.cos(swing) * radius
     );
     PATH.getPoint(m, pos);
@@ -107,16 +114,28 @@ function Rig({
     pos.z -= 1.4 * push * (1 - m);
     // Handheld drift, always alive, and the pointer leans the camera a little. Both fade as the crane starts.
     const lean = sway * (1 - m);
-    pos.x += Math.sin(time * 0.35) * 0.05 * sway + pointer.x * 0.35 * lean;
-    pos.y += Math.sin(time * 0.27) * 0.03 * sway - pointer.y * 0.2 * lean;
+    pos.x += Math.sin(time * 0.35) * 0.05 * sway + pointer.x * 0.7 * lean;
+    pos.y += Math.sin(time * 0.27) * 0.03 * sway - pointer.y * 0.35 * lean;
     camera.position.copy(pos);
 
     // A touch of vertigo mid-move, then it settles on the screen's fov. The opening starts wide and tightens.
     camera.fov =
-      THREE.MathUtils.lerp(46, 34, e) + 4 * Math.sin(Math.PI * m) * sway;
+      THREE.MathUtils.lerp(44, 32, e) + 4 * Math.sin(Math.PI * m) * sway;
+    // Home: aimed a touch lower so he sits full length under the name. The offset is gone as soon as the scroll starts,
+    // so the move after that is the original one.
+    const drop =
+      -0.15 * (1 - ease(seg(progress.current, [0, 0.3]))) +
+      // Through the turn his head rides low in the frame, under the name.
+      0.5 * Math.sin(Math.PI * seg(progress.current, [0.15, 0.85]));
     look
       .copy(head)
-      .setY(THREE.MathUtils.lerp(1.2, narrow > 1 ? 0.9 : 1.8, e))
+      .setY(
+        THREE.MathUtils.lerp(
+          0.8,
+          narrow > 1 ? 0.9 : 1.9,
+          reduced ? 1 : introSettle()
+        ) + drop
+      )
       .lerp(aim, ease(seg(progress.current, BEAT.look)));
     camera.lookAt(look);
     // Slight Dutch tilt through the crane, level again on arrival.
@@ -189,12 +208,13 @@ export default function HeroCanvas() {
           receiveShadow
         >
           <planeGeometry args={[60, 60]} />
-          <shadowMaterial opacity={0.65} />
+          <shadowMaterial opacity={0.45} />
         </mesh>
         <HeroLight reduced={reduced} low={low} progress={smooth} />
         <HeroEffects low={low} progress={smooth} />
         <AdaptiveDpr />
       </Canvas>
+      <CursorTip label="Make Rob dance" />
     </div>
   );
 }

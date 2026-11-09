@@ -77,31 +77,50 @@ export const SCREEN_DIST = 22;
 /** His head, the first thing in focus. */
 export const HEAD = [0, 1.8, 0] as const;
 
-/** Opening shot after Enter, in seconds: black, the light slams on, the camera flies in, the title assembles. */
+/** Opening shot after Enter, in seconds: the camera drops from high above onto the hero close-up while the key light rises. */
 export const INTRO = {
-  total: 5.5,
-  slam: 0.6,
-  fly: 4.4,
-  /** The title starts decoding just after the light hits. */
-  text: 0.9,
+  total: 3,
+  /** The key light starts to rise. */
+  slam: 0.4,
+  fly: 3,
+  /** The title starts decoding as he comes into the light. */
+  text: 0.6,
 } as const;
 
 /** 0 before Enter, 1 once the opening shot has played. Tweened once by the canvas. */
 export const intro: Progress = { current: 0 };
 
 const introTime = () => intro.current * INTRO.total;
+const soft = (x: number) => {
+  const t = clamp01(x);
+  return t * t * (3 - 2 * t);
+};
 
-/** Camera travel of the opening shot, 0–1, fast out of the dark and long to settle. */
-export const introFly = () => 1 - (1 - clamp01(introTime() / INTRO.fly)) ** 4;
+/** Camera travel of the opening shot, 0–1: a short ramp up, constant speed, then a long, gentle slow-motion landing on the close-up. */
+export function introFly() {
+  const t = clamp01(introTime() / INTRO.fly);
+  const up = 0.08;
+  const down = 0.4;
+  const v = 1 / (1 - up / 2 - down / 2);
+  if (t < up) return (v * t * t) / (2 * up);
+  if (t > 1 - down) return 1 - (v * (1 - t) * (1 - t)) / (2 * down);
+  return v * (t - up / 2);
+}
 
-/** 0 → 1 as a light snaps on `delay` seconds after the slam. */
+/** 0 → 1 across the shot: the aim comes up from the whole robot to the hero framing. */
+export const introSettle = () =>
+  soft((introTime() - 0.1) / (INTRO.total - 0.1));
+
+/** 0 → 1 as the key light rises, `delay` seconds after it starts. */
 export const introKey = (delay = 0) =>
-  clamp01((introTime() - INTRO.slam - delay) / 0.12);
+  soft((introTime() - INTRO.slam - delay) / 1.2);
 
-/** The brief overshoot as the key slams on: 0, a spike, then back to 0. Feeds the key and the bloom. */
+/** 0 → 1 as the cold rim traces the silhouette out of the dark. */
+export const introRim = () => soft(introTime() / 0.9);
+
+/** A gentle swell of glow as the key peaks, never a flash. Feeds the key and the bloom. */
 export function introFlash() {
-  const t = introTime() - INTRO.slam;
-  return t < 0 ? 0 : Math.exp(-t * 4) * Math.min(t / 0.06, 1);
+  return 0.25 * Math.sin(Math.PI * clamp01((introTime() - INTRO.slam) / 1.8));
 }
 
 /** Publishes the position to CSS (`--pos` raw, `--p` Home→Projects 0–1) so the DOM layer moves with the 3D one. */

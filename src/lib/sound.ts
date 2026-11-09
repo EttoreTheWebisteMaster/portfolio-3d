@@ -10,9 +10,9 @@ const subscribe = (cb: () => void) => {
 
 export const readSound = () => {
   try {
-    return localStorage.getItem(KEY) !== "off";
+    return localStorage.getItem(KEY) === "on";
   } catch {
-    return true;
+    return false;
   }
 };
 
@@ -25,4 +25,4 @@ export function setSound(on: boolean) {
 }
 
 export const useSound = () =>
-  useSyncExternalStore(subscribe, readSound, () => true);
+  useSyncExternalStore(subscribe, readSound, () => false);

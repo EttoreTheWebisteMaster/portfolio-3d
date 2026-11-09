@@ -6,14 +6,22 @@ import { MODEL_URL } from "@/lib/assets";
 const WEIGHTS = { model: 0.7, scene: 0.2, frame: 0.1 } as const;
 type LoadPart = keyof typeof WEIGHTS;
 
-const VISITED = "visited";
-
-type Snapshot = { progress: number; entered: boolean; modelUrl: string | null };
+type Snapshot = {
+  progress: number;
+  entered: boolean;
+  started: boolean;
+  modelUrl: string | null;
+};
 
 const parts: Record<LoadPart, number> = { model: 0, scene: 0, frame: 0 };
 const listeners = new Set<() => void>();
 const enterCallbacks = new Set<() => void>();
-let snapshot: Snapshot = { progress: 0, entered: false, modelUrl: null };
+let snapshot: Snapshot = {
+  progress: 0,
+  entered: false,
+  started: false,
+  modelUrl: null,
+};
 
 const emit = (next: Partial<Snapshot>) => {
   snapshot = { ...snapshot, ...next };
@@ -48,6 +56,7 @@ export function report(part: LoadPart, value: number) {
       ) * 1000
     ) / 1000;
   if (progress !== snapshot.progress) emit({ progress });
+  if (part === "frame" && !snapshot.started) emit({ started: true });
 }
 
 let fetching = false;
@@ -79,20 +88,9 @@ export async function fetchModel() {
   }
 }
 
-export function hasVisited() {
-  try {
-    return localStorage.getItem(VISITED) === "1";
-  } catch {
-    return false;
-  }
-}
-
 /** The visitor is in: the opening shot and the page's entrance start now. */
 export function enter() {
   if (snapshot.entered) return;
-  try {
-    localStorage.setItem(VISITED, "1");
-  } catch {}
   emit({ entered: true });
   enterCallbacks.forEach(cb => cb());
   enterCallbacks.clear();

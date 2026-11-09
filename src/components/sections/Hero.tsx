@@ -8,7 +8,7 @@ const stack = [
 /** Home page: the copy layer over the fixed 3D set (name, ROB-092, light, dust live in `Stage`). */
 export default function Hero() {
   return (
-    <section id="home" data-page className="page hero">
+    <section id="home" data-page className="hero page">
       <h1 className="sr-only">Ettore Serra, designer and engineer</h1>
 
       <div className="hero-copy" data-depth="0.45">

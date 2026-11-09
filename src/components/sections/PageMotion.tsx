@@ -8,7 +8,7 @@ import { pointer } from "@/lib/pointer";
 /** How much of the journey (in pages) a page takes to arrive and to leave. */
 const SPAN = 0.3;
 /** Home's copy decodes over the back half of the opening shot. */
-const INTRO_SECONDS = 2.4;
+const INTRO_SECONDS = 2;
 const CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
 type Kind = "title" | "text" | "item";
@@ -136,7 +136,7 @@ export default function PageMotion() {
               opacity: 1,
               scale: 1,
               y: 0,
-              duration: 2.4,
+              duration: 1.8,
               delay: INTRO.slam + 0.1,
               ease: "expo.out",
             }

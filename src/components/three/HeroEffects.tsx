@@ -4,11 +4,9 @@ import { useFrame } from "@react-three/fiber";
 import {
   Bloom,
   BrightnessContrast,
-  ChromaticAberration,
   DepthOfField,
   EffectComposer,
   HueSaturation,
-  Noise,
   ToneMapping,
   Vignette,
 } from "@react-three/postprocessing";
@@ -33,7 +31,6 @@ import {
 
 const forward = new THREE.Vector3();
 const scratch = new THREE.Vector3();
-const FRINGE = new THREE.Vector2(0.0009, 0.0009);
 const head = new THREE.Vector3(...HEAD);
 const screen = new THREE.Vector3(
   CAM_END[0] - 4.7,
@@ -41,7 +38,7 @@ const screen = new THREE.Vector3(
   CAM_END[2] - SCREEN_DIST
 );
 
-/** Dark Knight grade: crushed blacks, cold desaturated mids, hard highlights that bloom, heavy vignette. Focus racks from him to the screen. */
+/** Blockbuster grade: crushed blacks, teal shadows, orange highlights that bloom, saturated mids, vignette. Focus racks from him to the screen. */
 export default function HeroEffects({
   low,
   progress,
@@ -51,7 +48,7 @@ export default function HeroEffects({
 
   useFrame(({ camera }) => {
     // The light slam blows the highlights out, then they settle back to the grade.
-    if (bloom.current) bloom.current.intensity = 0.5 + 1.8 * introFlash();
+    if (bloom.current) bloom.current.intensity = 0.8 + 1.8 * introFlash();
     const fx = dof.current;
     if (!fx) return;
     const p = progress.current;
@@ -77,24 +74,15 @@ export default function HeroEffects({
       <Bloom
         ref={bloom}
         mipmapBlur
-        luminanceThreshold={0.8}
+        luminanceThreshold={0.95}
         luminanceSmoothing={0.2}
-        intensity={0.5}
+        intensity={0.6}
         radius={0.7}
       />
-      <HueSaturation saturation={-0.08} />
-      <BrightnessContrast brightness={0.02} contrast={0.25} />
+      <HueSaturation saturation={0} />
+      <BrightnessContrast brightness={0.02} contrast={0.15} />
       <ToneMapping mode={ToneMappingMode.ACES_FILMIC} />
-      <Vignette offset={0.2} darkness={0.75} />
-      {/* Lens fringe at the edges and film grain: the glass and the stock. Skipped on weak GPUs. */}
-      {!low && (
-        <ChromaticAberration
-          offset={FRINGE}
-          radialModulation
-          modulationOffset={0.3}
-        />
-      )}
-      {!low && <Noise premultiply opacity={0.07} />}
+      <Vignette offset={0.2} darkness={0.65} />
     </EffectComposer>
   );
 }

@@ -1,7 +1,8 @@
 /** Pointer position, -1 to 1 from the screen centre, smoothed. Read by the camera, the key light and the text parallax. */
 export const pointer = { x: 0, y: 0 };
 
-const target = { x: 0, y: 0 };
+/** Where the pointer really is right now, -1 to 1, unsmoothed. Used to hit-test the robot. */
+export const target = { x: 0, y: 0 };
 
 /** Starts listening. Returns the cleanup. */
 export function trackPointer() {
