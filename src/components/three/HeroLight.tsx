@@ -4,7 +4,14 @@ import { useFrame } from "@react-three/fiber";
 import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 
-import { heroLight, introFlash, introKey, type Progress } from "@/lib/journey";
+import {
+  ease,
+  heroLight,
+  seg,
+  introFlash,
+  introKey,
+  type Progress,
+} from "@/lib/journey";
 import { pointer } from "@/lib/pointer";
 
 import { Beam, type Cone, litByCone } from "./HeroBeam";
@@ -159,9 +166,12 @@ export default function HeroLight({
     const breath = reduced ? 1 : 1 + 0.015 * Math.sin(clock.elapsedTime * 2.1);
     const key = fade * (introKey() + introFlash());
     if (spot.current) spot.current.intensity = SPOT_INTENSITY * key * breath;
+    // Motes vanish almost at once so they never hang over the floor, going or coming.
+    const motes = 1 - ease(seg(progress.current, [0, 0.05]));
     for (const { obj, mat, base } of fades.current) {
-      mat.opacity = base * Math.min(key, 1);
-      obj.visible = key > 0.001;
+      const k = obj instanceof THREE.Points ? Math.min(key, motes) : key;
+      mat.opacity = base * Math.min(k, 1);
+      obj.visible = k > 0.001;
     }
     // The hand aims the lamp; the lamp has weight, so it trails the pointer and settles.
     const goalX = reduced ? 0 : pointer.x * 1.1 * fade;

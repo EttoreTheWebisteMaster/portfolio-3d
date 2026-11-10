@@ -4,8 +4,17 @@ import { useRef } from "react";
 
 import { gsap, useGSAP } from "@/lib/gsap";
 
-/** A small label that trails the cursor. Visibility is driven by CSS (`html[data-rob-hover]`), so it costs no re-renders. */
-export default function CursorTip({ label }: Readonly<{ label: string }>) {
+const VARIANTS = {
+  rob: "cursor-tip-rob",
+  grab: "cursor-tip-grab",
+  drop: "cursor-tip-drop",
+};
+
+/** A small label that trails the cursor. Visibility is driven by CSS on `html` (rob-hover, crowd), so it costs no re-renders. */
+export default function CursorTip({
+  label,
+  variant = "rob",
+}: Readonly<{ label: string; variant?: keyof typeof VARIANTS }>) {
   const el = useRef<HTMLDivElement>(null);
 
   useGSAP(
@@ -25,7 +34,7 @@ export default function CursorTip({ label }: Readonly<{ label: string }>) {
   );
 
   return (
-    <div ref={el} className="cursor-tip" aria-hidden>
+    <div ref={el} className={VARIANTS[variant]} aria-hidden>
       {label}
     </div>
   );

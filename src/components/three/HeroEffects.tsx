@@ -14,6 +14,7 @@ import {
   type BloomEffect,
   type DepthOfFieldEffect,
   ToneMappingMode,
+  type VignetteEffect,
 } from "postprocessing";
 import { useRef } from "react";
 import * as THREE from "three";
@@ -21,6 +22,7 @@ import * as THREE from "three";
 import {
   BEAT,
   CAM_END,
+  cinemaLight,
   ease,
   HEAD,
   introFlash,
@@ -45,10 +47,28 @@ export default function HeroEffects({
 }: Readonly<{ low: boolean; progress: Progress }>) {
   const dof = useRef<DepthOfFieldEffect>(null);
   const bloom = useRef<BloomEffect>(null);
+  const vignette = useRef<VignetteEffect>(null);
 
   useFrame(({ camera }) => {
     // The light slam blows the highlights out, then they settle back to the grade.
-    if (bloom.current) bloom.current.intensity = 0.8 + 1.8 * introFlash();
+    if (bloom.current) {
+      bloom.current.intensity =
+        (0.8 + 1.8 * introFlash()) *
+        THREE.MathUtils.lerp(1, 0, ease(seg(progress.current, BEAT.picture)));
+      // On the Projects screen only true highlights may glow, so the picture's lettering stays crisp.
+      bloom.current.luminanceMaterial.threshold = THREE.MathUtils.lerp(
+        0.95,
+        1.3,
+        ease(seg(progress.current, BEAT.picture))
+      );
+    }
+    // In the cinema the edges fall further into the dark: the screen is the only light.
+    if (vignette.current)
+      vignette.current.darkness = THREE.MathUtils.lerp(
+        0.65,
+        0.92,
+        cinemaLight(progress.current)
+      );
     const fx = dof.current;
     if (!fx) return;
     const p = progress.current;
@@ -65,7 +85,9 @@ export default function HeroEffects({
     // A shallow plane of focus on the screen: the crowd in front of it melts.
     fx.cocMaterial.focusRange = THREE.MathUtils.lerp(4, 3, rack);
     // The hero stays as shot; the room goes soft as the move begins.
-    fx.bokehScale = 9 * ease(seg(p, [0.02, 0.6]));
+    // Once the picture is up the lens is fully sharp: the trailer must read clean.
+    fx.bokehScale =
+      9 * ease(seg(p, [0.02, 0.6])) * (1 - ease(seg(p, BEAT.picture)));
   });
 
   return (
@@ -82,7 +104,7 @@ export default function HeroEffects({
       <HueSaturation saturation={0} />
       <BrightnessContrast brightness={0.02} contrast={0.15} />
       <ToneMapping mode={ToneMappingMode.ACES_FILMIC} />
-      <Vignette offset={0.2} darkness={0.65} />
+      <Vignette ref={vignette} offset={0.2} darkness={0.65} />
     </EffectComposer>
   );
 }

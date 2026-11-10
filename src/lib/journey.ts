@@ -55,14 +55,14 @@ export const BEAT = {
   key: [0.1, 0.8],
   /** The cinema's own light (fill and screen) comes up while the key goes down. */
   cinema: [0.05, 0.7],
-  /** The room surfaces out of the dark: floor first, then the warm house light. */
-  floor: [0, 0.2],
+  /** The room surfaces out of the dark: the floor stays masked in backdrop black until the hero key has handed over. */
+  floor: [0.25, 0.7],
   reveal: [0.04, 0.5],
   /** The screen draws as a line, then opens into the picture. */
   line: [0.4, 0.52],
   picture: [0.48, 0.85],
   /** The crowd comes in from the sides and settles. */
-  walk: [0.08, 0.92],
+  walk: [0.22, 0.95],
 } as const;
 
 /** Hero key light: 1 at the top of Home, 0 once the cinema has taken over. */
@@ -72,8 +72,10 @@ export const heroLight = (p: number) => 1 - ease(seg(p, BEAT.key));
 export const cinemaLight = (p: number) => ease(seg(p, BEAT.cinema));
 
 /** Where the camera ends, level, in the middle rows. */
-export const CAM_END = [0, 4.6, 7] as const;
+export const CAM_END = [0, 6, 7] as const;
 export const SCREEN_DIST = 22;
+/** Lens the camera settles on at the screen, in degrees. The screen frame is sized with it. */
+export const SCREEN_FOV = 32;
 /** His head, the first thing in focus. */
 export const HEAD = [0, 1.8, 0] as const;
 
@@ -81,7 +83,7 @@ export const HEAD = [0, 1.8, 0] as const;
 export const INTRO = {
   total: 3,
   /** The key light starts to rise. */
-  slam: 0.4,
+  slam: 0.65,
   fly: 3,
   /** The title starts decoding as he comes into the light. */
   text: 0.6,

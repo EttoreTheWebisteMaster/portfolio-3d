@@ -3,6 +3,7 @@
 import { gsap, Observer, useGSAP } from "@/lib/gsap";
 import { getLoading } from "@/lib/loading";
 import { cruise, setJourney, TRANSITION_SECONDS } from "@/lib/journey";
+import { view } from "@/lib/projects";
 
 const KEYS_NEXT = new Set(["ArrowDown", "PageDown", " "]);
 const KEYS_PREV = new Set(["ArrowUp", "PageUp"]);
@@ -37,7 +38,7 @@ export default function PageSnap() {
 
     const go = (to: number) => {
       const next = gsap.utils.clamp(0, pages.length - 1, to);
-      if (busy || next === index || !getLoading().entered) return;
+      if (busy || view.held || next === index || !getLoading().entered) return;
       const hops = Math.abs(next - index);
       busy = true;
       index = next;
@@ -76,9 +77,11 @@ export default function PageSnap() {
 
     const onLink = (e: MouseEvent) => {
       const link = e.target instanceof Element ? e.target.closest("a") : null;
-      const hash = link?.getAttribute("href");
-      if (!hash?.startsWith("#")) return;
-      const to = pages.findIndex(page => `#${page.id}` === hash);
+      if (!link || link.target || e.defaultPrevented) return;
+      const url = new URL(link.href, window.location.href);
+      if (url.origin !== window.location.origin || url.pathname !== "/") return;
+      const id = url.hash.slice(1) || pages[0].id;
+      const to = pages.findIndex(page => page.id === id);
       if (to < 0) return;
       e.preventDefault();
       go(to);
@@ -97,6 +100,7 @@ export default function PageSnap() {
       type: "wheel,touch",
       wheelSpeed: -1,
       tolerance: 12,
+      ignore: ".projects-index",
       preventDefault: true,
       onUp: () => go(index + 1),
       onDown: () => go(index - 1),

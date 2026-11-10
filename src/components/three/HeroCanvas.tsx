@@ -17,6 +17,7 @@ import {
   journey,
   type Progress,
   publish,
+  SCREEN_FOV,
   syncRig,
   seg,
 } from "@/lib/journey";
@@ -30,6 +31,7 @@ import HeroEnvironment from "./HeroEnvironment";
 import HeroLight, { FLOOR_Y } from "./HeroLight";
 import HeroRobot from "./HeroRobot";
 import ProjectsRoom from "./ProjectsRoom";
+import Warmup from "./Warmup";
 
 // The canvas chunk is in: that part of the load is done.
 report("scene", 1);
@@ -86,11 +88,13 @@ function Rig({
 }: Readonly<{ reduced: boolean; progress: Progress }>) {
   useFrame(({ camera, clock, size }) => {
     if (!(camera instanceof THREE.PerspectiveCamera)) return;
-    report("frame", 1);
     const time = clock.elapsedTime;
     // The opening shot is on the master intro clock, which starts when the visitor gets in.
     const e = reduced ? 1 : introFly();
-    const narrow = size.width / size.height < 1 ? 2.2 : 1;
+    const aspect = size.width / size.height;
+    const narrow = aspect < 1 ? 2.2 : 1;
+    // Squarer than 16:10 (landscape tablets) the name grows against his height: he sits lower so his head clears it.
+    const squat = THREE.MathUtils.clamp((1.6 - aspect) / 0.6, 0, 1);
     const t01 = seg(progress.current, BEAT.crane);
     // Mostly linear: the move keeps one speed from the first frame to the last.
     const m = THREE.MathUtils.lerp(t01, ease(t01), 0.25);
@@ -120,7 +124,8 @@ function Rig({
 
     // A touch of vertigo mid-move, then it settles on the screen's fov. The opening starts wide and tightens.
     camera.fov =
-      THREE.MathUtils.lerp(44, 32, e) + 4 * Math.sin(Math.PI * m) * sway;
+      THREE.MathUtils.lerp(44, SCREEN_FOV, e) +
+      4 * Math.sin(Math.PI * m) * sway;
     // Home: aimed a touch lower so he sits full length under the name. The offset is gone as soon as the scroll starts,
     // so the move after that is the original one.
     const drop =
@@ -132,7 +137,7 @@ function Rig({
       .setY(
         THREE.MathUtils.lerp(
           0.8,
-          narrow > 1 ? 0.9 : 1.9,
+          narrow > 1 ? 0.9 : 1.9 + 0.9 * squat,
           reduced ? 1 : introSettle()
         ) + drop
       )
@@ -149,7 +154,7 @@ function Rig({
 
 export default function HeroCanvas() {
   const smooth = useRef(0);
-  const { modelUrl } = useLoading();
+  const { modelUrl, entered } = useLoading();
   const reduced = useMemo(
     () => window.matchMedia("(prefers-reduced-motion: reduce)").matches,
     []
@@ -188,7 +193,8 @@ export default function HeroCanvas() {
       <Canvas
         dpr={[1, 1.5]}
         shadows="percentage"
-        frameloop="always"
+        // Idle behind the loader, so the countdown has the main thread and the GPU to itself.
+        frameloop={entered ? "always" : "demand"}
         camera={{ fov: 22, position: [0, 2.4, 24], near: 0.1, far: 80 }}
         gl={{ antialias: true, alpha: true }}
         onCreated={({ gl }) => {
@@ -201,6 +207,7 @@ export default function HeroCanvas() {
           {modelUrl && <HeroRobot progress={smooth} url={modelUrl} />}
           <ProjectsRoom progress={smooth} reduced={reduced} />
           <Rig reduced={reduced} progress={smooth} />
+          {modelUrl && <Warmup />}
         </Suspense>
         <mesh
           rotation={[-Math.PI / 2, 0, 0]}
@@ -215,6 +222,8 @@ export default function HeroCanvas() {
         <AdaptiveDpr />
       </Canvas>
       <CursorTip label="Make Rob dance" />
+      <CursorTip label="Grab" variant="grab" />
+      <CursorTip label="Drop" variant="drop" />
     </div>
   );
 }

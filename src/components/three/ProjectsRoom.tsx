@@ -4,127 +4,91 @@ import { useFrame } from "@react-three/fiber";
 import { useMemo, useRef } from "react";
 import * as THREE from "three";
 
-import {
-  BEAT,
-  CAM_END,
-  cinemaLight,
-  ease,
-  type Progress,
-  SCREEN_DIST,
-  seg,
-} from "@/lib/journey";
+import { BEAT, cinemaLight, ease, type Progress, seg } from "@/lib/journey";
+import { view } from "@/lib/projects";
 
-import { dustTexture, FLOOR_Y, mulberry32 } from "./HeroLight";
+import { FLOOR_Y } from "./HeroLight";
+import CrowdDust from "./CrowdDust";
+import { PROJECTOR } from "./crowdLight";
 import ProjectsCrowd from "./ProjectsCrowd";
 import ProjectsScreen from "./ProjectsScreen";
+import { warm } from "./Warmup";
 
-/** Projector light: cold white, close to neutral. The dust warms it slightly. */
+/** Projector light: cold white, close to neutral. */
 const BEAM = "#cfe6ee";
-const DUST = "#e6f0f2";
-/** Reference screen centre at 1440×900; the beam only needs to be near. */
-const SCREEN_AT = new THREE.Vector3(
-  CAM_END[0] - 4.7,
-  CAM_END[1] + 2.2,
-  CAM_END[2] - SCREEN_DIST
-);
-const PROJECTOR = new THREE.Vector3(0, 10, 18);
+const UP = new THREE.Vector3(0, 1, 0);
 
-/** Nested soft cones, brightest at the lens and falling off toward the screen, so the beam has no hard edge. */
+/** Nested soft cones, brightest at the lens and falling off toward the screen, so the beam has no hard edge. `reach` is the base radius in screen half-diagonals. */
 const CONES = [
-  { radius: 3.4, alpha: 0.03 },
-  { radius: 5, alpha: 0.022 },
-  { radius: 7, alpha: 0.014 },
-];
+  { reach: 0.6, alpha: 0.002 },
+  { reach: 0.88, alpha: 0.0012 },
+  { reach: 1.23, alpha: 0.0007 },
+] as const;
 
-function cone(radius: number, length: number, alpha: number) {
-  const geo = new THREE.ConeGeometry(radius, length, 48, 1, true);
+/** A unit cone (apex up, radius 1, length 1) whose vertex alpha fades from the lens down to the picture. */
+function cone(alpha: number) {
+  const geo = new THREE.ConeGeometry(1, 1, 48, 1, true);
   const pos = geo.getAttribute("position");
   const colors = new Float32Array(pos.count * 4);
   for (let i = 0; i < pos.count; i++) {
-    const fade = 0.15 + 0.85 * (pos.getY(i) / length + 0.5);
+    const fade = 0.1 + 0.9 * (pos.getY(i) + 0.5);
     colors.set([1, 1, 1, alpha * fade], i * 4);
   }
   geo.setAttribute("color", new THREE.BufferAttribute(colors, 4));
   return geo;
 }
 
-/** Soft projector beam with dust, swelling as the picture opens. */
+const dir = new THREE.Vector3();
+const mid = new THREE.Vector3();
+const at = new THREE.Vector3();
+
+/** Soft projector beam, swelling as the picture opens. Re-aimed every frame at the real screen, so it always lands on it. */
 function Beam({ progress }: Readonly<{ progress: Progress }>) {
   const group = useRef<THREE.Group>(null);
-  const dustMat = useRef<THREE.PointsMaterial>(null);
-  const { cones, position, quaternion, dust, texture } = useMemo(() => {
-    const axis = PROJECTOR.clone().sub(SCREEN_AT);
-    const length = axis.length();
-    const dir = axis.clone().normalize();
-    const rand = mulberry32(3);
-    const pts = new Float32Array(220 * 3);
-    for (let i = 0; i < 220; i++) {
-      const t = rand();
-      const spread = (1 - t) * 8;
-      pts[i * 3] = SCREEN_AT.x + dir.x * t * length + (rand() - 0.5) * spread;
-      pts[i * 3 + 1] =
-        SCREEN_AT.y + dir.y * t * length + (rand() - 0.5) * spread;
-      pts[i * 3 + 2] =
-        SCREEN_AT.z + dir.z * t * length + (rand() - 0.5) * spread * 0.4;
-    }
-    return {
-      cones: CONES.map(c => cone(c.radius, length, c.alpha)),
-      position: SCREEN_AT.clone().add(PROJECTOR).multiplyScalar(0.5),
-      quaternion: new THREE.Quaternion().setFromUnitVectors(
-        new THREE.Vector3(0, 1, 0),
-        dir
-      ),
-      dust: pts,
-      texture: dustTexture(),
-    };
-  }, []);
+  const cones = useMemo(() => CONES.map(c => cone(c.alpha)), []);
 
   useFrame(() => {
     const on = ease(seg(progress.current, BEAT.picture));
-    group.current?.traverse(obj => {
+    const { x, y, z, w, h } = view.screen;
+    at.set(x, y, z);
+    dir.copy(PROJECTOR).sub(at);
+    const length = dir.length();
+    dir.normalize();
+    mid.copy(at).add(PROJECTOR).multiplyScalar(0.5);
+    const g = group.current;
+    if (!g) return;
+    g.position.copy(mid);
+    g.quaternion.setFromUnitVectors(UP, dir);
+    g.children.forEach((obj, i) => {
       if (!(obj instanceof THREE.Mesh)) return;
+      const r = CONES[i].reach * Math.hypot(w, h) * 0.5;
+      obj.scale.set(r, length, r);
       const mat = obj.material;
-      if (!(mat instanceof THREE.Material)) return;
-      mat.opacity = on;
+      if (mat instanceof THREE.Material) mat.opacity = on;
     });
-    if (dustMat.current) dustMat.current.opacity = 0.5 * on;
   });
 
   return (
-    <>
-      <group ref={group} position={position} quaternion={quaternion}>
-        {cones.map((geometry, i) => (
-          <mesh key={CONES[i].radius} geometry={geometry}>
-            <meshBasicMaterial
-              color={BEAM}
-              vertexColors
-              transparent
-              opacity={0}
-              depthWrite={false}
-              side={THREE.DoubleSide}
-              blending={THREE.AdditiveBlending}
-            />
-          </mesh>
-        ))}
-      </group>
-      <points>
-        <bufferGeometry>
-          <bufferAttribute attach="attributes-position" args={[dust, 3]} />
-        </bufferGeometry>
-        <pointsMaterial
-          ref={dustMat}
-          map={texture}
-          color={DUST}
-          size={0.1}
-          transparent
-          opacity={0}
-          depthWrite={false}
-          blending={THREE.AdditiveBlending}
-        />
-      </points>
-    </>
+    <group ref={group}>
+      {cones.map((geometry, i) => (
+        <mesh key={CONES[i].reach} geometry={geometry} frustumCulled={false}>
+          <meshBasicMaterial
+            color={BEAM}
+            vertexColors
+            transparent
+            opacity={0}
+            depthWrite={false}
+            side={THREE.DoubleSide}
+            blending={THREE.AdditiveBlending}
+          />
+        </mesh>
+      ))}
+    </group>
   );
 }
+
+const MASK = new THREE.Color("#0b0a09");
+const FLOOR = new THREE.Color("#0d0c0b");
 
 /** The cinema behind the hero: floor, screen, projector beam and crowd. It surfaces out of the dark as he turns. */
 export default function ProjectsRoom({
@@ -140,13 +104,17 @@ export default function ProjectsRoom({
     const show = ease(seg(progress.current, BEAT.reveal));
     const cinema = cinemaLight(progress.current);
     // The crowd is always in the room (waiting off-screen); only the floor surfaces.
-    if (group.current) group.current.visible = progress.current > 0;
-    if (floor.current)
-      floor.current.opacity = ease(seg(progress.current, BEAT.floor));
+    if (group.current) group.current.visible = progress.current > 0 || warm.on;
+    if (floor.current) {
+      const f = ease(seg(progress.current, BEAT.floor));
+      floor.current.opacity = f;
+      // Masked in the backdrop colour, it takes its own colour only as it surfaces.
+      floor.current.color.lerpColors(MASK, FLOOR, f);
+    }
     // Cool ambient bounce so the room never goes black while the hero key hands over.
-    if (fill.current) fill.current.intensity = 0.5 * cinema;
+    if (fill.current) fill.current.intensity = 0.2 * cinema;
     // The warm accent: a low house light grazing the crowd's crowns against the cold screen.
-    if (top.current) top.current.intensity = 1.8 * show;
+    if (top.current) top.current.intensity = 0.3 * show;
   });
 
   return (
@@ -165,7 +133,8 @@ export default function ProjectsRoom({
       <directionalLight ref={top} position={[2, 12, 3]} color="#f29a26" />
       <ProjectsScreen progress={progress} reduced={reduced} />
       <Beam progress={progress} />
-      <ProjectsCrowd progress={progress} />
+      <ProjectsCrowd progress={progress} reduced={reduced} />
+      <CrowdDust />
     </group>
   );
 }

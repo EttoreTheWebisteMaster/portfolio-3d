@@ -1,7 +1,7 @@
 "use client";
 
-import { useFrame } from "@react-three/fiber";
-import { useMemo, useRef } from "react";
+import { useFrame, useThree } from "@react-three/fiber";
+import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { RectAreaLightUniformsLib } from "three/examples/jsm/lights/RectAreaLightUniformsLib.js";
 
@@ -11,66 +11,79 @@ import {
   ease,
   type Progress,
   SCREEN_DIST,
+  SCREEN_FOV,
   seg,
 } from "@/lib/journey";
 
-import { view } from "@/lib/projects";
+import { onEnter } from "@/lib/loading";
+import { TRAILER_SRC, view } from "@/lib/projects";
 
 import { dustTexture } from "./HeroLight";
+import { warm } from "./Warmup";
 
 /** Cold-white, slightly cyan: a projected picture, not a neon sign. */
 const SCREEN_LIGHT = "#b4dbe6";
 
-/** Screen frame on the page grid: columns 1–6, 680px wide, 16:9, top 112px. */
-const FRAME = { x: 64, y: 112, w: 680 };
+const HALF_FOV = THREE.MathUtils.degToRad(SCREEN_FOV) / 2;
 
-/** Below 1024px there are no columns to share: the screen takes the width, under the top bar. */
-function frameFor(width: number) {
-  if (width >= 1024) return FRAME;
-  const w = Math.min(680, width * 0.9);
-  return { x: (width - w) / 2, y: 88, w };
-}
-const HALF_FOV = THREE.MathUtils.degToRad(34) / 2;
-
-/** Placeholder picture per project: a colour wheel on a tinted dark, so the screen lights the room in that project's colour. */
-function pictureTexture() {
-  const canvas = document.createElement("canvas");
-  canvas.width = 512;
-  canvas.height = 288;
-  const tex = new THREE.CanvasTexture(canvas);
+/** The trailer: one muted, inline video shared with the panel, which reads its clock for the Next timer. */
+function trailer() {
+  const video = document.createElement("video");
+  video.src = TRAILER_SRC;
+  video.muted = true;
+  video.playsInline = true;
+  // Held back until the visitor is in, so the 9 MB film never competes with the robot the loader waits for.
+  video.preload = "none";
+  video.loop = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const tex = new THREE.VideoTexture(video);
   tex.colorSpace = THREE.SRGBColorSpace;
-  const paint = (index: number) => {
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-    const base = (index * 47) % 360;
-    const bg = ctx.createRadialGradient(150, 60, 0, 150, 60, 420);
-    bg.addColorStop(0, `hsl(${base} 30% 22%)`);
-    bg.addColorStop(1, `hsl(${base} 40% 5%)`);
-    ctx.fillStyle = bg;
-    ctx.fillRect(0, 0, 512, 288);
-    const hues = [
-      "#f4ecdc",
-      ...[1, 2, 3, 4].map(k => `hsl(${(base + k * 24) % 360} 75% 55%)`),
-      "#f4ecdc",
-    ];
-    hues.forEach((hue, i) => {
-      ctx.beginPath();
-      ctx.moveTo(256, 300);
-      ctx.arc(
-        256,
-        300,
-        270,
-        Math.PI + (i * Math.PI) / hues.length,
-        Math.PI + ((i + 1) * Math.PI) / hues.length
-      );
-      ctx.fillStyle = hue;
-      ctx.fill();
-    });
-    tex.needsUpdate = true;
-  };
-  paint(0);
-  return { tex, paint };
+  return { video, tex };
 }
+
+/** Corner radius as a share of the screen's height: soft, Apple-display proportions. */
+const CORNER = 0.04;
+/** How far the middle recedes behind the edges, as a share of the width: a gentle curved monitor. */
+const SAG = 0.04;
+
+/**
+ * A unit plane bent into a shallow horizontal arc. The edges stay on the frame's plane (so the picture
+ * still lands on its grid box) and the middle recedes. Vertices only move; the video is sampled as before, so it stays sharp.
+ */
+function curvedPlane() {
+  const geo = new THREE.PlaneGeometry(1, 1, 64, 1);
+  const pos = geo.attributes.position;
+  for (let i = 0; i < pos.count; i++) {
+    const u = pos.getX(i) * 2;
+    pos.setZ(i, -(1 - u * u) * SAG);
+  }
+  geo.computeVertexNormals();
+  return geo;
+}
+
+/** Rounded corners drawn in the fragment shader: a signed-distance edge, anti-aliased by its own screen-space slope. */
+function roundCorners(shader: {
+  uniforms: Record<string, THREE.IUniform>;
+  fragmentShader: string;
+}) {
+  shader.uniforms.uSize = corners.size;
+  shader.uniforms.uRadius = corners.radius;
+  shader.fragmentShader = shader.fragmentShader
+    .replace(
+      "void main() {",
+      "uniform vec2 uSize;\nuniform float uRadius;\nvoid main() {"
+    )
+    .replace(
+      "#include <dithering_fragment>",
+      `vec2 q = abs((vMapUv - 0.5) * uSize) - uSize * 0.5 + uRadius;
+      float d = length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - uRadius;
+      gl_FragColor.a *= clamp(0.5 - d / max(fwidth(d), 1e-5), 0.0, 1.0);
+      #include <dithering_fragment>`
+    );
+}
+const corners = {
+  size: { value: new THREE.Vector2(1, 1) },
+  radius: { value: 0 },
+};
 
 /**
  * Flat front-on screen, pinned to its grid frame when the camera lands.
@@ -87,20 +100,50 @@ export default function ProjectsScreen({
   const mat = useRef<THREE.MeshBasicMaterial>(null);
   const streakMat = useRef<THREE.MeshBasicMaterial>(null);
   const light = useRef<THREE.RectAreaLight>(null);
-  const { tex: picture, paint } = useMemo(() => pictureTexture(), []);
+  const gl = useThree(state => state.gl);
+  const { video, tex: picture } = useMemo(() => trailer(), []);
+  const arc = useMemo(() => curvedPlane(), []);
   const shown = useRef(0);
   const glow = useMemo(() => dustTexture(), []);
   useMemo(() => RectAreaLightUniformsLib.init(), []);
 
+  // Strict Mode runs this twice on the same memoised video, so cleanup only lets go of it; it never unloads it.
+  useEffect(() => {
+    view.video = video;
+    const stop = onEnter(() => {
+      video.preload = "auto";
+      video.load();
+    });
+    // Put the first frame on the GPU early, so the trailer starting to roll is not the moment it is uploaded.
+    const upload = () => gl.initTexture(picture);
+    video.addEventListener("loadeddata", upload, { once: true });
+    return () => {
+      stop();
+      video.removeEventListener("loadeddata", upload);
+      video.pause();
+      view.video = null;
+    };
+  }, [video, gl, picture]);
+
   useFrame(({ size, clock }) => {
-    // The panel picked another project: cut to its picture.
+    const video = view.video;
+    // The panel picked another trailer: start it from the top.
     if (shown.current !== view.index) {
       shown.current = view.index;
-      paint(view.index);
+      if (video) video.currentTime = 0;
     }
     const draw = ease(seg(progress.current, BEAT.line));
     const open = ease(seg(progress.current, BEAT.picture));
-    const frame = frameFor(size.width);
+    // The trailer rolls once the picture is opening, and rewinds when we leave.
+    if (video) {
+      if (open > 0.05) {
+        if (video.paused && !video.ended) void video.play().catch(() => {});
+      } else if (!video.paused || video.currentTime > 0) {
+        video.pause();
+        video.currentTime = 0;
+      }
+    }
+    const frame = view.frame;
     const halfH = Math.tan(HALF_FOV) * SCREEN_DIST;
     const halfW = (halfH * size.width) / size.height;
     const w = (frame.w / size.width) * 2 * halfW;
@@ -110,45 +153,52 @@ export default function ProjectsScreen({
     const cy = frame.y + (frame.w * 9) / 32;
     const y = CAM_END[1] + (1 - (cy / size.height) * 2) * halfH;
     const z = CAM_END[2] - SCREEN_DIST;
+    Object.assign(view.screen, { x, y, z, w, h });
     // The projector's slight unsteadiness, once the picture is up.
     const t = clock.elapsedTime;
     const flicker = reduced
       ? 1
-      : 1 + open * (0.03 * Math.sin(t * 41) + 0.02 * Math.sin(t * 17.3));
+      : 1 + open * (0.004 * Math.sin(t * 41) + 0.003 * Math.sin(t * 17.3));
 
     if (mesh.current) {
       mesh.current.position.set(x, y, z);
-      mesh.current.scale.set(w * draw, Math.max(0.006 * w, h * open), 1);
-      mesh.current.visible = draw > 0;
+      const sh = Math.max(0.006 * w, h * open);
+      // Depth scales with width so the arc keeps its proportion at any size.
+      mesh.current.scale.set(w * draw, sh, w);
+      corners.size.value.set(w * draw, sh);
+      corners.radius.value = Math.min(CORNER * h, sh / 2, (w * draw) / 2);
+      mesh.current.visible = draw > 0 || warm.on;
     }
     // Hot enough to bloom as a line, then settles to the picture's own light.
     if (mat.current)
-      mat.current.color.setScalar(
-        THREE.MathUtils.lerp(2, 0.85, open) * flicker
-      );
-    // Horizontal lens streak: hottest while the line draws, a faint kiss once the picture is up.
+      mat.current.color.setScalar(THREE.MathUtils.lerp(2, 1, open));
+    // Horizontal lens streak: hottest while the line draws, gone once the picture is up.
     if (streak.current) {
       streak.current.position.set(x, y, z + 0.05);
       streak.current.scale.set(w * (1.2 + 1.6 * draw), h * 0.07, 1);
     }
-    if (streakMat.current)
-      streakMat.current.opacity =
-        (0.03 + 0.3 * draw * (1 - open)) * (draw > 0 ? 1 : 0) * flicker;
+    if (streakMat.current) streakMat.current.opacity = 0.03 * draw * (1 - open);
     // The key of the cinema: a screen-sized panel facing the audience.
     if (light.current) {
       light.current.position.set(x, y, z + 0.3);
-      light.current.width = w * 1.05;
-      light.current.height = h * 1.05;
+      light.current.width = w * 1.5;
+      light.current.height = h * 1.5;
       light.current.lookAt(x, y - 2, z + 14);
-      light.current.intensity = (2 * draw * (1 - open) + 9 * open) * flicker;
+      light.current.intensity =
+        (0.4 * draw * (1 - open) + 0.85 * open) * flicker;
     }
   });
 
   return (
     <>
-      <mesh ref={mesh} visible={false}>
-        <planeGeometry args={[1, 1]} />
-        <meshBasicMaterial ref={mat} map={picture} toneMapped={false} />
+      <mesh ref={mesh} visible={false} geometry={arc}>
+        <meshBasicMaterial
+          ref={mat}
+          map={picture}
+          toneMapped={false}
+          transparent
+          onBeforeCompile={roundCorners}
+        />
       </mesh>
       <mesh ref={streak}>
         <planeGeometry args={[1, 1]} />

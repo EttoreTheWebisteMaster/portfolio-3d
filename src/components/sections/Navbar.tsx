@@ -10,7 +10,7 @@ const links = [{ href: "/#projects", label: "Projects", count: "09" }];
 
 export default function Navbar() {
   return (
-    <header className="fixed inset-x-0 top-0 z-10 bar bar-solid">
+    <header className="bar-solid fixed inset-x-0 top-0 z-10 bar">
       <Link href="/" className="logo" aria-label="Ettore Serra, home">
         <span>Ettore</span>
         <span>Serra</span>
@@ -18,7 +18,7 @@ export default function Navbar() {
       <nav aria-label="Primary" className="hidden md:block">
         <div className="nav-links">
           {links.map(link => (
-            <Link key={link.href} href={link.href}>
+            <Link key={link.href} href={link.href} data-nav="projects">
               {link.label}
               {link.count && <sup>{link.count}</sup>}
             </Link>
