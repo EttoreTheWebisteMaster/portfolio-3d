@@ -3,6 +3,8 @@ type Project = {
   /** Facts line, e.g. platform · stack · year. */
   facts: string;
   discipline: string;
+  /** Hover thumbnail in /public. Rows without one show the felt card. */
+  image?: string;
   /** Two lines at most. */
   lead: string;
 };
@@ -17,30 +19,32 @@ export const PROJECTS: readonly Project[] = [
     title: "Pausa",
     facts: "macOS menu-bar app · SwiftUI · 2026",
     discipline: "Product",
+    image: "/projects/pausa.jpg",
     lead: "A small menu-bar app for taking breaks. Placeholder copy: replace with the real story.",
   },
   {
     title: "Antonino",
     facts: "Project facts · Stack · Year",
-    discipline: "Web",
+    discipline: "Voice · AI",
     lead: "Placeholder copy: one sentence on what it is and why it matters.",
   },
   {
     title: "Chef AI",
     facts: "Project facts · Stack · Year",
-    discipline: "AI",
+    discipline: "React · AI",
     lead: "Placeholder copy: one sentence on what it is and why it matters.",
   },
   {
     title: "The Morning Ledger",
     facts: "Project facts · Stack · Year",
-    discipline: "Editorial",
+    discipline: "AI · Finance",
+    image: "/projects/morning-ledger.jpg",
     lead: "Placeholder copy: one sentence on what it is and why it matters.",
   },
   {
     title: "This portfolio",
     facts: "Next.js · Three.js · GSAP · 2026",
-    discipline: "Web",
+    discipline: "Next.js · 3D",
     lead: "The site you are on: one persistent 3D set, scrolled like a film.",
   },
   {
@@ -64,13 +68,29 @@ export const PROJECTS: readonly Project[] = [
   {
     title: "Local Agents",
     facts: "Project facts · Stack · Year",
-    discipline: "AI",
+    discipline: "AI · Tools",
     lead: "Placeholder copy: one sentence on what it is and why it matters.",
   },
 ];
 
-/** Which project the screen is playing. Written by the panel, read by the 3D screen every frame. */
-export const view = { index: 0 };
+/** Trailer file. Every project plays the same test clip until the real trailers exist. */
+export const TRAILER_SRC = "/video/test-1280.mp4";
 
-/** Seconds a project plays before the next one starts. */
+/** Fallback length in seconds until the clip's metadata has loaded. */
 export const TRAILER_SECONDS = 10;
+
+/**
+ * Shared between the panel (DOM) and the 3D screen, read every frame.
+ * `frame` is the stage box in page px, measured from the DOM so the 3D screen can never drift from the grid.
+ * `screen` is where the 3D screen ends up in the world, so the projector beam lands exactly on it.
+ */
+export const view = {
+  index: 0,
+  /** Counts up each time the cursor lands on a different project row: the crowd reacts. */
+  pulse: 0,
+  /** A robot is in the visitor's hand: the page must not scroll away. */
+  held: false,
+  video: null as HTMLVideoElement | null,
+  frame: { x: 64, y: 144, w: 644 },
+  screen: { x: 0, y: 0, z: 0, w: 1, h: 1 },
+};

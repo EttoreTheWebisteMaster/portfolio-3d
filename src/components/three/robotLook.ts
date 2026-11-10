@@ -21,6 +21,7 @@ export function setBrows(faces: THREE.Mesh[], surprised: number, kind: number) {
     if (!dict || !infl) continue;
     if (dict.Surprised !== undefined) infl[dict.Surprised] = surprised;
     if (dict.Sad !== undefined) infl[dict.Sad] = kind;
+    if (dict.Angry !== undefined) infl[dict.Angry] = 0;
   }
 }
 
@@ -58,7 +59,7 @@ export type Mood = [surprised: number, kind: number];
 /** His faces as [surprised, kind] blends. They sit close together so every change reads as a feeling, not a jump. */
 export const REST: Mood = [0.2, 0.2];
 const SMILE: Mood = [0.3, 0.1];
-const SURPRISE: Mood = [0.45, 0];
+const SURPRISE: Mood = [0.85, 0];
 
 /** Eases `mood` toward the face he should wear now; surprise lands fast, the rest settles slowly. */
 export function stepMood(
@@ -69,7 +70,7 @@ export function stepMood(
   dt: number
 ) {
   const [s, k] = hovering ? SURPRISE : waving ? SMILE : REST;
-  const rate = hovering ? 14 : 6;
+  const rate = hovering ? 14 : 3.5;
   // A slow breath in the brows keeps the rest from feeling frozen.
   const alive = hovering || waving ? 0 : 0.04 * Math.sin(time * 0.8);
   mood[0] = THREE.MathUtils.damp(mood[0], s + alive, rate, dt);

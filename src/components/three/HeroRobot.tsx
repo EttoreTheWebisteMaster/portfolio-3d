@@ -164,7 +164,7 @@ export default function HeroRobot({
 
     // Is the cursor on him, and how close is it? Hit-tested against his box in his own space.
     let over = false;
-    if (home && turn.current) {
+    if (home && turn.current && cursor.live) {
       bounds.current ??= robotBounds(gltf.scene, turn.current);
       over = cursorOnRobot(
         cursor.x,
@@ -183,11 +183,12 @@ export default function HeroRobot({
     // Brows lift in surprise while the cursor is on him, and into a warm smile while he waves; otherwise a kind, alive rest.
     const waving = oneShot.current?.getClip().name === "Wave";
     stepMood(mood.current, hovering, waving, clock.elapsedTime, dt);
-    setBrows(faces, mood.current[0], mood.current[1]);
 
     // Take last frame's head offset back out first: a bone the clip does not key would otherwise keep adding it up and spin.
     if (head) turnHead(head, -offset.current.y, -offset.current.x);
     mixer.update(dt);
+    // After the mixer: the clips key the face morphs too (Wave flashes its own expression), so our eased mood must have the last word.
+    setBrows(faces, mood.current[0], mood.current[1]);
     if (head) {
       // His head follows the cursor on top of the animated pose (applied after the mixer, which rewrites the bones each frame).
       // It lets go while he waves or dances and as he turns away.
