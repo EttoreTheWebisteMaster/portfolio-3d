@@ -40,6 +40,21 @@ const STEEL: Record<
   Black: { color: "#4a4d54", metalness: 0.85, roughness: 0.4 },
 };
 
+/** His polished metal: gold for the yellow parts, steel for the grey, gunmetal for the dark. The studio around him gives it something to reflect. */
+export function steel(name: string, flatShading: boolean) {
+  const p = PALETTE[name];
+  return new THREE.MeshPhysicalMaterial({
+    name,
+    color: STEEL[name]?.color ?? p.color,
+    metalness: STEEL[name]?.metalness ?? p.metalness,
+    roughness: STEEL[name]?.roughness ?? p.roughness,
+    clearcoat: 0.15,
+    clearcoatRoughness: 0.3,
+    flatShading,
+    envMapIntensity: 0.9,
+  });
+}
+
 export default function HeroRobot({
   progress,
   url,
@@ -60,18 +75,7 @@ export default function HeroRobot({
         return;
       let mat = made.get(old.name);
       if (!mat) {
-        const p = PALETTE[old.name];
-        mat = new THREE.MeshPhysicalMaterial({
-          name: old.name,
-          color: STEEL[old.name]?.color ?? p.color,
-          // Polished metal: gold for the yellow parts, steel for the grey, gunmetal for the dark. The studio around him gives it something to reflect.
-          metalness: STEEL[old.name]?.metalness ?? p.metalness,
-          roughness: STEEL[old.name]?.roughness ?? p.roughness,
-          clearcoat: 0.15,
-          clearcoatRoughness: 0.3,
-          flatShading: old.flatShading,
-          envMapIntensity: 0.9,
-        });
+        mat = steel(old.name, old.flatShading);
         made.set(old.name, mat);
       }
       obj.material = mat;

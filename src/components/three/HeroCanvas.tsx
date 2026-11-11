@@ -26,6 +26,16 @@ import { pointer, stepPointer, trackPointer } from "@/lib/pointer";
 
 import CursorTip from "@/components/ui/CursorTip";
 
+import {
+  aboutCamera,
+  exposure,
+  onAbout,
+  publishAbout,
+  pushThrough,
+} from "./aboutShot";
+import AboutScene from "./AboutScene";
+import { contactCamera, onContact } from "./contactShot";
+import ContactScene from "./ContactScene";
 import HeroEffects from "./HeroEffects";
 import HeroEnvironment from "./HeroEnvironment";
 import HeroLight, { FLOOR_Y } from "./HeroLight";
@@ -56,10 +66,11 @@ const aim = new THREE.Vector3(CAM_END[0], CAM_END[1], CAM_END[2] - 20);
 
 /** Hands the 3D rig the journey as it is: the snapper already moves it at one constant speed, so no extra smoothing. */
 function Driver({ smooth }: Readonly<{ smooth: Progress }>) {
-  useFrame((_, dt) => {
+  useFrame(({ size }, dt) => {
     stepPointer(dt);
     syncRig(smooth);
     publish(journey.current);
+    publishAbout(size.width, size.height);
   }, -1);
   return null;
 }
@@ -86,8 +97,18 @@ function Rig({
   reduced,
   progress,
 }: Readonly<{ reduced: boolean; progress: Progress }>) {
-  useFrame(({ camera, clock, size }) => {
+  useFrame(({ camera, clock, size, gl }, dt) => {
     if (!(camera instanceof THREE.PerspectiveCamera)) return;
+    gl.toneMappingExposure = exposure(1.1);
+    if (onContact()) {
+      // The front canvas draws this same frame, so both read one wall clock.
+      contactCamera(camera, performance.now() / 1000, dt);
+      return;
+    }
+    if (onAbout()) {
+      aboutCamera(camera, size.width, size.height);
+      return;
+    }
     const time = clock.elapsedTime;
     // The opening shot is on the master intro clock, which starts when the visitor gets in.
     const e = reduced ? 1 : introFly();
@@ -147,6 +168,7 @@ function Rig({
     camera.rotateZ(
       (0.03 * Math.sin(Math.PI * m) + Math.sin(time * 0.2) * 0.002) * sway
     );
+    pushThrough(camera, size.width, size.height);
     camera.updateProjectionMatrix();
   });
   return null;
@@ -206,6 +228,8 @@ export default function HeroCanvas() {
           <Driver smooth={smooth} />
           {modelUrl && <HeroRobot progress={smooth} url={modelUrl} />}
           <ProjectsRoom progress={smooth} reduced={reduced} />
+          <AboutScene url={modelUrl} />
+          <ContactScene url={modelUrl} />
           <Rig reduced={reduced} progress={smooth} />
           {modelUrl && <Warmup />}
         </Suspense>

@@ -10,7 +10,8 @@ const BEAM_COLOR = "#ffbe70";
 export function Beam({
   radius,
   alpha,
-}: Readonly<{ radius: number; alpha: number }>) {
+  color = BEAM_COLOR,
+}: Readonly<{ radius: number; alpha: number; color?: string }>) {
   const geometry = useMemo(() => {
     const geo = new THREE.ConeGeometry(radius, BEAM_LENGTH, 48, 1, true);
     geo.translate(0, -BEAM_LENGTH / 2, 0);
@@ -27,7 +28,7 @@ export function Beam({
   return (
     <mesh geometry={geometry}>
       <meshBasicMaterial
-        color={BEAM_COLOR}
+        color={color}
         vertexColors
         transparent
         depthWrite={false}

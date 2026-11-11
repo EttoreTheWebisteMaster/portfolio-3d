@@ -1,6 +1,9 @@
 import Loader from "@/components/sections/Loader";
 import Navbar from "@/components/sections/Navbar";
 import BottomBar from "@/components/sections/BottomBar";
+import About from "@/components/sections/About";
+import Contact from "@/components/sections/Contact";
+import ContactStage from "@/components/sections/ContactStage";
 import Hero from "@/components/sections/Hero";
 import PageMotion from "@/components/sections/PageMotion";
 import PageSnap from "@/components/sections/PageSnap";
@@ -16,6 +19,10 @@ export default function Home() {
         <Navbar />
         <Hero />
         <Projects />
+        <About />
+        <Contact />
+        <ContactStage />
+        <div aria-hidden className="flare" />
         <BottomBar />
         <PageSnap />
         <PageMotion />

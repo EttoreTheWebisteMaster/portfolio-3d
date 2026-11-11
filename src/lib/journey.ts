@@ -22,8 +22,19 @@ export const seg = (p: number, [from, to]: readonly [number, number]) =>
 /** Smootherstep: zero velocity and acceleration at both ends. Used for fades, never for travel. */
 export const ease = (t: number) => t * t * t * (t * (t * 6 - 15) + 10);
 
-/** Seconds one page change takes. Longer hops take proportionally longer, so speed never changes. */
+/** Seconds the Home → Projects hop takes. */
 export const TRANSITION_SECONDS = 3.2;
+
+/** Seconds each hop between neighbouring pages takes: Home → Projects, Projects → About, About → Contact. */
+const HOP_SECONDS = [TRANSITION_SECONDS, 1.8, 1.6] as const;
+
+/** Seconds a change from page `from` to page `to` takes: the hops it crosses, added up. */
+export function travelSeconds(from: number, to: number) {
+  let seconds = 0;
+  for (let i = Math.min(from, to); i < Math.max(from, to); i++)
+    seconds += HOP_SECONDS[i] ?? HOP_SECONDS[0];
+  return seconds;
+}
 
 /**
  * Travel curve of a page change: a short ramp up, a long stretch at one constant speed, a short ramp down.

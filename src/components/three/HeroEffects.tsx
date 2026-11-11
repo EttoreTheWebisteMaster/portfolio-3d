@@ -31,6 +31,9 @@ import {
   seg,
 } from "@/lib/journey";
 
+import { flare, onAbout } from "./aboutShot";
+import { onContact } from "./contactShot";
+
 const forward = new THREE.Vector3();
 const scratch = new THREE.Vector3();
 const head = new THREE.Vector3(...HEAD);
@@ -51,24 +54,37 @@ export default function HeroEffects({
 
   useFrame(({ camera }) => {
     // The light slam blows the highlights out, then they settle back to the grade.
+    const paper = onAbout();
+    // The white-out: the screen's light spills over everything.
+    const f = flare();
     if (bloom.current) {
       bloom.current.intensity =
-        (0.8 + 1.8 * introFlash()) *
-        THREE.MathUtils.lerp(1, 0, ease(seg(progress.current, BEAT.picture)));
+        (paper ? 0.15 : 0.8 + 1.8 * introFlash()) *
+          THREE.MathUtils.lerp(
+            1,
+            0,
+            ease(seg(progress.current, BEAT.picture))
+          ) +
+        5 * f;
       // On the Projects screen only true highlights may glow, so the picture's lettering stays crisp.
       bloom.current.luminanceMaterial.threshold = THREE.MathUtils.lerp(
-        0.95,
-        1.3,
-        ease(seg(progress.current, BEAT.picture))
+        THREE.MathUtils.lerp(
+          0.95,
+          1.3,
+          ease(seg(progress.current, BEAT.picture))
+        ),
+        0.3,
+        f
       );
     }
     // In the cinema the edges fall further into the dark: the screen is the only light.
+    // On the cream wall of About it is only a breath.
     if (vignette.current)
-      vignette.current.darkness = THREE.MathUtils.lerp(
-        0.65,
-        0.92,
-        cinemaLight(progress.current)
-      );
+      vignette.current.darkness = paper
+        ? 0.25
+        : onContact()
+          ? 0.85
+          : THREE.MathUtils.lerp(0.65, 0.92, cinemaLight(progress.current));
     const fx = dof.current;
     if (!fx) return;
     const p = progress.current;

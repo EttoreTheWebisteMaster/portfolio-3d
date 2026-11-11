@@ -179,7 +179,10 @@ function feel(b: Bone, dt: number) {
  * behind the body, swings and settles. The elbow or knee is a hinge: it folds only the way a joint can, rests a little bent, and never
  * past its stop. Feet stay on the ankles and droop. Runs after the animation, blended in by `w.limpW`.
  */
-export function limpStep(w: Walker, dt: number) {
+export function limpStep(
+  w: Pick<Walker, "limp" | "limpW" | "robot">,
+  dt: number
+) {
   const limp = w.limp;
   if (!limp) return;
   if (w.limpW < 0.01) {

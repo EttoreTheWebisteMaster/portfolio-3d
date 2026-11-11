@@ -232,6 +232,7 @@ export function advance(
     // Still waiting beyond the frame: nothing to draw or animate until its turn comes.
     if (t <= 0) {
       w.robot.visible = false;
+      w.shadow.visible = false;
       w.speed = 0;
       w.at.copy(here);
       return;

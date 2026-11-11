@@ -5,7 +5,8 @@ import { useEffect, useMemo } from "react";
 import * as THREE from "three";
 
 import { type Puff, puffs } from "./crowdHands";
-import { dustTexture, FLOOR_Y } from "./HeroLight";
+import { FLOOR_Y } from "./HeroLight";
+import { PointLayer } from "./pointLayer";
 
 /** Particles in the pool; the oldest is reused when a burst needs more. */
 const COUNT = 96;
@@ -14,29 +15,13 @@ const LIFE = 0.9;
 const TINT = new THREE.Color("#8a7358").multiplyScalar(0.45);
 
 /** The particle pool: owns its buffers and moves them each frame. */
-class DustPool {
-  geometry = new THREE.BufferGeometry();
-  material: THREE.PointsMaterial;
-  private pos = new Float32Array(COUNT * 3);
-  private col = new Float32Array(COUNT * 3);
+class DustPool extends PointLayer {
   private vel = new Float32Array(COUNT * 3);
   private life = new Float32Array(COUNT);
   private next = 0;
 
   constructor() {
-    this.geometry.setAttribute(
-      "position",
-      new THREE.BufferAttribute(this.pos, 3)
-    );
-    this.geometry.setAttribute("color", new THREE.BufferAttribute(this.col, 3));
-    this.material = new THREE.PointsMaterial({
-      map: dustTexture(),
-      size: 0.7,
-      vertexColors: true,
-      transparent: true,
-      depthWrite: false,
-      blending: THREE.AdditiveBlending,
-    });
+    super(COUNT, 0.7);
   }
 
   private spawn(puff: Puff) {
@@ -73,14 +58,7 @@ class DustPool {
         vel[i * 3 + c] *= drag;
       }
     }
-    this.geometry.attributes.position.needsUpdate = true;
-    this.geometry.attributes.color.needsUpdate = true;
-  }
-
-  dispose() {
-    this.material.map?.dispose();
-    this.material.dispose();
-    this.geometry.dispose();
+    this.upload();
   }
 }
 
