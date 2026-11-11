@@ -7,7 +7,7 @@ const facts = [
   ["Status", "Available"],
 ] as const;
 
-/** About: the cream wall and ROB-092 are in the 3D set behind; this layer is the interview column and the caption. */
+/** About: the cream room and ROB-092 are in the 3D set behind; this layer is the interview column and the caption. */
 export default function About() {
   return (
     <section id="about" data-page data-theme="paper" className="page about">
@@ -25,7 +25,7 @@ export default function About() {
           <div data-fx="item" className="fx about-ask">
             <AboutAsk />
           </div>
-          <dl data-fx="item" className="fx about-facts">
+          <dl data-fx="item" className="fx about-facts max-md:hidden">
             {facts.map(([term, value]) => (
               <div key={term}>
                 <dt>{term}</dt>
@@ -36,7 +36,7 @@ export default function About() {
         </div>
       </div>
 
-      <p data-fx="item" className="fx about-caption">
+      <p data-fx="item" className="fx about-caption max-md:hidden">
         <strong>ROB-092</strong>
         <span>Public relations unit</span>
       </p>

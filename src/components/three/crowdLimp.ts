@@ -52,6 +52,8 @@ type Bone = {
 type Foot = {
   bone: THREE.Object3D;
   ankle: THREE.Object3D;
+  /** Its bind position in the parent: the clips animate the foot's rotation only, so this must be put back by hand. */
+  rest: THREE.Vector3;
   /** The foot in the shin's own frame, as the animation poses it. */
   offset: THREE.Vector3;
   rel: THREE.Quaternion;
@@ -112,6 +114,7 @@ export function makeLimp(robot: THREE.Object3D): Limp | null {
         ? {
             bone: foot,
             ankle: nodes[nodes.length - 1] as THREE.Object3D,
+            rest: foot.position.clone(),
             offset: new THREE.Vector3(),
             rel: new THREE.Quaternion(),
           }
@@ -158,7 +161,9 @@ function carryFoot(foot: Foot, shinBone: THREE.Object3D, weight: number) {
   const parent = foot.bone.parent;
   if (!parent) return;
   parent.getWorldQuaternion(parentQ);
-  foot.bone.position.copy(parent.worldToLocal(here));
+  foot.bone.position
+    .copy(foot.rest)
+    .lerp(parent.worldToLocal(here), Math.min(1, weight));
   foot.bone.quaternion.copy(parentQ.invert().multiply(world));
   foot.bone.updateMatrixWorld(true);
 }
@@ -186,7 +191,12 @@ export function limpStep(
   const limp = w.limp;
   if (!limp) return;
   if (w.limpW < 0.01) {
-    for (const limb of limp) limb.primed = false;
+    for (const limb of limp) {
+      // Limp is over: the clip never moves the foot, so without this it stays where the leg last carried it, off the ankle.
+      if (limb.primed && limb.foot)
+        limb.foot.bone.position.copy(limb.foot.rest);
+      limb.primed = false;
+    }
     return;
   }
   w.robot.updateMatrixWorld(true);

@@ -11,8 +11,9 @@ import { PAGES, pad } from "@/lib/pages";
 function cueFor(i: number) {
   const next = PAGES[i + 1];
   if (next && document.getElementById(next.id))
-    return { href: `#${next.id}`, text: `${next.label} ↓` };
-  return { href: `#${PAGES[0].id}`, text: `${PAGES[0].label} ↑` };
+    // Projects → About is the one sideways move: the camera trucks right with him.
+    return { href: next.path, text: `${next.label} ${i === 1 ? "→" : "↓"}` };
+  return { href: PAGES[0].path, text: `${PAGES[0].label} ↑` };
 }
 
 /** Rolls a bar field out, swaps its text, and rolls the new text in. */
@@ -95,7 +96,7 @@ export default function BottomBar() {
           {PAGES[0].label}
         </span>
       </p>
-      <Link href={`#${PAGES[1].id}`} className="bar-field bar-cue" data-bar-cue>
+      <Link href={PAGES[1].path} className="bar-field bar-cue" data-bar-cue>
         {PAGES[1].label} ↓
       </Link>
       <p className="bar-progress whitespace-nowrap">

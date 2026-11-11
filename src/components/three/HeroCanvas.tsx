@@ -26,13 +26,9 @@ import { pointer, stepPointer, trackPointer } from "@/lib/pointer";
 
 import CursorTip from "@/components/ui/CursorTip";
 
-import {
-  aboutCamera,
-  exposure,
-  onAbout,
-  publishAbout,
-  pushThrough,
-} from "./aboutShot";
+import { exposure, publishAbout, walkCamera } from "./aboutShot";
+import { onAbout } from "./walkPose";
+import { pushThrough } from "./diveShot";
 import AboutScene from "./AboutScene";
 import { contactCamera, onContact } from "./contactShot";
 import ContactScene from "./ContactScene";
@@ -106,9 +102,10 @@ function Rig({
       return;
     }
     if (onAbout()) {
-      aboutCamera(camera, size.width, size.height);
+      walkCamera(camera, size.width, size.height);
       return;
     }
+    if (camera.view?.enabled) camera.clearViewOffset();
     const time = clock.elapsedTime;
     // The opening shot is on the master intro clock, which starts when the visitor gets in.
     const e = reduced ? 1 : introFly();
@@ -228,7 +225,7 @@ export default function HeroCanvas() {
           <Driver smooth={smooth} />
           {modelUrl && <HeroRobot progress={smooth} url={modelUrl} />}
           <ProjectsRoom progress={smooth} reduced={reduced} />
-          <AboutScene url={modelUrl} />
+          <AboutScene />
           <ContactScene url={modelUrl} />
           <Rig reduced={reduced} progress={smooth} />
           {modelUrl && <Warmup />}

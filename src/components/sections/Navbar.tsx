@@ -7,9 +7,9 @@ import SoundToggle from "@/components/ui/SoundToggle";
 import Timecode from "@/components/ui/Timecode";
 
 const links = [
-  { href: "/#projects", label: "Projects", count: "09" },
-  { href: "/#about", label: "About" },
-  { href: "/#contact", label: "Contact" },
+  { href: "/projects", label: "Projects", count: "09" },
+  { href: "/about", label: "About" },
+  { href: "/contact", label: "Contact" },
 ];
 
 export default function Navbar() {

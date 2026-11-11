@@ -5,10 +5,21 @@ import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 
+import { asking, greet } from "@/lib/interview";
+import { play } from "@/lib/sound";
 import { pointer, target as cursor } from "@/lib/pointer";
-import { BEAT, ease, intro, type Progress, seg } from "@/lib/journey";
+import { BEAT, ease, intro, journey, type Progress, seg } from "@/lib/journey";
 
 import { FLOOR_Y } from "./HeroLight";
+import {
+  driveMoves,
+  makeCoats,
+  makeMoves,
+  type Moves,
+  paintCoats,
+  resetMoves,
+} from "./robotShot";
+import { type Pose, STRIDE, walkPose } from "./walkPose";
 import {
   type Bounds,
   type Mood,
@@ -80,8 +91,11 @@ export default function HeroRobot({
       }
       obj.material = mat;
     });
+    coats.current = makeCoats(made);
     const idle = THREE.AnimationClip.findByName(gltf.animations, "Idle");
     if (idle) mixer.clipAction(idle).play();
+    // Sitting and Walking are scrubbed by hand (the shot's distance and progress), never advanced by the clock.
+    moves.current = makeMoves(mixer, gltf.animations);
     mixer.update(0);
     reduced.current = window.matchMedia(
       "(prefers-reduced-motion: reduce)"
@@ -91,6 +105,13 @@ export default function HeroRobot({
     };
   }, [gltf, mixer]);
 
+  const coats = useRef<ReturnType<typeof makeCoats>>([]);
+  const moves = useRef<Moves | null>(null);
+  const pose = useRef<Pose>({ x: 0, yaw: 0, stand: 0, phase: 0, moving: 0 });
+  const arrived = useRef(false);
+  const steps = useRef(0);
+  const live = useRef(false);
+  const matte = useRef(-1);
   const head = useMemo(() => gltf.scene.getObjectByName("Head"), [gltf]);
   // The face meshes that carry his expressions (Angry / Surprised / Sad).
   const faces = useMemo(() => {
@@ -188,6 +209,38 @@ export default function HeroRobot({
     const waving = oneShot.current?.getClip().name === "Wave";
     stepMood(mood.current, hovering, waving, clock.elapsedTime, dt);
 
+    // The shot: seated in the audience, then up, along the row, out of the door, to his mark. All of it is the scroll position.
+    const pos = journey.current;
+    const p = walkPose(pose.current, pos);
+    const m = moves.current;
+    if (m && pos > 0.5 && !oneShot.current) {
+      live.current = true;
+      driveMoves(
+        m,
+        p,
+        ease(seg(progress.current, [0.5, 0.7])) *
+          (1 - ease(seg(pos, [1.2, 1.3])))
+      );
+    } else if (m && live.current && pos <= 0.5) {
+      live.current = false;
+      resetMoves(m);
+    }
+    // Footsteps on the stride (two a cycle), so they follow the scroll, backwards too.
+    const step = Math.floor(p.x / (STRIDE / 2));
+    if (step !== steps.current && p.moving > 0.5 && pos > 1.2) play("step");
+    steps.current = step;
+    // His paint turns from the hero's polished metal to the matte palette as the daylight takes over.
+    const k = ease(seg(pos, [1.55, 1.75]));
+    if (k !== matte.current) {
+      matte.current = k;
+      paintCoats(coats.current, k);
+    }
+    // Arrived on his mark: the interview opens.
+    if (!arrived.current && pos >= 1.995) {
+      arrived.current = true;
+      greet();
+    } else if (arrived.current && pos < 1.9) arrived.current = false;
+
     // Take last frame's head offset back out first: a bone the clip does not key would otherwise keep adding it up and spin.
     if (head) turnHead(head, -offset.current.y, -offset.current.x);
     mixer.update(dt);
@@ -196,23 +249,31 @@ export default function HeroRobot({
     if (head) {
       // His head follows the cursor on top of the animated pose (applied after the mixer, which rewrites the bones each frame).
       // It lets go while he waves or dances and as he turns away.
+      // On his mark he looks at us (his body is turned a little toward the text), then the cursor takes his head; he lets go as he walks on.
+      const settled = ease(seg(pos, [1.96, 2])) * (1 - seg(pos, [2, 2.05]));
       const goal =
-        reduced.current || oneShot.current
+        reduced.current || oneShot.current || asking.speaking
           ? 0
-          : 1 - seg(progress.current, BEAT.turn);
+          : Math.max(1 - seg(progress.current, BEAT.turn), settled);
       look.current = THREE.MathUtils.damp(look.current, goal, 4, dt);
-      offset.current.y = pointer.x * 0.5 * look.current;
-      offset.current.x = pointer.y * 0.3 * look.current;
+      // A nod when a question is sent.
+      const since = performance.now() / 1000 - asking.sentAt;
+      const nod = since < 0.6 ? Math.sin((Math.PI * since) / 0.6) * 0.18 : 0;
+      offset.current.y = pointer.x * 0.5 * look.current - 0.12 * settled;
+      offset.current.x = pointer.y * 0.3 * look.current + nod * settled;
       turnHead(head, offset.current.y, offset.current.x);
     }
     if (turn.current) {
       // A small wind-up against the turn, then round to face the screen.
       const t = seg(progress.current, BEAT.turn);
       turn.current.rotation.y =
-        Math.PI * ease(t) -
-        0.12 * Math.sin(Math.PI * seg(t, [0, 0.25])) +
-        // He turns a touch toward the pointer, so the scene answers the hand.
-        pointer.x * 0.18 * (1 - t);
+        pos > 1
+          ? p.yaw
+          : Math.PI * ease(t) -
+            0.12 * Math.sin(Math.PI * seg(t, [0, 0.25])) +
+            // He turns a touch toward the pointer, so the scene answers the hand.
+            pointer.x * 0.18 * (1 - t);
+      turn.current.position.x = p.x;
     }
   });
 

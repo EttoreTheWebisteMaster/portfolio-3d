@@ -31,12 +31,16 @@ import {
   seg,
 } from "@/lib/journey";
 
-import { flare, onAbout } from "./aboutShot";
+import { flare } from "./diveShot";
+import { FLOOR_Y } from "./HeroLight";
+import { daylight, SHOT, walk, walkPose } from "./walkPose";
 import { onContact } from "./contactShot";
 
 const forward = new THREE.Vector3();
 const scratch = new THREE.Vector3();
 const head = new THREE.Vector3(...HEAD);
+const mark = new THREE.Vector3();
+const pose = { x: 0, yaw: 0, stand: 0, phase: 0, moving: 0 };
 const screen = new THREE.Vector3(
   CAM_END[0] - 4.7,
   CAM_END[1] + 2.2,
@@ -54,12 +58,12 @@ export default function HeroEffects({
 
   useFrame(({ camera }) => {
     // The light slam blows the highlights out, then they settle back to the grade.
-    const paper = onAbout();
+    const paper = daylight();
     // The white-out: the screen's light spills over everything.
     const f = flare();
     if (bloom.current) {
       bloom.current.intensity =
-        (paper ? 0.15 : 0.8 + 1.8 * introFlash()) *
+        THREE.MathUtils.lerp(0.8 + 1.8 * introFlash(), 0.15, paper) *
           THREE.MathUtils.lerp(
             1,
             0,
@@ -80,11 +84,13 @@ export default function HeroEffects({
     // In the cinema the edges fall further into the dark: the screen is the only light.
     // On the cream wall of About it is only a breath.
     if (vignette.current)
-      vignette.current.darkness = paper
-        ? 0.25
-        : onContact()
-          ? 0.85
-          : THREE.MathUtils.lerp(0.65, 0.92, cinemaLight(progress.current));
+      vignette.current.darkness = onContact()
+        ? 0.85
+        : THREE.MathUtils.lerp(
+            THREE.MathUtils.lerp(0.65, 0.92, cinemaLight(progress.current)),
+            0.25,
+            paper
+          );
     const fx = dof.current;
     if (!fx) return;
     const p = progress.current;
@@ -104,11 +110,25 @@ export default function HeroEffects({
     // Once the picture is up the lens is fully sharp: the trailer must read clean.
     fx.bokehScale =
       9 * ease(seg(p, [0.02, 0.6])) * (1 - ease(seg(p, BEAT.picture)));
+    // The walk-out: focus racks off the screen onto him and follows him; the screen goes soft, then the cream room keeps a gentle depth.
+    const w = walk();
+    if (w > 0) {
+      const s = ease(seg(w, SHOT.rack));
+      walkPose(pose);
+      mark.set(pose.x, FLOOR_Y + 2, 0);
+      fx.cocMaterial.focusDistance = THREE.MathUtils.lerp(
+        depth(screen),
+        depth(mark),
+        s
+      );
+      fx.cocMaterial.focusRange = THREE.MathUtils.lerp(3, 5, s);
+      fx.bokehScale = THREE.MathUtils.lerp(0, 7, s) * (1 - 0.65 * paper);
+    }
   });
 
   return (
     <EffectComposer multisampling={low ? 0 : 4}>
-      <DepthOfField ref={dof} bokehScale={0} />
+      <DepthOfField ref={dof} bokehScale={0} resolutionScale={low ? 0.5 : 1} />
       <Bloom
         ref={bloom}
         mipmapBlur

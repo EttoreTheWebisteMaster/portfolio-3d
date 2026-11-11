@@ -118,6 +118,8 @@ export default function ContactScene({
         distance={80}
         decay={2}
       />
+      {/* Over the bright copy, a robot outside the lamp's pool would read as a black cut-out: a little cold bounce keeps it a robot. */}
+      {front && <ambientLight color="#9fb4b8" intensity={0.9} />}
       <mesh
         rotation={[-Math.PI / 2, 0, 0]}
         position={[ORIGIN.x, 0, -10]}

@@ -1,6 +1,6 @@
 /** Tiny synthesized sound effects (WebAudio): no files, no dependency. Silent until the visitor's first gesture. */
 const KEY = "sound-muted";
-type Kind = "pop" | "thud" | "clang" | "ooh";
+type Kind = "pop" | "thud" | "clang" | "ooh" | "step" | "door";
 
 let ctx: AudioContext | null = null;
 let armed = false;
@@ -80,8 +80,52 @@ export function play(kind: Kind) {
   } else if (kind === "clang") {
     tone("square", 1700, 650, 0.14, 0.05);
     tone("triangle", 520, 240, 0.3, 0.07);
+  } else if (kind === "step") {
+    // A soft metallic footfall: a short ring over a low tap.
+    tone("triangle", 1100, 520, 0.05, 0.02);
+    tone("sine", 150, 70, 0.08, 0.05);
+  } else if (kind === "door") {
+    // The door's creak, then its latch.
+    tone("sawtooth", 150, 260, 0.5, 0.012);
+    tone("square", 900, 400, 0.04, 0.03);
   } else {
     tone("sine", 330, 420, 0.5, 0.04);
     tone("sine", 495, 630, 0.5, 0.02);
   }
+}
+
+let hum: GainNode | null = null;
+let air: GainNode | null = null;
+
+/** Room tone: the cinema's low hum (`mix` 0) gives way to a breath of daylight air (`mix` 1). Silent while muted. */
+export function roomTone(mix: number) {
+  if (!ctx || ctx.state !== "running") return;
+  if (!hum || !air) {
+    const c = ctx;
+    hum = c.createGain();
+    air = c.createGain();
+    hum.gain.value = air.gain.value = 0;
+    const low = c.createOscillator();
+    low.type = "sine";
+    low.frequency.value = 55;
+    low.connect(hum).connect(c.destination);
+    low.start();
+    const noise = c.createBufferSource();
+    const buffer = c.createBuffer(1, c.sampleRate * 2, c.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+    noise.buffer = buffer;
+    noise.loop = true;
+    const soft = c.createBiquadFilter();
+    soft.type = "lowpass";
+    soft.frequency.value = 700;
+    noise.connect(soft).connect(air).connect(c.destination);
+    noise.start();
+  }
+  const on = isMuted() ? 0 : 1;
+  const t = ctx.currentTime;
+  // Only during the walk-out: the hum is there while it plays, then the air; both are gone on Home and Contact (mix < 0).
+  const live = mix < 0 ? 0 : on;
+  hum.gain.setTargetAtTime(0.02 * (1 - mix) * live, t, 0.2);
+  air.gain.setTargetAtTime(0.012 * mix * live, t, 0.2);
 }
