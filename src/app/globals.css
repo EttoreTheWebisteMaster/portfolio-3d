@@ -2172,19 +2172,27 @@
 @utility about {
   padding: 0 var(--page-margin);
 }
-/* One 12-column grid, like Projects. The interview column spans exactly the height of the cut: the headline sits on its apex line, the facts on its base line (--cut-top / --cut-bottom come from the 3D camera). */
+/* One 12-column grid, like Projects. The interview column spans his height: the headline sits on his head line, the facts on his feet line (--about-top / --about-feet come from the 3D camera). */
 @utility about-layout {
   position: absolute;
   inset: 0;
   display: grid;
   grid-template-columns: repeat(12, minmax(0, 1fr));
   column-gap: var(--gutter);
-  padding: var(--cut-top, 22vh) var(--page-margin)
-    calc(100dvh - var(--cut-bottom, 82vh));
+  padding: var(--about-top, 22vh) var(--page-margin)
+    calc(100dvh - var(--about-feet, 86vh));
   pointer-events: none;
+  /* Phone: he stands on top, the headline and the ask line run under him. */
+  @media (max-width: 767px) {
+    padding: calc(var(--about-feet, 40vh) + var(--space-5)) var(--page-margin)
+      calc(var(--bar-height) + var(--space-4));
+  }
 }
 @utility about-copy {
   grid-column: 8 / 13;
+  @media (max-width: 767px) {
+    grid-column: 1 / -1;
+  }
   display: flex;
   flex-direction: column;
   gap: var(--space-5);
@@ -2199,6 +2207,9 @@
   line-height: 0.84;
   text-transform: uppercase;
   color: var(--text-primary);
+  @media (max-width: 767px) {
+    font-size: 52px;
+  }
   /* The highlight is a pen stroke: it wipes across once the headline has landed. */
   & mark {
     padding: 0 var(--space-2);
@@ -2387,7 +2398,7 @@
 @utility contact-front {
   position: fixed;
   inset: 0;
-  z-index: 2;
+  z-index: 1;
   pointer-events: none;
   &[data-on="false"] {
     visibility: hidden;
@@ -2451,6 +2462,7 @@
 /* The end credits: four label-over-value columns across the foot of the page, quiet like a film's last card. */
 @utility contact-credits {
   position: absolute;
+  z-index: 2;
   inset-inline: var(--page-margin);
   bottom: calc(var(--bar-height) + var(--space-6));
   display: grid;
@@ -2470,6 +2482,146 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+/* Case study: the Projects screen grows to fill the viewport and becomes the hero. Same dark grade as Projects: the screen is the only light, grain and vignette from `scene`. */
+@utility case {
+  @apply scene scene-screen-light;
+  --light-x: 30%;
+  --light-y: 38%;
+  --light-strength: 24%;
+  min-height: 100dvh;
+}
+@utility case-hero {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  column-gap: var(--gutter);
+  row-gap: var(--space-7);
+  align-items: center;
+  min-height: 100dvh;
+  padding: calc(var(--bar-height) + var(--space-8)) var(--page-margin)
+    var(--space-8);
+}
+/* The screen: lit by its own picture, the only light in the room. */
+@utility case-frame {
+  grid-column: 1 / 8;
+  position: relative;
+  z-index: 4;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border-radius: var(--space-1);
+  background: var(--color-black);
+  box-shadow:
+    0 0 var(--space-9)
+      color-mix(in srgb, var(--color-light-screen) 22%, transparent),
+    0 0 var(--space-5)
+      color-mix(in srgb, var(--color-light-screen) 14%, transparent);
+  & video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  @media (max-width: 1023px) {
+    grid-column: 1 / -1;
+  }
+}
+@utility case-copy {
+  grid-column: 8 / 13;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-5);
+  @media (max-width: 1023px) {
+    grid-column: 1 / -1;
+  }
+}
+@utility case-title {
+  @apply type-poster-xl uppercase;
+  color: var(--color-cream);
+  text-shadow: 0 0 var(--space-7)
+    color-mix(in srgb, var(--color-light-screen) 28%, transparent);
+}
+@utility case-lead {
+  @apply type-lead;
+  max-width: 40ch;
+  color: var(--color-cream-deep);
+}
+@utility case-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-6);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--hairline);
+  & .fact-value {
+    @apply type-label-l uppercase;
+    font-family: var(--font-poster);
+    font-weight: 700;
+  }
+}
+@utility case-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+/* Chapters: the episode list, then each chapter in turn. */
+@utility case-body {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  column-gap: var(--gutter);
+  row-gap: var(--space-8);
+  padding: var(--space-8) var(--page-margin) var(--space-9);
+  border-top: 1px solid var(--hairline);
+}
+@utility case-episodes {
+  grid-column: 1 / 6;
+  display: flex;
+  flex-direction: column;
+  align-self: start;
+  position: sticky;
+  top: calc(var(--bar-height) + var(--space-5));
+  @media (max-width: 1023px) {
+    grid-column: 1 / -1;
+    position: static;
+  }
+}
+@utility case-chapters {
+  grid-column: 7 / 13;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+  @media (max-width: 1023px) {
+    grid-column: 1 / -1;
+  }
+}
+@utility case-chapter {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  scroll-margin-top: calc(var(--bar-height) + var(--space-5));
+  & h2 {
+    @apply type-poster-m;
+  }
+  & p {
+    @apply type-body;
+    max-width: 52ch;
+    color: var(--text-secondary);
+  }
+}
+@utility case-chapter-no {
+  @apply type-label-s;
+  color: var(--text-accent);
+}
+/* The auto-advance: the underline is the 7s timer. */
+@utility case-next {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-4);
+  padding-top: var(--space-6);
+  border-top: 1px solid var(--hairline);
+}
+
 /* Projects → About: the screen's light swells to a quick white flash (the cut hides in it), then the cream wall is there. --flare and --flare-r come from the 3D rig; the bloom starts at the screen itself. */
 @utility flare {
   position: fixed;
@@ -2485,4 +2637,13 @@
     color-mix(in srgb, var(--color-flare) 30%, transparent) 72%,
     transparent 100%
   );
+}
+/* Link jump across pages: a dark veil covers the skipped pages while the cut happens underneath. It never reaches full black. */
+@utility veil {
+  position: fixed;
+  inset: 0;
+  z-index: 9;
+  pointer-events: none;
+  opacity: 0;
+  background: var(--color-black);
 }

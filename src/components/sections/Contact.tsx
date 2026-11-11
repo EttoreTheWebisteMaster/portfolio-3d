@@ -1,4 +1,5 @@
 import ContactActions from "@/components/sections/ContactActions";
+import ContactStage from "@/components/sections/ContactStage";
 
 /** The end credits: label over value, in the billing-block language of the hero. */
 const credits = [
@@ -33,6 +34,8 @@ export default function Contact() {
           <ContactActions />
         </div>
       </div>
+
+      <ContactStage />
 
       <dl data-fx="item" className="fx contact-credits">
         {credits.map(([term, value]) => (

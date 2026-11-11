@@ -75,7 +75,9 @@ Details: `02-design-system/README.md`, `components/Letterbox`, `Logo`, `SoundTog
 - Projects (sample): Pausa · Antonino · Chef AI · The Morning Ledger · This portfolio · Photo Curator · INFN · Mr Fruitman · Local Agents.
 - **To do:** mobile frames.
 
-## 03 · About — in polish (v23)
+## 03 · About — v24 (no triangle; the walk-out)
+
+> **v24 supersedes the v23 notes below** (triangle, tunnel, "leans out of the cut", cut-aligned facts). See `03-page-specs/About-scene.md`: ROB-092 walks into a cream room at the end of the Projects → About shot and stops on his mark; facts align to his feet line.
 
 **Frames:** `About` (v23) · `M-About` · `M-About-Interview` · `About-Iris` (**outdated** — redo to v23). Spec: `03-page-specs/About-scene.md`.
 

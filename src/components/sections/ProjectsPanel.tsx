@@ -2,10 +2,14 @@
 
 import { useEffect, useRef, useState } from "react";
 
+import { useRouter } from "next/navigation";
+
 import ProjectsIndex from "@/components/sections/ProjectsIndex";
 import { ButtonArrow, ButtonLabel } from "@/components/ui/Button";
 import { gsap, useGSAP } from "@/lib/gsap";
-import { PROJECTS, TRAILER_SECONDS, view } from "@/lib/projects";
+import { openCaseStudy } from "@/lib/caseStudy";
+import { journey } from "@/lib/journey";
+import { PROJECTS, slugOf, TRAILER_SECONDS, view } from "@/lib/projects";
 import { pad } from "@/lib/pages";
 
 /** Right column of Projects: what is on the screen, the way into it, and the index. */
@@ -13,6 +17,8 @@ export default function ProjectsPanel() {
   const [active, setActive] = useState(0);
   const next = (active + 1) % PROJECTS.length;
   const project = PROJECTS[active];
+  const router = useRouter();
+  const href = `/projects/${slugOf(project.title)}`;
   const timer = useRef<HTMLButtonElement>(null);
   const seconds = useRef<HTMLSpanElement>(null);
   const root = useRef<HTMLDivElement>(null);
@@ -29,6 +35,15 @@ export default function ProjectsPanel() {
     if (view.video) view.video.currentTime = 0;
     setActive(i);
   };
+
+  useEffect(() => router.prefetch(href), [router, href]);
+  // Leaving mid-dive (or for good) hands the scroll back.
+  useEffect(
+    () => () => {
+      view.held = false;
+    },
+    []
+  );
 
   // The screen is a DOM box the 3D screen is pinned to: measured, never copied, so they cannot drift apart.
   useEffect(() => {
@@ -49,7 +64,8 @@ export default function ProjectsPanel() {
   useEffect(() => {
     const tick = () => {
       const video = view.video;
-      if (!video) return;
+      // The walk-out has begun: the trailer plays on as light, but its timer and the next-project clock hold.
+      if (!video || journey.current > 1.001) return;
       const length =
         Number.isFinite(video.duration) && video.duration > 0
           ? video.duration
@@ -115,8 +131,11 @@ export default function ProjectsPanel() {
           {project.lead}
         </p>
         <div className="projects-actions">
-          {/* TODO(content): link to the case study once /projects/[slug] exists. */}
-          <button type="button" className="btn-primary">
+          <button
+            type="button"
+            className="btn-primary"
+            onClick={() => openCaseStudy(() => router.push(href))}
+          >
             <ButtonLabel>View the case study</ButtonLabel>
           </button>
           <button

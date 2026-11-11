@@ -12,6 +12,7 @@ import CrowdDust from "./CrowdDust";
 import { PROJECTOR } from "./crowdLight";
 import ProjectsCrowd from "./ProjectsCrowd";
 import ProjectsScreen from "./ProjectsScreen";
+import { daylight, walk } from "./walkPose";
 import { warm } from "./Warmup";
 
 /** Projector light: cold white, close to neutral. */
@@ -99,6 +100,7 @@ export default function ProjectsRoom({
   const floor = useRef<THREE.MeshStandardMaterial>(null);
   const top = useRef<THREE.DirectionalLight>(null);
   const fill = useRef<THREE.HemisphereLight>(null);
+  const set = useRef<THREE.Group>(null);
 
   useFrame(() => {
     const show = ease(seg(progress.current, BEAT.reveal));
@@ -112,15 +114,21 @@ export default function ProjectsRoom({
       floor.current.color.lerpColors(MASK, FLOOR, f);
     }
     // Cool ambient bounce so the room never goes black while the hero key hands over.
-    if (fill.current) fill.current.intensity = 0.2 * cinema;
+    const day = daylight();
+    if (fill.current) fill.current.intensity = 0.2 * cinema * (1 - 0.7 * day);
+    // Once the camera is in the cream room the cinema is behind it: it stops being drawn. Its lights stay (a changing light count would recompile everything).
+    if (set.current) set.current.visible = walk() < 0.82 || warm.on;
     // The warm accent: a low house light grazing the crowd's crowns against the cold screen.
-    if (top.current) top.current.intensity = 0.3 * show;
+    if (top.current) top.current.intensity = 0.3 * show * (1 - day);
   });
 
   return (
     <group ref={group} visible={false}>
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, FLOOR_Y - 0.01, -6]}>
-        <planeGeometry args={[60, 60]} />
+      <mesh
+        rotation={[-Math.PI / 2, 0, 0]}
+        position={[-7.5, FLOOR_Y - 0.01, -6]}
+      >
+        <planeGeometry args={[45, 60]} />
         <meshStandardMaterial
           ref={floor}
           color="#0d0c0b"
@@ -131,10 +139,12 @@ export default function ProjectsRoom({
       </mesh>
       <hemisphereLight ref={fill} args={["#3d7384", "#0b0907", 0]} />
       <directionalLight ref={top} position={[2, 12, 3]} color="#f29a26" />
-      <ProjectsScreen progress={progress} reduced={reduced} />
-      <Beam progress={progress} />
-      <ProjectsCrowd progress={progress} reduced={reduced} />
-      <CrowdDust />
+      <group ref={set}>
+        <ProjectsScreen progress={progress} reduced={reduced} />
+        <Beam progress={progress} />
+        <ProjectsCrowd progress={progress} reduced={reduced} />
+        <CrowdDust />
+      </group>
     </group>
   );
 }

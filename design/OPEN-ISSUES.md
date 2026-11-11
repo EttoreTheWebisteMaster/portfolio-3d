@@ -20,7 +20,8 @@ Found while assembling this package. The sources were exported as they are; noth
 
 - Bars on the case study.
 - Mobile frames for Projects, Contact and the footer strip; any tablet frames.
-- `About-Iris` (the Projects → About transition frame) needs redoing to v23.
+- `About-Iris` is obsolete: Projects → About is now the walk-out (v24). `About`, `M-About`, `M-About-Interview` need redoing without the triangle.
 - Case study not designed on the canvas.
 - Easter eggs: which survive (dancing/draggable audience, "action" stunt, Konami "director's cut", idle sleep, post-credits line).
 - Content placeholders: trailers, project years, case-study copy, the Pausa palette.
+12. **Walk-out as built (v24).** The seat/audience: ROB-092 stands in Idle at the origin; the crowd sits behind him (z < −5), so he walks along an empty row in front of them rather than through heads. The trailer is muted, so there is no trailer audio to duck. "Letterbox bars slide in" is not built: the bars here are transparent veil strips that switch to the paper theme. → Decide if the row needs foreground heads and a real bar slide.

@@ -1,6 +1,7 @@
 "use client";
 
-import { gsap, SplitText, useGSAP } from "@/lib/gsap";
+import { gsap, type SplitText, useGSAP } from "@/lib/gsap";
+import { addEntrance, RISE } from "@/lib/fx";
 import { INTRO, journey, seg } from "@/lib/journey";
 import { onEnter } from "@/lib/loading";
 import { pointer } from "@/lib/pointer";
@@ -9,7 +10,6 @@ import { pointer } from "@/lib/pointer";
 const SPAN = 0.25;
 /** Home's copy decodes over the back half of the opening shot. */
 const INTRO_SECONDS = 2;
-const CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
 type Kind = "title" | "text" | "item";
 
@@ -43,13 +43,8 @@ export default function PageMotion() {
         items.forEach((el, i) => {
           const kind = el.dataset.fx as Kind;
           const at = i * 0.12;
-          if (kind === "item") {
-            enter.fromTo(
-              el,
-              { opacity: 0, y: 28, scale: 0.97 },
-              { opacity: 1, y: 0, scale: 1, duration: 0.7, ease: "power3.out" },
-              at
-            );
+          const split = addEntrance(enter, el, at);
+          if (!split) {
             leave.to(
               el,
               {
@@ -63,26 +58,11 @@ export default function PageMotion() {
             );
             return;
           }
-          const split = SplitText.create(el, { type: "lines", mask: "lines" });
           splits.push(split);
-          const rise = kind === "title" ? 110 : 105;
-          enter.fromTo(
-            split.lines,
-            { yPercent: rise, skewY: kind === "title" ? 8 : 0, opacity: 0 },
-            {
-              yPercent: 0,
-              skewY: 0,
-              opacity: 1,
-              duration: 0.9,
-              ease: "power4.out",
-              stagger: 0.1,
-            },
-            at
-          );
           leave.to(
             split.lines,
             {
-              yPercent: -rise,
+              yPercent: -RISE,
               opacity: 0,
               skewY: kind === "title" ? -6 : 0,
               duration: 0.6,
@@ -91,25 +71,6 @@ export default function PageMotion() {
             },
             at * 0.6
           );
-          if (kind === "title")
-            split.lines.forEach((line, n) => {
-              const text = line.textContent ?? "";
-              enter.fromTo(
-                line,
-                { scrambleText: { text: "", chars: CHARS } },
-                {
-                  scrambleText: {
-                    text,
-                    chars: CHARS,
-                    speed: 0.7,
-                    revealDelay: 0.25,
-                  },
-                  duration: 0.9,
-                  ease: "none",
-                },
-                at + n * 0.1
-              );
-            });
         });
 
         // One scrubbed timeline per page: 0→1 arriving, 1→2 leaving.
@@ -176,6 +137,12 @@ export default function PageMotion() {
         rigs.forEach((rig, i) => {
           // Pin the page to the viewport; the scroll only drives the journey.
           gsap.set(rig.page, { y: y - rig.page.offsetTop });
+          // Projects' programme fades out as the camera comes down to him; the trailer keeps playing behind as light.
+          if (i === 1) {
+            const gone = seg(pos, [1, 1.12]);
+            gsap.set(rig.page, { opacity: 1 - gone });
+            rig.page.inert = pos >= 1.12;
+          }
           if (!rig.tl) return;
           if (i === 0 && !started) return;
           if (rig.intro) {
@@ -199,7 +166,7 @@ export default function PageMotion() {
         gsap.set("[data-name],[data-depth]", { clearProps: "all" });
         rigs.forEach(rig => {
           rig.tl?.kill();
-          gsap.set(rig.page, { clearProps: "y" });
+          gsap.set(rig.page, { clearProps: "y,opacity" });
         });
         splits.forEach(split => split.revert());
       };

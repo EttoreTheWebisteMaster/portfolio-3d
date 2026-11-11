@@ -23,7 +23,7 @@ export default function Hero() {
           anywhere.
         </p>
         <div data-fx="item" className="fx hero-actions">
-          <Button href="#projects" arrow>
+          <Button href="/projects" arrow>
             See the projects
           </Button>
         </div>

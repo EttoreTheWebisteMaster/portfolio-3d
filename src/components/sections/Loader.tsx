@@ -46,18 +46,27 @@ export default function Loader() {
   const leader = useRef<HTMLDivElement>(null);
   const exit = useRef<() => void>(() => {});
   const startedAt = useRef(0);
-  const [phase, setPhase] = useState<"on" | "out" | "gone">("on");
+  // Coming back from a case study the visitor has already entered: no loading page, the page is theirs at once.
+  const [skip] = useState(() => {
+    console.log("INERT init entered", getLoading().entered);
+    return getLoading().entered;
+  });
+  const [phase, setPhase] = useState<"on" | "out" | "gone">(
+    skip ? "gone" : "on"
+  );
 
   // Start the download, and keep the page out of reach until the visitor is in.
   useEffect(() => {
+    if (skip) return;
     void fetchModel();
     document.documentElement.dataset.loading = "";
     document.querySelector("main")?.setAttribute("inert", "");
     return release;
-  }, []);
+  }, [skip]);
 
   // The countdown starts as soon as the numeral's font is in (or after 0.4s at most). It is a CSS animation: nothing here drives it.
   useEffect(() => {
+    if (skip) return;
     let live = true;
     const start = () => {
       const el = root.current;
@@ -72,10 +81,11 @@ export default function Loader() {
       live = false;
       window.clearTimeout(wait);
     };
-  }, []);
+  }, [skip]);
 
   // The progress line follows the real load; once the countdown has landed and the scene is ready, the bars close in.
   useEffect(() => {
+    if (skip) return;
     let loaded = 0;
     let closing = 0;
     let held = -1;
@@ -127,7 +137,7 @@ export default function Loader() {
       gsap.ticker.remove(tick);
       bars.forEach(bar => bar.style.removeProperty("transform"));
     };
-  }, []);
+  }, [skip]);
 
   // Everything is loaded and the bars are in: the ticker cuts straight to the hero.
   const leave = () => {

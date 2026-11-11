@@ -7,6 +7,7 @@ const variants = {
   primary: "btn-primary",
   secondary: "btn-secondary",
   key: "btn-key",
+  timer: "btn-timer",
 } as const;
 
 type Props = Readonly<

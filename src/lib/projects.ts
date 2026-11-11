@@ -94,3 +94,13 @@ export const view = {
   frame: { x: 64, y: 144, w: 644 },
   screen: { x: 0, y: 0, z: 0, w: 1, h: 1 },
 };
+
+/** URL part of a project: "The Morning Ledger" → "the-morning-ledger". */
+export const slugOf = (title: string) =>
+  title
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
+
+export const findProject = (slug: string) =>
+  PROJECTS.find(project => slugOf(project.title) === slug);

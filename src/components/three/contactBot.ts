@@ -1,3 +1,4 @@
+import { radialDisc } from "./aboutRoom";
 import * as THREE from "three";
 import type { GLTF } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { clone } from "three/examples/jsm/utils/SkeletonUtils.js";
@@ -66,18 +67,11 @@ let blobMap: THREE.CanvasTexture | null = null;
 /** A soft black disc that fades to nothing at its edge. */
 function softDisc() {
   if (blobMap) return blobMap;
-  const canvas = document.createElement("canvas");
-  canvas.width = canvas.height = 64;
-  const ctx = canvas.getContext("2d");
-  if (ctx) {
-    const g = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
-    g.addColorStop(0, "rgba(0,0,0,1)");
-    g.addColorStop(0.45, "rgba(0,0,0,0.6)");
-    g.addColorStop(1, "rgba(0,0,0,0)");
-    ctx.fillStyle = g;
-    ctx.fillRect(0, 0, 64, 64);
-  }
-  blobMap = new THREE.CanvasTexture(canvas);
+  blobMap = radialDisc([
+    [0, "rgba(0,0,0,1)"],
+    [0.45, "rgba(0,0,0,0.6)"],
+    [1, "rgba(0,0,0,0)"],
+  ]);
   return blobMap;
 }
 const blobGeometry = new THREE.PlaneGeometry(1, 1);
