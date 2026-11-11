@@ -6,7 +6,7 @@ import { onEnter } from "@/lib/loading";
 import { pointer } from "@/lib/pointer";
 
 /** How much of the journey (in pages) a page takes to arrive and to leave. */
-const SPAN = 0.3;
+const SPAN = 0.25;
 /** Home's copy decodes over the back half of the opening shot. */
 const INTRO_SECONDS = 2;
 const CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -186,7 +186,8 @@ export default function PageMotion() {
           const time =
             pos < i ? seg(pos, [i - SPAN, i]) : 1 + seg(pos, [i, i + SPAN]);
           rig.tl.time(time);
-          rig.page.style.pointerEvents = Math.abs(pos - i) < 0.5 ? "" : "none";
+          // Inert, not just pointer-events none: a panel that opts back into pointer events must not catch clicks meant for the page in front.
+          rig.page.inert = Math.abs(pos - i) >= 0.5;
         });
       };
       gsap.ticker.add(tick);

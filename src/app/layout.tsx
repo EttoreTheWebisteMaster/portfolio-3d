@@ -6,6 +6,7 @@ import {
   Instrument_Sans,
   Tac_One,
 } from "next/font/google";
+import ButtonFx from "@/components/ui/ButtonFx";
 import { MODEL_URL } from "@/lib/assets";
 
 import "./globals.css";
@@ -53,7 +54,10 @@ export default function RootLayout({
       lang="en"
       className={`${marquee.variable} ${poster.variable} ${reading.variable} ${pencil.variable}`}
     >
-      <body>{children}</body>
+      <body>
+        {children}
+        <ButtonFx />
+      </body>
     </html>
   );
 }

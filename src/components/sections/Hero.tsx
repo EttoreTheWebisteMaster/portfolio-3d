@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Button from "@/components/ui/Button";
 
 const stack = [
   "React · Next.js · Three.js · GSAP · TypeScript",
@@ -23,9 +23,9 @@ export default function Hero() {
           anywhere.
         </p>
         <div data-fx="item" className="fx hero-actions">
-          <Link href="#projects" className="btn-primary">
+          <Button href="#projects" arrow>
             See the projects
-          </Link>
+          </Button>
         </div>
       </div>
 

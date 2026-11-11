@@ -1,6 +1,6 @@
 /** Tiny synthesized sound effects (WebAudio): no files, no dependency. Silent until the visitor's first gesture. */
 const KEY = "sound-muted";
-type Kind = "pop" | "thud" | "ooh";
+type Kind = "pop" | "thud" | "clang" | "ooh";
 
 let ctx: AudioContext | null = null;
 let armed = false;
@@ -77,6 +77,9 @@ export function play(kind: Kind) {
   else if (kind === "thud") {
     tone("sine", 140, 40, 0.22, 0.25);
     tone("triangle", 90, 35, 0.12, 0.12);
+  } else if (kind === "clang") {
+    tone("square", 1700, 650, 0.14, 0.05);
+    tone("triangle", 520, 240, 0.3, 0.07);
   } else {
     tone("sine", 330, 420, 0.5, 0.04);
     tone("sine", 495, 630, 0.5, 0.02);

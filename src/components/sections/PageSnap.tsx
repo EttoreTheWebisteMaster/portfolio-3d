@@ -2,7 +2,7 @@
 
 import { gsap, Observer, useGSAP } from "@/lib/gsap";
 import { getLoading } from "@/lib/loading";
-import { cruise, setJourney, TRANSITION_SECONDS } from "@/lib/journey";
+import { cruise, setJourney, travelSeconds } from "@/lib/journey";
 import { view } from "@/lib/projects";
 
 const KEYS_NEXT = new Set(["ArrowDown", "PageDown", " "]);
@@ -39,12 +39,12 @@ export default function PageSnap() {
     const go = (to: number) => {
       const next = gsap.utils.clamp(0, pages.length - 1, to);
       if (busy || view.held || next === index || !getLoading().entered) return;
-      const hops = Math.abs(next - index);
+      const seconds = travelSeconds(index, next);
       busy = true;
       index = next;
       gsap.to(window, {
         scrollTo: { y: top(next), autoKill: false },
-        duration: reduced.matches ? 0 : TRANSITION_SECONDS * hops,
+        duration: reduced.matches ? 0 : seconds,
         ease: cruise,
         onComplete: () => {
           // Swallow trackpad momentum before listening again.
@@ -100,7 +100,7 @@ export default function PageSnap() {
       type: "wheel,touch",
       wheelSpeed: -1,
       tolerance: 12,
-      ignore: ".projects-index",
+      ignore: ".projects-index, .about-ask",
       preventDefault: true,
       onUp: () => go(index + 1),
       onDown: () => go(index - 1),

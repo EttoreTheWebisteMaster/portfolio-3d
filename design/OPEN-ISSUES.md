@@ -13,6 +13,7 @@ Found while assembling this package. The sources were exported as they are; noth
 7. **Brief status table is out of date.** It lists Contact and Footer as "not built"; both have desktop frames now.
 8. **Canvas tokens copy is stale.** `04-canvas/source/ds/ettore-serra/tokens.json` still has film-word samples (NOW CASTING, NOW SHOWING, WATCH THE CASE, 98% match), the old `marquee-wordmark`, and a pill sound button with orange glow. → Use `02-design-system/tokens.json`.
 9. **Component previews behind their READMEs.** `Annotation/preview.html` still shows "click to make the robot talk!" and "every robot that wasn't cast"; `ProgrammeList` preview shows the retired Now Showing version (its README says so). Viewfinder, FilterTabs and Screenplay are retired; DanceTooltip is on hold.
+11. **Contact as built (Ettore, 11 Nov 2026).** The falling robots are **yellow** (the hero's paint), not grey; the footer strip is a compact row pinned above the bottom bar inside the Contact page (no 272px strip, no Back to top: the bar's cue does it); the cut from About is a quick dip to black, not a 2-frame flash. → Follow the build; update the frames.
 10. **`orange` token usage.** Canvas copy says the sound button uses orange; the current system says the sound toggle is the yellow waveform. → Yellow waveform.
 
 ## Still undecided

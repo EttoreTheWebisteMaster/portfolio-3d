@@ -9,6 +9,7 @@ import {
   BEAT,
   CAM_END,
   ease,
+  journey,
   type Progress,
   SCREEN_DIST,
   SCREEN_FOV,
@@ -17,6 +18,7 @@ import {
 
 import { onEnter } from "@/lib/loading";
 import { TRAILER_SRC, view } from "@/lib/projects";
+import { isMuted, subscribeMuted } from "@/lib/sound";
 
 import { dustTexture } from "./HeroLight";
 import { warm } from "./Warmup";
@@ -38,6 +40,15 @@ function trailer() {
   const tex = new THREE.VideoTexture(video);
   tex.colorSpace = THREE.SRGBColorSpace;
   return { video, tex };
+}
+
+/** The trailer's sound follows the page's mute switch. Returns the unsubscribe. */
+function followMute(video: HTMLVideoElement) {
+  const sync = () => {
+    video.muted = isMuted();
+  };
+  sync();
+  return subscribeMuted(sync);
 }
 
 /** Corner radius as a share of the screen's height: soft, Apple-display proportions. */
@@ -110,6 +121,7 @@ export default function ProjectsScreen({
   // Strict Mode runs this twice on the same memoised video, so cleanup only lets go of it; it never unloads it.
   useEffect(() => {
     view.video = video;
+    const unsub = followMute(video);
     const stop = onEnter(() => {
       video.preload = "auto";
       video.load();
@@ -119,6 +131,7 @@ export default function ProjectsScreen({
     video.addEventListener("loadeddata", upload, { once: true });
     return () => {
       stop();
+      unsub();
       video.removeEventListener("loadeddata", upload);
       video.pause();
       view.video = null;
@@ -136,8 +149,15 @@ export default function ProjectsScreen({
     const open = ease(seg(progress.current, BEAT.picture));
     // The trailer rolls once the picture is opening, and rewinds when we leave.
     if (video) {
-      if (open > 0.05) {
-        if (video.paused && !video.ended) void video.play().catch(() => {});
+      // Past Projects (About, Contact) the picture is gone, so the trailer stops and rewinds with it.
+      const here = journey.current < 1.5;
+      if (open > 0.05 && here) {
+        if (video.paused && !video.ended)
+          void video.play().catch(() => {
+            // Sound needs a prior gesture: fall back to a silent start rather than no picture.
+            video.muted = true;
+            void video.play().catch(() => {});
+          });
       } else if (!video.paused || video.currentTime > 0) {
         video.pause();
         video.currentTime = 0;

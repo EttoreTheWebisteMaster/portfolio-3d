@@ -74,7 +74,7 @@ export const PROJECTS: readonly Project[] = [
 ];
 
 /** Trailer file. Every project plays the same test clip until the real trailers exist. */
-export const TRAILER_SRC = "/video/test-1280.mp4";
+export const TRAILER_SRC = "/video/pausa.mp4";
 
 /** Fallback length in seconds until the clip's metadata has loaded. */
 export const TRAILER_SECONDS = 10;
