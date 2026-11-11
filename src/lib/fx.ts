@@ -24,7 +24,12 @@ export function addEntrance(
     );
     return null;
   }
-  const split = SplitText.create(el, { type: "lines", mask: "lines" });
+  const split = SplitText.create(el, {
+    type: "lines",
+    mask: "lines",
+    // No aria-label on the block: a label on a plain paragraph is invalid, and the lines already read as the text.
+    aria: "none",
+  });
   enter.fromTo(
     split.lines,
     { yPercent: RISE, skewY: kind === "title" ? 8 : 0, opacity: 0 },

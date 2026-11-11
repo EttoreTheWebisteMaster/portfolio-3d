@@ -141,7 +141,7 @@ export default function PageMotion() {
           if (i === 1) {
             const gone = seg(pos, [1, 1.12]);
             gsap.set(rig.page, { opacity: 1 - gone });
-            rig.page.inert = pos >= 1.12;
+            rig.page.inert = pos < 0.9 || pos >= 1.12;
           }
           if (!rig.tl) return;
           if (i === 0 && !started) return;
@@ -179,6 +179,8 @@ export default function PageMotion() {
         const pos = journey.current;
         const y = window.scrollY;
         pages.forEach((page, i) => {
+          // Faded-out pages must not be reachable with Tab.
+          page.inert = Math.abs(pos - i) >= 0.5;
           gsap.set(page, {
             y: y - page.offsetTop,
             opacity: 1 - Math.min(Math.abs(pos - i) * 2, 1),
@@ -189,6 +191,9 @@ export default function PageMotion() {
       return () => {
         gsap.ticker.remove(tick);
         gsap.set(pages, { clearProps: "y,opacity" });
+        pages.forEach(page => {
+          page.inert = false;
+        });
       };
     });
   });

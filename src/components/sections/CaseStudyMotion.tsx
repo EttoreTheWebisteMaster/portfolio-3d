@@ -92,6 +92,8 @@ export default function CaseStudyMotion() {
     mm.add("(prefers-reduced-motion: reduce)", () => {
       setFlare(0);
       gsap.set(items, { visibility: "visible" });
+      // No autoplaying loop for visitors who asked for less motion: the poster stays, "Play trailer" starts it.
+      document.querySelector<HTMLVideoElement>("[data-pull] video")?.pause();
     });
 
     return () => {

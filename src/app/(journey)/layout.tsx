@@ -16,6 +16,8 @@ export default function JourneyLayout({
     <>
       <Loader />
       <main className="relative">
+        {/* Outside the pages: they go inert when off-screen, and the page always needs its one h1. */}
+        <h1 className="sr-only">Ettore Serra, designer and engineer</h1>
         <Stage />
         <Navbar />
         <Hero />

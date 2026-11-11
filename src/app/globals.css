@@ -150,7 +150,7 @@
     --text-tertiary: var(--color-fog);
     --text-accent: var(--color-yellow);
     --text-loud: var(--color-red-lit);
-    --text-note: var(--color-orange);
+    --text-annotation: var(--color-orange);
     --action-fill: var(--color-yellow);
     --action-text: var(--color-ink);
     --hairline: color-mix(in srgb, var(--color-cream) 14%, transparent);
@@ -171,7 +171,7 @@
     --text-tertiary: var(--color-dust);
     --text-accent: var(--color-red);
     --text-loud: var(--color-red);
-    --text-note: var(--color-red);
+    --text-annotation: var(--color-red);
     --action-fill: var(--color-ink);
     --action-text: var(--color-cream);
     --hairline: color-mix(in srgb, var(--color-ink) 18%, transparent);
@@ -470,6 +470,8 @@
     --veil: 0.7;
     --color-letterbox: var(--color-paper-veil);
     --color-cream: var(--color-ink);
+    /* Semantic tokens resolve on :root, so the bar's buttons need their own ink. */
+    --text-primary: var(--color-ink);
     --color-nav: var(--color-dust);
     --color-nav-dim: var(--color-dust);
     --color-fog: var(--color-dust);
@@ -530,6 +532,9 @@
 }
 @utility bar-cue {
   @apply type-label-s uppercase;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
   color: var(--color-yellow);
   text-decoration: none;
 }
@@ -676,7 +681,8 @@
 @utility logo {
   @apply type-logo uppercase;
   display: inline-flex;
-  align-items: baseline;
+  align-items: center;
+  min-height: 44px;
   gap: 0.5em;
   text-decoration: none;
   & > :first-child {
@@ -950,6 +956,14 @@
   font-weight: 700;
   font-size: 26px;
   letter-spacing: 0.08em;
+  @media (max-width: 639px), (max-height: 520px) {
+    height: 64px;
+    padding: 0 var(--space-5);
+    font-size: 22px;
+  }
+  @media (max-height: 520px) {
+    height: 52px;
+  }
 }
 
 /* Marquee title — Tac One, lit by the scene. Variants: marquee-gold | marquee-yellow | marquee-red · marquee-dim for the letter-by-letter reveal */
@@ -1009,7 +1023,7 @@
 }
 @utility robot-gibberish {
   @apply type-gibberish;
-  color: var(--text-note);
+  color: var(--text-annotation);
 }
 @utility robot-subtitle {
   @apply type-subtitle;
@@ -1034,7 +1048,7 @@
   display: inline-flex;
   align-items: flex-end;
   gap: 8px;
-  color: var(--text-note);
+  color: var(--text-annotation);
   & svg {
     width: 72px;
     height: 48px;
@@ -1143,13 +1157,28 @@
 /* Episode row — case-study chapter. Add aria-current to the active one */
 @utility episode {
   display: grid;
-  grid-template-columns: 56px 200px 1fr;
+  grid-template-columns: 56px 200px minmax(0, 1fr);
   gap: var(--space-5);
   align-items: center;
   padding: var(--space-5);
   text-decoration: none;
   color: inherit;
   transition: background 160ms;
+  /* The list's own width decides: the still goes first, then the numeral shrinks, so the text never gets a sliver. */
+  @container (width < 560px) {
+    grid-template-columns: 56px minmax(0, 1fr);
+    & .episode-still {
+      display: none;
+    }
+  }
+  @container (width < 400px) {
+    grid-template-columns: 40px minmax(0, 1fr);
+    gap: var(--space-3);
+    padding: var(--space-4) var(--space-2);
+    & .episode-no {
+      font-size: 32px;
+    }
+  }
   &:hover {
     background: color-mix(in srgb, var(--bg-raised) 60%, transparent);
   }
@@ -1541,6 +1570,9 @@
 }
 @utility menu-item {
   @apply type-label uppercase;
+  display: flex;
+  align-items: center;
+  min-height: 44px;
   padding: var(--space-2) var(--space-3);
   color: var(--text-secondary);
   &[data-focus] {
@@ -1655,6 +1687,8 @@
   position: relative;
   z-index: 2;
   min-height: 100dvh;
+  /* The soft shade pools reach past the margins; they must not make the document scroll sideways. */
+  overflow-x: clip;
 }
 /* The name lifts away over the first third of the journey. */
 @utility hero-out {
@@ -1703,9 +1737,14 @@
   word-spacing: 0.12em;
   text-align: center;
   white-space: nowrap;
+  /* Landscape phone: no room above the copy; the logo and the page heading carry the name. */
+  @media (max-height: 520px) {
+    display: none;
+  }
+  /* Phone: the name is also capped by the height, so it never reaches the copy that sits at the foot of the page. */
   @media (max-width: 639px) {
-    top: calc(var(--bar-height) + var(--space-7));
-    font-size: 28vw;
+    top: calc(var(--bar-height) + var(--space-4));
+    font-size: min(28vw, 11dvh);
     white-space: normal;
   }
 }
@@ -1762,6 +1801,14 @@
   gap: var(--space-5);
   max-width: 468px;
   isolation: isolate;
+  @media (max-width: 639px) {
+    bottom: calc(var(--bar-height) + var(--space-5));
+  }
+  /* Landscape phone: tight stack that clears the top bar. */
+  @media (max-height: 520px) {
+    bottom: calc(var(--bar-height) + var(--space-3));
+    gap: var(--space-3);
+  }
   /* A soft dark pool under the copy: the lettering keeps 4.5:1 even where the robot's bright body passes behind it. */
   &::before {
     content: "";
@@ -1784,11 +1831,17 @@
   font-family: var(--font-poster);
   font-weight: 800;
   color: var(--color-cream);
+  @media (max-height: 520px) {
+    font-size: 28px;
+  }
 }
 @utility hero-body {
   @apply type-body;
   max-width: 40ch;
   color: var(--color-cream-deep);
+  @media (max-height: 520px) {
+    font-size: 16px;
+  }
 }
 @utility hero-actions {
   display: flex;
@@ -1838,13 +1891,22 @@
   padding: calc(var(--bar-height) + var(--space-8)) var(--page-margin)
     calc(var(--bar-height) + var(--space-5));
   pointer-events: none;
+  /* Stacked: the screen and the full details must both fit, so the room above the screen is tighter. */
+  @media (max-width: 1023px) and (max-aspect-ratio: 1/1) {
+    padding-top: calc(var(--bar-height) + var(--space-4));
+    padding-bottom: calc(var(--bar-height) + var(--space-4));
+  }
+  @media (max-height: 520px) and (min-aspect-ratio: 1/1) {
+    padding-top: calc(var(--bar-height) + var(--space-2));
+    padding-bottom: calc(var(--bar-height) + var(--space-2));
+  }
 }
 /* The empty box the 3D screen is pinned to. Measured by the panel; 16:9. */
 @utility projects-stage {
   grid-column: 1 / 8;
   grid-row: 1;
   aspect-ratio: 16 / 9;
-  @media (max-width: 1023px) {
+  @media (max-width: 1023px) and (max-aspect-ratio: 1/1) {
     grid-column: 1 / -1;
   }
 }
@@ -1865,7 +1927,13 @@
       display: none;
     }
   }
-  @media (max-width: 1023px) {
+  /* Side by side on a short screen: the title and the keys fill the column. */
+  @container (height < 300px) {
+    & .projects-lead {
+      display: none;
+    }
+  }
+  @media (max-width: 1023px) and (max-aspect-ratio: 1/1) {
     grid-column: 1 / -1;
     grid-row: 2;
     align-self: end;
@@ -1939,6 +2007,10 @@
   -webkit-box-orient: vertical;
   overflow: hidden;
   color: var(--color-cream-deep);
+  /* Small phones: the screen and the keys come first. */
+  @media (max-width: 1023px) and (max-aspect-ratio: 1/1) and (max-height: 620px) {
+    display: none;
+  }
 }
 /* Two equal columns that never change width: the next title is cut to fit, never the button grown. */
 @utility projects-actions {
@@ -2183,14 +2255,19 @@
     calc(100dvh - var(--about-feet, 86vh));
   pointer-events: none;
   /* Phone: he stands on top, the headline and the ask line run under him. */
-  @media (max-width: 767px) {
+  @media (max-aspect-ratio: 1/1) {
     padding: calc(var(--about-feet, 40vh) + var(--space-5)) var(--page-margin)
       calc(var(--bar-height) + var(--space-4));
+  }
+  /* Landscape phone: the column takes the whole height between the bars. */
+  @media (max-height: 520px) and (min-aspect-ratio: 1/1) {
+    padding: calc(var(--bar-height) + var(--space-2)) var(--page-margin)
+      calc(var(--bar-height) + var(--space-2));
   }
 }
 @utility about-copy {
   grid-column: 8 / 13;
-  @media (max-width: 767px) {
+  @media (max-aspect-ratio: 1/1) {
     grid-column: 1 / -1;
   }
   display: flex;
@@ -2199,16 +2276,23 @@
   min-height: 0;
   color: var(--text-primary);
   pointer-events: auto;
+  @media (max-height: 700px) {
+    gap: var(--space-3);
+  }
 }
 @utility about-headline {
   font-family: var(--font-poster);
   font-weight: 800;
-  font-size: 84px;
+  font-size: min(84px, 10.5dvh);
   line-height: 0.84;
   text-transform: uppercase;
   color: var(--text-primary);
-  @media (max-width: 767px) {
-    font-size: 52px;
+  /* Portrait: sized by the width and the height, so the lines, the field and the picks always fit under him. */
+  @media (max-aspect-ratio: 1/1) {
+    font-size: min(14vw, 7.4dvh);
+  }
+  @media (max-height: 520px) and (min-aspect-ratio: 1/1) {
+    font-size: 8dvh;
   }
   /* The highlight is a pen stroke: it wipes across once the headline has landed. */
   & mark {
@@ -2259,7 +2343,7 @@
     color: var(--text-secondary);
   }
   &[data-old] {
-    color: color-mix(in srgb, var(--text-primary) 45%, transparent);
+    color: color-mix(in srgb, var(--text-primary) 62%, transparent);
   }
 }
 @utility chat-from {
@@ -2280,6 +2364,9 @@
 }
 @utility ask-input {
   @apply type-lead;
+  @media (max-height: 520px) {
+    font-size: var(--text-body);
+  }
   flex: 1;
   min-width: 0;
   height: 48px;
@@ -2299,11 +2386,23 @@
 @utility ask-picks {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-2) var(--space-5);
+  gap: 0 var(--space-5);
+  /* Short screens keep fewer suggestions so the answer has room. */
+  @media (max-height: 700px) and (max-aspect-ratio: 1/1) {
+    & li:nth-child(n + 2) {
+      display: none;
+    }
+  }
+  @media (max-height: 600px) and (max-aspect-ratio: 1/1) {
+    display: none;
+  }
+  @media (max-height: 520px) and (min-aspect-ratio: 1/1) {
+    display: none;
+  }
 }
 @utility ask-pick {
   @apply type-label uppercase;
-  padding: 0;
+  padding: var(--space-2) 0;
   border: 0;
   background: transparent;
   color: var(--text-primary);
@@ -2367,6 +2466,9 @@
   gap: var(--space-4);
   padding-top: var(--space-4);
   border-top: 1px solid var(--hairline);
+  @media (max-height: 520px) {
+    display: none;
+  }
   & dt {
     @apply type-label-s uppercase;
     color: var(--text-secondary);
@@ -2385,6 +2487,10 @@
   display: flex;
   flex-direction: column;
   color: var(--text-secondary);
+  /* Portrait: the facts take the foot of the page. */
+  @media (max-aspect-ratio: 1/1) {
+    display: none;
+  }
   & strong {
     @apply type-label-l;
     color: var(--text-primary);
@@ -2417,11 +2523,14 @@
   & > * {
     pointer-events: auto;
   }
+  @media (max-height: 520px) {
+    gap: var(--space-3);
+  }
 }
 @utility contact-headline {
   font-family: var(--font-poster);
   font-weight: 800;
-  font-size: clamp(56px, 9dvh, 96px);
+  font-size: clamp(36px, 9dvh, 96px);
   line-height: 0.86;
   text-align: center;
   text-transform: uppercase;
@@ -2439,6 +2548,9 @@
   max-width: 34rem;
   text-align: center;
   color: var(--color-cream-deep);
+  @media (max-height: 520px) {
+    font-size: var(--text-body);
+  }
 }
 @utility contact-actions {
   display: flex;
@@ -2448,6 +2560,8 @@
 }
 @utility contact-buttons {
   display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
   gap: var(--space-4);
   /* The copied key keeps its hot glow while the line below confirms. */
   & [data-copied="true"] {
@@ -2469,6 +2583,10 @@
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: var(--space-5);
   text-align: center;
+  /* No room under the keys on a small screen: the credits would run into them. */
+  @media (max-height: 700px) {
+    display: none;
+  }
   & dt {
     @apply type-label-s uppercase;
     color: var(--text-tertiary);
@@ -2535,6 +2653,8 @@
 }
 @utility case-title {
   @apply type-poster-xl uppercase;
+  /* Phones: the longest word ("Morning") has to fit the column. */
+  font-size: min(var(--text-poster-xl), 22vw);
   color: var(--color-cream);
   text-shadow: 0 0 var(--space-7)
     color-mix(in srgb, var(--color-light-screen) 28%, transparent);
@@ -2577,6 +2697,7 @@
   display: flex;
   flex-direction: column;
   align-self: start;
+  container-type: inline-size;
   position: sticky;
   top: calc(var(--bar-height) + var(--space-5));
   @media (max-width: 1023px) {

@@ -9,8 +9,6 @@ const stack = [
 export default function Hero() {
   return (
     <section id="home" data-page className="hero page">
-      <h1 className="sr-only">Ettore Serra, designer and engineer</h1>
-
       <div className="hero-copy" data-depth="0.45">
         <h2 data-fx="title" className="fx hero-tagline">
           Designer &amp; engineer.

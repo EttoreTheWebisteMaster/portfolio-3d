@@ -96,7 +96,7 @@ export default function BottomBar() {
           {PAGES[0].label}
         </span>
       </p>
-      <Link href={PAGES[1].path} className="bar-field bar-cue" data-bar-cue>
+      <Link href={PAGES[1].path} className="bar-cue bar-field" data-bar-cue>
         {PAGES[1].label} ↓
       </Link>
       <p className="bar-progress whitespace-nowrap">
