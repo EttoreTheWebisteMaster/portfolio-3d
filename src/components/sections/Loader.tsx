@@ -47,10 +47,7 @@ export default function Loader() {
   const exit = useRef<() => void>(() => {});
   const startedAt = useRef(0);
   // Coming back from a case study the visitor has already entered: no loading page, the page is theirs at once.
-  const [skip] = useState(() => {
-    console.log("INERT init entered", getLoading().entered);
-    return getLoading().entered;
-  });
+  const [skip] = useState(() => getLoading().entered);
   const [phase, setPhase] = useState<"on" | "out" | "gone">(
     skip ? "gone" : "on"
   );
