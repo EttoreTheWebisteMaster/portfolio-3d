@@ -1,10 +1,10 @@
+import { radialDisc } from "./aboutRoom";
 import * as THREE from "three";
 import type { GLTF } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { clone } from "three/examples/jsm/utils/SkeletonUtils.js";
 
 import { play } from "@/lib/sound";
 
-import { radialDisc } from "./aboutRoom";
 import { limpStep, makeLimp, type Limp } from "./crowdLimp";
 import {
   AIM,
@@ -23,6 +23,8 @@ import { warm } from "./Warmup";
 const GRAVITY = 4;
 /** A hero drop falls in slow motion: this share of gravity and spin. */
 const SLOW = 0.45;
+/** Height of a standing robot's centre above the floor. */
+const STAND = 0.215;
 /** Share of the closing speed an impact gives back (coefficient of restitution): metal on a hard floor hops, then hops less. */
 const RESTITUTION = 0.25;
 /** Below this closing speed an impact gives nothing back, so the hops die out instead of jittering forever. */
@@ -64,7 +66,8 @@ const TAN = Math.tan(THREE.MathUtils.degToRad(14));
 let blobMap: THREE.CanvasTexture | null = null;
 /** A soft black disc that fades to nothing at its edge. */
 function softDisc() {
-  blobMap ??= radialDisc([
+  if (blobMap) return blobMap;
+  blobMap = radialDisc([
     [0, "rgba(0,0,0,1)"],
     [0.45, "rgba(0,0,0,0.6)"],
     [1, "rgba(0,0,0,0)"],
@@ -139,8 +142,6 @@ export class Bot {
   /** A twitch on the floor, 1 → 0: the robot is dead metal that still remembers a current. */
   jolt = 0;
   private euler = new THREE.Euler();
-  /** Height of the root above the floor when the feet stand on it: measured from the model, not assumed. */
-  private stand = 0.215;
 
   constructor(gltf: GLTF, scale: number, centre: THREE.Vector3) {
     const scene = clone(gltf.scene);
@@ -200,8 +201,6 @@ export class Bot {
     this.root.visible = false;
     this.root.position.copy(ORIGIN);
     this.root.updateMatrixWorld(true);
-    this.stand =
-      ORIGIN.y - new THREE.Box3().setFromObject(this.root, true).min.y;
     this.limp = makeLimp(this.root);
   }
 
@@ -269,7 +268,7 @@ export class Bot {
     this.lying = 0;
     this.limpW = 0;
     this.setOpacity(1);
-    this.pos.set(ORIGIN.x + x, this.stand, z);
+    this.pos.set(ORIGIN.x + x, STAND, z);
     this.heading = rand(0, Math.PI * 2);
     this.rises = false;
     this.tilt.identity();
@@ -328,7 +327,7 @@ export class Bot {
       this.vel.x *= keep;
       this.vel.z *= keep;
     }
-    this.pos.y = this.stand;
+    this.pos.y = STAND;
     this.vel.y = closing * give;
     this.spin.multiplyScalar(0.5);
     const first = this.bounces === 0;
@@ -457,7 +456,7 @@ export class Bot {
         this.spin.multiplyScalar(Math.exp(-SPIN_DAMP * dt));
         this.tilt.slerp(IDENTITY, 1 - Math.exp(-RIGHT * dt));
       }
-      if (this.pos.y <= this.stand && this.vel.y < 0) this.impact(sound, time);
+      if (this.pos.y <= STAND && this.vel.y < 0) this.impact(sound, time);
     } else if (this.mode === "rest") {
       this.lying += dt;
       this.jolt *= Math.exp(-5 * dt);
@@ -514,7 +513,7 @@ export class Bot {
 
   /** Places the floor shadow: wide and dark at the floor, small and faint as the body leaves it. */
   private shade() {
-    const up = Math.max(0, this.pos.y - this.stand);
+    const up = Math.max(0, this.pos.y - STAND);
     const up01 = Math.max(0, 1 - up / 0.9);
     const stand =
       this.mode === "walk" || this.mode === "chat" || this.mode === "rise";
