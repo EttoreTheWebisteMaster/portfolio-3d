@@ -90,7 +90,6 @@ export async function fetchModel() {
 
 /** The visitor is in: the opening shot and the page's entrance start now. */
 export function enter() {
-  console.log("INERT enter() was", snapshot.entered);
   if (snapshot.entered) return;
   emit({ entered: true });
   enterCallbacks.forEach(cb => cb());
