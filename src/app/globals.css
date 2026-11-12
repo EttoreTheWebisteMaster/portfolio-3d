@@ -2623,6 +2623,10 @@
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: var(--space-5);
   text-align: center;
+  /* A soft dark halo, so a robot walking behind the lines does not swallow them. */
+  text-shadow:
+    0 0 var(--space-2) color-mix(in srgb, var(--color-black) 90%, transparent),
+    0 0 var(--space-5) color-mix(in srgb, var(--color-black) 80%, transparent);
   /* No room under the keys on a small screen: the credits would run into them. */
   @media (max-height: 700px) {
     display: none;

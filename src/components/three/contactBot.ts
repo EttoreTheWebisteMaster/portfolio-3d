@@ -5,11 +5,12 @@ import { clone } from "three/examples/jsm/utils/SkeletonUtils.js";
 
 import { play } from "@/lib/sound";
 
-import { limpStep, makeLimp, type Limp } from "./crowdLimp";
+import { limpStep, makeLimp, restFeet, type Limp } from "./crowdLimp";
 import {
   AIM,
   depthAt,
   flash,
+  halfView,
   landings,
   LOOK_Y,
   ORIGIN,
@@ -45,20 +46,57 @@ const TUMBLE = 0.7;
 const PACE = 0.75;
 const TURN = 4;
 const ARRIVE = 0.05;
+/** The time in the Idle clip its pose is frozen at: the falling pose, and the standing one. */
+const STILL = 1.2;
 /** Seconds a robot that got up stays on its feet before it fades. */
 const ACTIVE = [16, 24] as const;
 /** Depth (world z) that splits the floor: robots nearer than this walk over the copy, the far ones stay behind it. A little slack keeps one crossing it from flickering between the two. */
 const FRONT_Z = -3.5;
+/** Seconds on its feet before the visitor can pick a robot up, how high the head sits above the body's centre, and the fastest a throw can leave the hand (units/s). */
+const GRAB_AFTER = 0.5;
+const HEAD = 0.2;
+const THROW_MAX = 6;
+/** How wide the floor is at a depth, for a 16:10 screen: nothing is thrown past it. */
+const WALL_ASPECT = 1.6;
 const SLACK = 0.3;
 /** How dark the soft shadow under a robot is, and how wide it is for a standing and a lying body. */
 const BLOB = 0.6;
 const FOOT = { stand: 0.36, lie: 0.55 } as const;
-/** The gestures only move the arms, head and chest: the legs stay on the idle pose, so the feet never leave the floor while a robot talks. */
+const LEG = /^(Hips|UpperLeg|LowerLeg|Leg|Foot)/;
+/** Only the arms, head and chest of a clip: the legs belong to the walking clip alone. */
 function upperBody(clip: THREE.AnimationClip) {
   const out = clip.clone();
-  out.tracks = out.tracks.filter(
-    track => !/^(Hips|UpperLeg|LowerLeg|Leg|Foot)/.test(track.name)
-  );
+  out.tracks = out.tracks.filter(track => !LEG.test(track.name));
+  return out;
+}
+const ARMS = [
+  "ShoulderL",
+  "ShoulderR",
+  "UpperArmL",
+  "UpperArmR",
+  "LowerArmL",
+  "LowerArmR",
+];
+/** A copy of a clip that also holds every arm bone it leaves alone at its place on the model. A bone no clip drives keeps whatever the limp physics last left it in, so a robot that was thrown around would stand and talk with its arms flung back. */
+function holdArms(clip: THREE.AnimationClip, scene: THREE.Object3D) {
+  const out = clip.clone();
+  for (const name of ARMS) {
+    const bone = scene.getObjectByName(name);
+    if (bone && !out.tracks.some(t => t.name === `${name}.quaternion`))
+      out.tracks.push(
+        new THREE.QuaternionKeyframeTrack(
+          `${name}.quaternion`,
+          [0],
+          bone.quaternion.toArray()
+        )
+      );
+  }
+  return out;
+}
+/** Only the hips, legs and feet of a clip. */
+function legsOnly(clip: THREE.AnimationClip) {
+  const out = clip.clone();
+  out.tracks = out.tracks.filter(track => LEG.test(track.name));
   return out;
 }
 
@@ -85,10 +123,11 @@ function softDisc() {
 }
 const blobGeometry = new THREE.PlaneGeometry(1, 1);
 const foot = new THREE.Vector3();
+const hold = new THREE.Vector3();
 
 export const rand = (a: number, b: number) => a + Math.random() * (b - a);
 
-export type Mode = "idle" | "fall" | "rest" | "rise" | "walk" | "chat";
+export type Mode = "idle" | "fall" | "rest" | "rise" | "walk" | "chat" | "held";
 
 /** A knot of robots standing in a ring, talking. */
 export type Huddle = { x: number; z: number; phase: number; members: Bot[] };
@@ -124,7 +163,18 @@ export class Bot {
   private mixer: THREE.AnimationMixer | null = null;
   private idle: THREE.AnimationAction | null = null;
   private death: THREE.AnimationAction | null = null;
+  /** The arms and chest of the walk, and of standing: the legs never come from these. */
   private walk: THREE.AnimationAction | null = null;
+  private stand: THREE.AnimationAction | null = null;
+  /** The legs: the walking clip striding, or the standing pose held still. Both move the feet too, so a foot always follows its leg. */
+  private stride: THREE.AnimationAction | null = null;
+  private pose: THREE.AnimationAction | null = null;
+  /** How much of the legs the walking clip owns (0 while falling or lying), and how much of that is striding rather than standing. */
+  private legsOn = 0;
+  private striding = 0;
+  /** Ground speed this frame (units/s): the legs stride only while it moves, not while it turns on the spot. */
+  private speed = 0;
+
   private gestures: THREE.AnimationAction[] = [];
   private cur: THREE.AnimationAction | null = null;
   /** Whether this one gets up after it lands, and how long after the Death clip ends. */
@@ -156,6 +206,16 @@ export class Bot {
   private hero = false;
   /** A twitch on the floor, 1 → 0: the robot is dead metal that still remembers a current. */
   jolt = 0;
+  /** Seconds on its feet since it got up. */
+  private stood = 0;
+  /** Thrown by the visitor: it always gets up again. */
+  private thrown = false;
+  /** In the hand: where the cursor wants the head, where the head is, and how fast it moves (what a throw takes). */
+  readonly hand = {
+    aim: new THREE.Vector3(),
+    at: new THREE.Vector3(),
+    v: new THREE.Vector3(),
+  };
   private euler = new THREE.Euler();
 
   constructor(gltf: GLTF, scale: number, centre: THREE.Vector3) {
@@ -186,11 +246,11 @@ export class Bot {
     const death = THREE.AnimationClip.findByName(gltf.animations, "Death");
     if (idle && death) {
       this.mixer = new THREE.AnimationMixer(scene);
-      this.idle = this.mixer.clipAction(idle);
+      this.idle = this.mixer.clipAction(holdArms(idle, scene));
       this.idle.play();
-      this.idle.time = 1.2;
+      this.idle.time = STILL;
       this.idle.paused = true;
-      this.death = this.mixer.clipAction(death);
+      this.death = this.mixer.clipAction(holdArms(death, scene));
       this.death.setLoop(THREE.LoopOnce, 1);
       this.death.clampWhenFinished = true;
       for (const name of GESTURES) {
@@ -198,7 +258,25 @@ export class Bot {
         if (clip) this.gestures.push(this.mixer.clipAction(upperBody(clip)));
       }
       const walk = THREE.AnimationClip.findByName(gltf.animations, "Walking");
-      if (walk) this.walk = this.mixer.clipAction(walk);
+      if (walk) {
+        this.walk = this.mixer.clipAction(upperBody(holdArms(walk, scene)));
+        this.stand = this.mixer.clipAction(upperBody(holdArms(idle, scene)));
+        this.stride = this.mixer.clipAction(legsOnly(walk));
+        // The standing pose: the idle legs, held still, with each foot where it sits in the model. The idle clip never moves the feet (the walk does), so they are pinned here, and a foot blends from stride to stance with its leg.
+        const stance = legsOnly(idle);
+        for (const name of ["FootL", "FootR"]) {
+          const bone = scene.getObjectByName(name);
+          if (bone)
+            stance.tracks.push(
+              new THREE.VectorKeyframeTrack(
+                `${name}.position`,
+                [0],
+                bone.position.toArray()
+              )
+            );
+        }
+        this.pose = this.mixer.clipAction(stance);
+      }
       this.mixer.update(0);
     }
     const body = new THREE.Group();
@@ -219,36 +297,51 @@ export class Bot {
     this.root.position.copy(ORIGIN);
     this.root.updateMatrixWorld(true);
     this.limp = makeLimp(this.root);
-    this.feet = ["Foot.L_end", "Foot.R_end"].flatMap(name => {
+    this.feet = ["FootL_end", "FootR_end"].flatMap(name => {
       const bone = scene.getObjectByName(name);
       return bone ? [bone] : [];
     });
     this.calibrate();
   }
 
-  /** Where the lowest ankle sits when each clip stands on the floor: a flat idle and a walking stride put it at different heights, so each gets its own. */
+  /** Where the lowest ankle sits on the standing pose and over the whole stride: the heights every frame is pinned to the floor with. */
   private calibrate() {
-    const { idle, walk, mixer } = this;
-    if (!idle || !walk || !mixer || this.feet.length === 0) {
+    const { stride, pose, mixer } = this;
+    // Each clip remembers the pose of the bones it moves the first time it plays, and blends back to it when it fades. The arm clips must meet the model in its own pose: left to their first real play, a robot that has been thrown around would teach them its flung arms.
+    if (mixer)
+      for (const action of [
+        this.walk,
+        this.stand,
+        this.death,
+        ...this.gestures,
+      ]) {
+        action?.reset().play();
+        mixer.update(0);
+      }
+    mixer?.stopAllAction();
+    if (!stride || !pose || !mixer || this.feet.length === 0) {
       this.sole = this.lowestFoot();
       this.soleWalk = this.sole;
       return;
     }
-    const measure = (action: THREE.AnimationAction, samples: number) => {
+    const measure = (action: THREE.AnimationAction, at: number[]) => {
       mixer.stopAllAction();
       action.reset().play();
       action.paused = true;
-      const length = action.getClip().duration;
       let low = Infinity;
-      for (let i = 0; i < samples; i++) {
-        action.time = (length * i) / samples;
+      for (const time of at) {
+        action.time = time;
         mixer.update(0);
         low = Math.min(low, this.lowestFoot());
       }
       return low;
     };
-    this.sole = measure(idle, 1);
-    this.soleWalk = measure(walk, 16);
+    const length = stride.getClip().duration;
+    this.sole = measure(pose, [STILL]);
+    this.soleWalk = measure(
+      stride,
+      Array.from({ length: 16 }, (_, i) => (length * i) / 16)
+    );
     this.reset();
   }
 
@@ -267,9 +360,7 @@ export class Bot {
   private ground(dt: number) {
     if (this.feet.length === 0) return;
     // Standing flat and striding sit differently on the floor: follow the walk's share of the blend.
-    const striding = this.walk?.getEffectiveWeight() ?? 0;
-    const sole =
-      this.sole + (this.soleWalk - this.sole) * Math.min(striding, 1);
+    const sole = this.sole + (this.soleWalk - this.sole) * this.striding;
     const target = sole - this.lowestFoot();
     this.lift += (target - this.lift) * (1 - Math.exp(-30 * dt));
   }
@@ -280,10 +371,12 @@ export class Bot {
     if (this.idle) {
       this.idle.timeScale = 1;
       this.idle.play();
-      this.idle.time = 1.2;
+      this.idle.time = STILL;
       this.idle.paused = true;
     }
     this.cur = null;
+    // The walk and the fall move the feet and the idle never does: back to where they sit on the model.
+    if (this.limp) restFeet(this.limp);
     this.mixer?.update(0);
     this.dying = 0;
   }
@@ -316,6 +409,7 @@ export class Bot {
     this.bounces = 0;
     this.lying = 0;
     this.rises = false;
+    this.thrown = false;
     this.goal = null;
     this.group = null;
     this.reset();
@@ -405,7 +499,7 @@ export class Bot {
     if (first) {
       this.limpW = 0.5;
       this.startDeath();
-      this.rises = Math.random() < 0.5;
+      this.rises = this.thrown || Math.random() < 0.5;
       this.riseAt = rand(1, 2.5);
     }
     this.land(sound, time, first ? 1 : 0.3);
@@ -439,16 +533,82 @@ export class Bot {
     this.cur = death;
   }
 
+  /** Left alone in a huddle: back on its feet, wandering. */
+  disband() {
+    this.group = null;
+    this.goal = null;
+    this.pause = 0;
+    if (this.mode === "chat") this.mode = "walk";
+    this.to(this.walk);
+  }
+
   /** Walk to a spot on the floor (relative to the set). */
   goTo(x: number, z: number) {
     this.goal ??= new THREE.Vector2();
     this.goal.set(ORIGIN.x + x, z);
+    // A new walk starts the arms and the legs from the same step, from the standing pose, so the two never fall out of phase.
+    if (this.striding < 0.05 && this.stride) this.stride.time = 0;
     this.to(this.walk);
   }
 
   /** On its feet, free to be given somewhere to go. */
   get ready() {
     return this.mode === "walk" && !this.goal && !this.group && this.pause <= 0;
+  }
+
+  /** On the near half of the floor, on its feet for half a second, and not fading: the ones the visitor can pick up. */
+  get grabbable() {
+    return (
+      (this.mode === "walk" || this.mode === "chat") &&
+      this.front &&
+      this.life > 0 &&
+      this.stood >= GRAB_AFTER
+    );
+  }
+
+  /** Where the head is, for aiming the hand. */
+  headAt(out: THREE.Vector3) {
+    return out.copy(this.pos).addScaledVector(UP, HEAD);
+  }
+
+  /** Taken by the head: it goes limp and hangs from the hand. */
+  pickUp() {
+    this.mode = "held";
+    this.goal = null;
+    this.group = null;
+    for (const limb of this.limp ?? []) limb.primed = false;
+    this.reset();
+    this.setOpacity(1);
+    this.headAt(this.hand.at);
+    this.hand.aim.copy(this.hand.at);
+    this.hand.v.set(0, 0, 0);
+    play("pop");
+  }
+
+  /** Let go: it leaves the hand at the hand's speed, falls, lands, and gets up again. */
+  letGo() {
+    if (this.mode !== "held") return;
+    this.vel.copy(this.hand.v).clampLength(0, THROW_MAX);
+    this.spin.set(rand(-0.3, 0.3), 0, rand(-0.3, 0.3));
+    this.mode = "fall";
+    this.bounces = 0;
+    this.hero = false;
+    this.thrown = true;
+  }
+
+  /** Keeps a thrown or sliding body on the floor the camera sees. */
+  private walls() {
+    const z = THREE.MathUtils.clamp(this.pos.z, -9, 1.5);
+    const half = halfView(depthAt(z), WALL_ASPECT) * 0.9;
+    const x = THREE.MathUtils.clamp(
+      this.pos.x,
+      ORIGIN.x - half,
+      ORIGIN.x + half
+    );
+    if (x !== this.pos.x) this.vel.x *= -0.3;
+    if (z !== this.pos.z) this.vel.z *= -0.3;
+    this.pos.x = x;
+    this.pos.z = z;
   }
 
   /** Walking or chatting and not yet fading: the ones a huddle can count on. */
@@ -460,6 +620,7 @@ export class Bot {
     this.gait += (1 - this.gait) * (1 - Math.exp(-3 * dt));
     const goal = this.goal;
     if (!goal) {
+      this.speed = 0;
       this.pause -= dt;
       return;
     }
@@ -468,7 +629,7 @@ export class Bot {
     const dist = Math.hypot(dx, dz);
     if (dist < ARRIVE) {
       this.goal = null;
-      this.to(this.idle);
+      this.to(this.stand);
       if (this.group) {
         this.mode = "chat";
         this.chatT = rand(0.3, 1.5);
@@ -480,9 +641,52 @@ export class Bot {
     const ahead = Math.max(0, Math.cos(want - this.heading));
     const speed =
       PACE * this.gait * ahead * THREE.MathUtils.clamp(dist / 0.25, 0.3, 1);
+    this.speed = speed;
     this.pos.x += Math.sin(this.heading) * speed * dt;
     this.pos.z += Math.cos(this.heading) * speed * dt;
-    if (this.walk) this.walk.timeScale = 0.3 + (speed / PACE) * 1.1;
+    const pace = 0.3 + (speed / PACE) * 1.1;
+    if (this.walk) this.walk.timeScale = pace;
+    if (this.stride) this.stride.timeScale = pace;
+  }
+
+  /** In the hand: the head follows the cursor, the body hangs below it and trails the move. */
+  private holding(dt: number) {
+    const { aim, at, v } = this.hand;
+    const was = hold.copy(at);
+    at.lerp(aim, 1 - Math.exp(-22 * dt));
+    if (dt > 0)
+      v.lerp(was.sub(at).multiplyScalar(-1 / dt), 1 - Math.exp(-18 * dt));
+    this.pos.copy(at).addScaledVector(UP, -HEAD);
+    const lean = (a: number) => THREE.MathUtils.clamp(a, -0.4, 0.4);
+    this.turn.setFromEuler(
+      this.euler.set(lean(v.z * 0.05), 0, lean(-v.x * 0.05))
+    );
+    this.tilt.slerp(this.turn, 1 - Math.exp(-10 * dt));
+  }
+
+  /** The legs on their feet are the walking clip's and nobody else's: striding while it walks, held on the standing frame otherwise, faded in as the robot gets up. */
+  private legs(dt: number) {
+    const { stride, pose } = this;
+    if (!stride || !pose) return;
+    if (this.mode !== "walk" && this.mode !== "chat") {
+      this.legsOn = 0;
+      this.striding = 0;
+      stride.stop();
+      pose.stop();
+      return;
+    }
+    if (!stride.isRunning()) {
+      stride.reset().play();
+      pose.reset().play();
+      pose.time = STILL;
+      pose.paused = true;
+    }
+    const k = (rate: number) => 1 - Math.exp(-rate * dt);
+    this.legsOn += (1 - this.legsOn) * k(12);
+    const going = this.mode === "walk" && this.goal && this.speed > 0.1 ? 1 : 0;
+    this.striding += (going - this.striding) * k(9);
+    stride.setEffectiveWeight(this.legsOn * this.striding);
+    pose.setEffectiveWeight(this.legsOn * (1 - this.striding));
   }
 
   private chatting(dt: number) {
@@ -495,8 +699,8 @@ export class Bot {
       );
     this.chatT -= dt;
     if (this.chatT > 0) return;
-    if (this.cur !== this.idle) {
-      this.to(this.idle);
+    if (this.cur !== this.stand) {
+      this.to(this.stand);
       this.chatT = rand(1, 3);
     } else {
       const say =
@@ -509,7 +713,8 @@ export class Bot {
   step(dt: number, sound: { at: number }, time: number) {
     this.root.visible = this.mode !== "idle" || warm.on;
     this.blob.visible = this.root.visible;
-    if (this.pos.z > FRONT_Z + SLACK) this.front = true;
+    if (this.mode === "held") this.front = true;
+    else if (this.pos.z > FRONT_Z + SLACK) this.front = true;
     else if (this.pos.z < FRONT_Z - SLACK) this.front = false;
     if (this.mode === "fall") {
       this.vel.y -= GRAVITY * (this.hero ? SLOW : 1) * dt;
@@ -526,12 +731,16 @@ export class Bot {
         this.spin.multiplyScalar(Math.exp(-SPIN_DAMP * dt));
         this.tilt.slerp(IDENTITY, 1 - Math.exp(-RIGHT * dt));
       }
+      this.walls();
       if (this.pos.y <= STAND && this.vel.y < 0) this.impact(sound, time);
+    } else if (this.mode === "held") {
+      this.holding(dt);
     } else if (this.mode === "rest") {
       this.lying += dt;
       this.jolt *= Math.exp(-5 * dt);
       this.skid(dt);
       this.pos.addScaledVector(this.vel, dt);
+      this.walls();
       this.tilt.slerp(IDENTITY, 1 - Math.exp(-RIGHT * dt));
       const gone = (this.lying - LIE) / FADE;
       if (gone > 0) this.setOpacity(Math.max(0, 1 - gone));
@@ -543,6 +752,7 @@ export class Bot {
       if (this.rising >= length - 0.25) {
         this.mode = "walk";
         this.gait = 0.3;
+        this.stood = 0;
         this.pause = 0;
         this.life = rand(...ACTIVE);
         this.to(this.walk, 0.3);
@@ -550,6 +760,7 @@ export class Bot {
     }
     if (this.mode === "walk" || this.mode === "chat") {
       this.life -= dt;
+      this.stood += dt;
       if (this.mode === "walk") this.walking(dt);
       else this.chatting(dt);
       if (this.life < 0) {
@@ -558,6 +769,7 @@ export class Bot {
         if (gone >= 1) this.mode = "idle";
       }
     }
+    this.legs(dt);
     if (this.mode !== "idle" && (this.mode !== "fall" || this.bounces > 0)) {
       this.mixer?.update(dt);
       this.dying += dt;
@@ -580,7 +792,10 @@ export class Bot {
     }
     // Limbs hang loose and trail the body while it falls; once down, the clip poses them.
     this.limpW +=
-      ((this.mode === "fall" && this.bounces === 0 ? 1 : 0) - this.limpW) *
+      ((this.mode === "held" || (this.mode === "fall" && this.bounces === 0)
+        ? 1
+        : 0) -
+        this.limpW) *
       (1 - Math.exp(-9 * dt));
     if (this.mode !== "idle") limpStep(this, dt);
   }

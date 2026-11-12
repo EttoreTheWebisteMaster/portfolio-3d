@@ -8,6 +8,7 @@ import PageMotion from "@/components/sections/PageMotion";
 import PageSnap from "@/components/sections/PageSnap";
 import Projects from "@/components/sections/Projects";
 import Stage from "@/components/sections/Stage";
+import CursorTip from "@/components/ui/CursorTip";
 
 export default function JourneyLayout({
   children,
@@ -28,6 +29,9 @@ export default function JourneyLayout({
         <BottomBar />
         <PageSnap />
         <PageMotion />
+        {/* Above every canvas, so a held robot never covers its own label. */}
+        <CursorTip label="Grab" variant="grab" />
+        <CursorTip label="Drop" variant="drop" />
         {children}
       </main>
     </>

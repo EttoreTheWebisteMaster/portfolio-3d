@@ -163,6 +163,12 @@ export default function HeroEffects({
       fx.bokehScale =
         THREE.MathUtils.lerp(0, 7, s) * (1 - 0.65 * paper) + 6 * cu;
     }
+    // Contact: focus on the near robots and let the blur grow slowly over the whole depth of the room, so far ones are only a little softer, never a sudden cut.
+    if (onContact()) {
+      fx.cocMaterial.focusDistance = 7;
+      fx.cocMaterial.focusRange = 22;
+      fx.bokehScale = 2.2;
+    }
   });
 
   return (
