@@ -81,8 +81,9 @@ export default function NextProject({
       <p className="eyebrow">
         Next project <span ref={label} />
       </p>
+      <h2 className="case-next-title">{title}</h2>
       <Button href={href} variant="timer" arrow>
-        {title}
+        Play now
       </Button>
     </div>
   );

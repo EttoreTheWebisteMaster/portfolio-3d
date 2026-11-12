@@ -19,7 +19,7 @@ import {
   paintCoats,
   resetMoves,
 } from "./robotShot";
-import { type Pose, STRIDE, walkPose } from "./walkPose";
+import { eye, type Pose, STRIDE, walkPose, ZOOM } from "./walkPose";
 import {
   type Bounds,
   type Mood,
@@ -65,6 +65,9 @@ export function steel(name: string, flatShading: boolean) {
     envMapIntensity: 0.9,
   });
 }
+
+/** His eye in the head bone's own space (the visor's left eye, from the model's head box). */
+const EYE = { x: 0.0062, y: 0.0074, z: 0.0075 };
 
 export default function HeroRobot({
   progress,
@@ -209,7 +212,7 @@ export default function HeroRobot({
     const waving = oneShot.current?.getClip().name === "Wave";
     stepMood(mood.current, hovering, waving, clock.elapsedTime, dt);
 
-    // The shot: seated in the audience, then up, along the row, out of the door, to his mark. All of it is the scroll position.
+    // The shot: seated in the audience, then up, along the room, to his mark. All of it is the scroll position.
     const pos = journey.current;
     const p = walkPose(pose.current, pos);
     const m = moves.current;
@@ -230,7 +233,7 @@ export default function HeroRobot({
     if (step !== steps.current && p.moving > 0.5 && pos > 1.2) play("step");
     steps.current = step;
     // His paint turns from the hero's polished metal to the matte palette as the daylight takes over.
-    const k = ease(seg(pos, [1.55, 1.75]));
+    const k = ease(seg(pos, [1.35, 1.65]));
     if (k !== matte.current) {
       matte.current = k;
       paintCoats(coats.current, k);
@@ -250,11 +253,13 @@ export default function HeroRobot({
       // His head follows the cursor on top of the animated pose (applied after the mixer, which rewrites the bones each frame).
       // It lets go while he waves or dances and as he turns away.
       // On his mark he looks at us (his body is turned a little toward the text), then the cursor takes his head; he lets go as he walks on.
-      const settled = ease(seg(pos, [1.96, 2])) * (1 - seg(pos, [2, 2.05]));
+      const settled = ease(seg(pos, [1.96, 2]));
       const goal =
         reduced.current || oneShot.current || asking.speaking
           ? 0
-          : Math.max(1 - seg(progress.current, BEAT.turn), settled);
+          : Math.max(1 - seg(progress.current, BEAT.turn), settled) *
+            // The zoom has him square to the lens: the cursor lets go of his head.
+            (1 - ease(seg(pos, [ZOOM[0], ZOOM[0] + 0.1])));
       look.current = THREE.MathUtils.damp(look.current, goal, 4, dt);
       // A nod when a question is sent.
       const since = performance.now() / 1000 - asking.sentAt;
@@ -262,6 +267,12 @@ export default function HeroRobot({
       offset.current.y = pointer.x * 0.5 * look.current - 0.12 * settled;
       offset.current.x = pointer.y * 0.3 * look.current + nod * settled;
       turnHead(head, offset.current.y, offset.current.x);
+      // Where his eye is, for the About → Contact push-in to ride.
+      if (pos > 1.9) {
+        head.updateWorldMatrix(true, false);
+        head.localToWorld(eye.pos.set(EYE.x, EYE.y, EYE.z));
+        eye.facing.set(0, 0, 1).transformDirection(head.matrixWorld);
+      }
     }
     if (turn.current) {
       // A small wind-up against the turn, then round to face the screen.

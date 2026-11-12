@@ -1,8 +1,9 @@
 "use client";
 
 import Button from "@/components/ui/Button";
+import { isMuted } from "@/lib/sound";
 
-/** Restarts the hero screen's trailer from the top, with sound. */
+/** Restarts the hero screen's trailer from the top, with the page's sound setting. */
 export default function PlayTrailer() {
   return (
     <Button
@@ -10,7 +11,7 @@ export default function PlayTrailer() {
         const video =
           document.querySelector<HTMLVideoElement>("[data-pull] video");
         if (!video) return;
-        video.muted = false;
+        video.muted = isMuted();
         video.currentTime = 0;
         void video.play();
       }}

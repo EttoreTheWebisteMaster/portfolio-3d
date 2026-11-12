@@ -27,15 +27,17 @@ export default function Hero() {
         </div>
       </div>
 
-      <p data-fx="item" className="fx hero-billing">
-        <span>Design &amp; development</span> <strong>Ettore Serra</strong>{" "}
-        <span>with</span> <em>ROB-092</em>
-        {stack.map(line => (
-          <span key={line} className="hero-billing-line">
-            {line}
-          </span>
-        ))}
-      </p>
+      <div className="hero-aside" data-depth="0.3">
+        <p data-fx="item" className="fx hero-billing">
+          <span>Design &amp; development</span> <strong>Ettore Serra</strong>{" "}
+          <span>with</span> <em>ROB-092</em>
+          {stack.map(line => (
+            <span key={line} className="hero-billing-line">
+              {line}
+            </span>
+          ))}
+        </p>
+      </div>
     </section>
   );
 }

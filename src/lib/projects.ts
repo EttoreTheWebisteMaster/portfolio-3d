@@ -20,7 +20,7 @@ export const PROJECTS: readonly Project[] = [
     facts: "macOS menu-bar app · SwiftUI · 2026",
     discipline: "Product",
     image: "/projects/pausa.jpg",
-    lead: "A small menu-bar app for taking breaks. Placeholder copy: replace with the real story.",
+    lead: "Rest makes you better. A menu-bar app that turns the break into a small event.",
   },
   {
     title: "Antonino",

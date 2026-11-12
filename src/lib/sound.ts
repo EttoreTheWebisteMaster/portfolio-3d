@@ -1,6 +1,6 @@
 /** Tiny synthesized sound effects (WebAudio): no files, no dependency. Silent until the visitor's first gesture. */
 const KEY = "sound-muted";
-type Kind = "pop" | "thud" | "clang" | "ooh" | "step" | "door";
+type Kind = "pop" | "thud" | "clang" | "ooh" | "step";
 
 let ctx: AudioContext | null = null;
 let armed = false;
@@ -84,10 +84,6 @@ export function play(kind: Kind) {
     // A soft metallic footfall: a short ring over a low tap.
     tone("triangle", 1100, 520, 0.05, 0.02);
     tone("sine", 150, 70, 0.08, 0.05);
-  } else if (kind === "door") {
-    // The door's creak, then its latch.
-    tone("sawtooth", 150, 260, 0.5, 0.012);
-    tone("square", 900, 400, 0.04, 0.03);
   } else {
     tone("sine", 330, 420, 0.5, 0.04);
     tone("sine", 495, 630, 0.5, 0.02);

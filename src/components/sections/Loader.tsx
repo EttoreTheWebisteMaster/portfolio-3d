@@ -11,7 +11,7 @@ import { isMuted } from "@/lib/sound";
 
 const C = 160;
 const R = 150;
-/** The countdown, 3 → 0, always takes exactly this long, and starts the moment the numeral's font is in. */
+/** The countdown, 3 → 0, takes at least this long, and is paced by the real load: it never gets ahead of the progress line. */
 const COUNT_MS = 1500;
 /** The bars close in over this long, once everything has loaded. */
 const BARS_MS = 300;
@@ -45,35 +45,41 @@ export default function Loader() {
   const line = useRef<HTMLSpanElement>(null);
   const leader = useRef<HTMLDivElement>(null);
   const exit = useRef<() => void>(() => {});
-  const startedAt = useRef(0);
+  const counted = useRef<Animation[] | null>(null);
   // Coming back from a case study the visitor has already entered: no loading page, the page is theirs at once.
-  const [skip] = useState(() => {
-    console.log("INERT init entered", getLoading().entered);
-    return getLoading().entered;
-  });
+  const [skip] = useState(() => getLoading().entered);
   const [phase, setPhase] = useState<"on" | "out" | "gone">(
     skip ? "gone" : "on"
   );
 
+  // Next keeps this layout alive, hidden, while a case study is open, and runs these effects again on Back: once the visitor has entered they must do nothing,
+  // or the page is locked again with no loader on screen to unlock it.
   // Start the download, and keep the page out of reach until the visitor is in.
   useEffect(() => {
-    if (skip) return;
+    if (skip || getLoading().entered) return;
     void fetchModel();
     document.documentElement.dataset.loading = "";
     document.querySelector("main")?.setAttribute("inert", "");
     return release;
   }, [skip]);
 
-  // The countdown starts as soon as the numeral's font is in (or after 0.4s at most). It is a CSS animation: nothing here drives it.
+  // The countdown starts as soon as the numeral's font is in (or after 0.4s at most). Its CSS animations are paused; the ticker scrubs them.
   useEffect(() => {
-    if (skip) return;
+    if (skip || getLoading().entered) return;
     let live = true;
     const start = () => {
       const el = root.current;
-      if (!live || !el || startedAt.current) return;
-      startedAt.current = performance.now();
+      if (!live || !el || counted.current) return;
       el.style.setProperty("--count", `${COUNT_MS}ms`);
       el.dataset.count = "";
+      // The CSS animations are paused and scrubbed by the ticker, so the digits follow the real load.
+      counted.current = (
+        leader.current?.getAnimations({ subtree: true }) ?? []
+      ).map(a => {
+        a.pause();
+        a.currentTime = 0;
+        return a;
+      });
     };
     const wait = window.setTimeout(start, 400);
     void document.fonts.ready.then(start);
@@ -85,12 +91,13 @@ export default function Loader() {
 
   // The progress line follows the real load; once the countdown has landed and the scene is ready, the bars close in.
   useEffect(() => {
-    if (skip) return;
+    if (skip || getLoading().entered) return;
     let loaded = 0;
     let closing = 0;
     let held = -1;
     let percent = -1;
     let heroOn = false;
+    let countT = 0;
     const bars = document.querySelectorAll<HTMLElement>(".bar");
     const tick = (_: number, ms: number) => {
       const { progress, started } = getLoading();
@@ -107,9 +114,18 @@ export default function Loader() {
         percent = pct;
         label.current.textContent = `Loading · ${pct}%`;
       }
-      const landed =
-        startedAt.current > 0 &&
-        performance.now() - startedAt.current >= COUNT_MS;
+      const anims = counted.current;
+      if (anims) {
+        // Real time at most, and never past the load: slow loads stretch the countdown, fast ones keep the 1.5s floor.
+        countT =
+          countT < COUNT_MS
+            ? Math.min(countT + dt, Math.max(countT, loaded * COUNT_MS))
+            : countT + dt;
+        anims.forEach(a => {
+          a.currentTime = countT;
+        });
+      }
+      const landed = countT >= COUNT_MS;
       if (landed && started) {
         if (held < 0 && leader.current) {
           held = 0;

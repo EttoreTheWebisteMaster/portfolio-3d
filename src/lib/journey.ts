@@ -26,7 +26,7 @@ export const ease = (t: number) => t * t * t * (t * (t * 6 - 15) + 10);
 export const TRANSITION_SECONDS = 3.2;
 
 /** Seconds each hop between neighbouring pages takes: Home → Projects, Projects → About, About → Contact. */
-const HOP_SECONDS = [TRANSITION_SECONDS, 1.8, 1.6] as const;
+const HOP_SECONDS = [TRANSITION_SECONDS, 3.8, 3.2] as const;
 
 /** Seconds a change from page `from` to page `to` takes: the hops it crosses, added up. */
 export function travelSeconds(from: number, to: number) {

@@ -43,6 +43,19 @@
   --color-nav-dim: #837c70;
   --color-paper-veil: #f2edda;
   --color-flare: #fffdf4;
+  /* Pausa's palette: one colour per break on a warm paper base (from the case study's design system scene) */
+  --color-pausa-move: #b02624;
+  --color-pausa-breathe: #e8a43c;
+  --color-pausa-snack: #ffd957;
+  --color-pausa-outside: #8fbc85;
+  --color-pausa-water: #5f9dc8;
+  --color-pausa-eyes: #1f1b19;
+  --color-pausa-talk: #e58e72;
+  --color-pausa-tidy: #f6f0e3;
+  --color-pausa-paper: #efe6d3;
+  --color-pausa-panel: #faf7f0;
+  --font-system:
+    -apple-system, "SF Pro Display", "Helvetica Neue", system-ui, sans-serif;
 
   /* Fonts (next/font exposes --font-*-src on <html>, see layout.tsx) */
   --font-marquee: var(--font-marquee-src), Impact, "Arial Black", sans-serif;
@@ -1201,6 +1214,28 @@
 @utility episode-still {
   height: 88px;
   background: linear-gradient(160deg, var(--color-smoke), var(--color-night));
+  &[data-still="wheel"] {
+    justify-self: center;
+    width: 88px;
+    border-radius: 50%;
+    @apply wheel-paint;
+  }
+  &[data-still="swatches"] {
+    background: linear-gradient(
+      90deg,
+      var(--color-pausa-move) 0 25%,
+      var(--color-pausa-breathe) 0 50%,
+      var(--color-pausa-outside) 0 75%,
+      var(--color-pausa-water) 0 100%
+    );
+  }
+  &[data-still="popover"] {
+    background: radial-gradient(
+      ellipse at 50% 80%,
+      var(--color-pausa-tidy),
+      var(--color-pausa-paper)
+    );
+  }
 }
 @utility episode-head {
   display: flex;
@@ -1550,7 +1585,7 @@
   text-transform: uppercase;
 }
 /* Starter helpers (re-pointed at the new tokens) */
-@utility card {
+@utility case-card {
   padding: var(--space-5);
   border: 1px solid var(--hairline);
   background: var(--bg-raised);
@@ -1848,12 +1883,18 @@
   flex-wrap: wrap;
   gap: var(--space-3);
 }
-@utility hero-billing {
-  @apply type-label uppercase;
+/* Carries the billing's place on the page, so the depth parallax moves it without touching its entrance. */
+@utility hero-aside {
   position: absolute;
   inset-inline-end: var(--page-margin);
   bottom: calc(var(--bar-height) + var(--space-8));
   max-width: 420px;
+  @media (max-width: 1023px) {
+    display: none;
+  }
+}
+@utility hero-billing {
+  @apply type-label uppercase;
   text-align: end;
   line-height: 1.75;
   color: var(--color-ash);
@@ -1875,9 +1916,6 @@
     font-size: inherit;
     letter-spacing: inherit;
     color: inherit;
-  }
-  @media (max-width: 1023px) {
-    display: none;
   }
 }
 /* Projects — one 12-column grid under the top bar: the screen (cols 1–7) and the panel with every project detail (cols 8–12) share a top and bottom edge */
@@ -2603,6 +2641,10 @@
 /* Case study: the Projects screen grows to fill the viewport and becomes the hero. Same dark grade as Projects: the screen is the only light, grain and vignette from `scene`. */
 @utility case {
   @apply scene scene-screen-light;
+  /* Scenes settle on a clean frame, like the rest of the site; gentle so the page never fights the hand. */
+  html:has(&) {
+    scroll-snap-type: y proximity;
+  }
   --light-x: 30%;
   --light-y: 38%;
   --light-strength: 24%;
@@ -2681,60 +2723,498 @@
   flex-wrap: wrap;
   gap: var(--space-2);
 }
-/* Chapters: the episode list, then each chapter in turn. */
-@utility case-body {
+/* Case study scenes: full-height, one idea each, little text. Motion is scroll-driven (CaseStudyMotion); at rest they read as stills. */
+@utility case-scene {
   position: relative;
   z-index: 2;
   display: grid;
   grid-template-columns: repeat(12, minmax(0, 1fr));
   column-gap: var(--gutter);
-  row-gap: var(--space-8);
-  padding: var(--space-8) var(--page-margin) var(--space-9);
+  align-content: center;
+  row-gap: var(--space-6);
+  min-height: 100dvh;
+  padding: calc(var(--bar-height) + var(--space-7)) var(--page-margin)
+    calc(var(--bar-height) + var(--space-7));
   border-top: 1px solid var(--hairline);
-}
-@utility case-episodes {
-  grid-column: 1 / 6;
-  display: flex;
-  flex-direction: column;
-  align-self: start;
-  container-type: inline-size;
-  position: sticky;
-  top: calc(var(--bar-height) + var(--space-5));
-  @media (max-width: 1023px) {
-    grid-column: 1 / -1;
-    position: static;
-  }
-}
-@utility case-chapters {
-  grid-column: 7 / 13;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-8);
-  @media (max-width: 1023px) {
+  scroll-snap-align: start;
+  & > .eyebrow {
     grid-column: 1 / -1;
   }
 }
-@utility case-chapter {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-  scroll-margin-top: calc(var(--bar-height) + var(--space-5));
-  & h2 {
-    @apply type-poster-m;
+/* The idea */
+@utility case-story {
+  overflow: hidden;
+}
+@utility case-system {
+  overflow: hidden;
+  align-content: center;
+}
+@utility case-statement {
+  @apply type-lead;
+  grid-column: 1 / 8;
+  align-self: center;
+  font-size: min(var(--text-poster-s), 5.2vw);
+  line-height: 1.3;
+  font-weight: 300;
+  color: var(--color-cream);
+  @media (min-width: 1024px) {
+    font-size: 40px;
+    line-height: 1.22;
   }
-  & p {
+  @media (max-width: 1023px) {
+    grid-column: 1 / -1;
+  }
+}
+@utility case-meta {
+  grid-column: 9 / 13;
+  align-self: center;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-5) var(--gutter);
+  & .fact-value {
     @apply type-body;
-    max-width: 52ch;
+    color: var(--text-primary);
+  }
+  @media (max-width: 1023px) {
+    grid-column: 1 / -1;
+  }
+}
+/* Pausa's eight break colours as the wheel's slices. */
+@utility wheel-paint {
+  background: conic-gradient(
+    var(--color-pausa-move) 0 45deg,
+    var(--color-pausa-breathe) 0 90deg,
+    var(--color-pausa-snack) 0 135deg,
+    var(--color-pausa-outside) 0 180deg,
+    var(--color-pausa-water) 0 225deg,
+    var(--color-pausa-eyes) 0 270deg,
+    var(--color-pausa-talk) 0 315deg,
+    var(--color-pausa-tidy) 0 360deg
+  );
+}
+/* The wheel: eight slices, a pointer on top and a hub. Only the disc turns. */
+@utility wheel {
+  position: relative;
+  aspect-ratio: 1;
+  & > .wheel-disc {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    border: var(--space-2) solid var(--color-pausa-eyes);
+    @apply wheel-paint;
+    box-shadow: 0 var(--space-6) var(--space-9)
+      color-mix(in srgb, var(--color-black) 70%, transparent);
+  }
+  & > .wheel-hub {
+    position: absolute;
+    inset: 42%;
+    border-radius: 50%;
+    background: var(--color-pausa-eyes);
+  }
+  & > .wheel-pointer {
+    position: absolute;
+    top: -3%;
+    left: 50%;
+    width: 14%;
+    aspect-ratio: 1.1;
+    translate: -50% 0;
+    background: var(--color-pausa-eyes);
+    clip-path: polygon(0 0, 100% 0, 50% 100%);
+  }
+}
+/* Palette & type */
+@utility case-swatches {
+  grid-column: 1 / 9;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: var(--space-3);
+  @media (max-width: 1023px) {
+    grid-column: 1 / -1;
+  }
+}
+@utility swatch {
+  display: flex;
+  align-items: flex-end;
+  aspect-ratio: 3 / 4;
+  padding: var(--space-3);
+  border-radius: var(--space-1);
+  transform-origin: 50% 100%;
+  color: var(--color-ink);
+  box-shadow: 0 var(--space-4) var(--space-6)
+    color-mix(in srgb, var(--color-black) 55%, transparent);
+  &[data-tone="move"] {
+    background: var(--color-pausa-move);
+    color: var(--color-pausa-panel);
+  }
+  &[data-tone="breathe"] {
+    background: var(--color-pausa-breathe);
+  }
+  &[data-tone="snack"] {
+    background: var(--color-pausa-snack);
+  }
+  &[data-tone="outside"] {
+    background: var(--color-pausa-outside);
+  }
+  &[data-tone="water"] {
+    background: var(--color-pausa-water);
+  }
+  &[data-tone="eyes"] {
+    background: var(--color-pausa-eyes);
+    color: var(--color-cream-deep);
+    outline: 1px solid var(--hairline);
+  }
+  &[data-tone="talk"] {
+    background: var(--color-pausa-talk);
+  }
+  &[data-tone="tidy"] {
+    background: var(--color-pausa-tidy);
+  }
+  &[data-tone="paper"] {
+    background: var(--color-pausa-paper);
+  }
+  &[data-tone="panel"] {
+    background: var(--color-pausa-panel);
+  }
+}
+@utility swatch-name {
+  @apply type-label-s uppercase;
+  @media (max-width: 767px) {
+    font-size: 10px;
+    letter-spacing: 0;
+  }
+}
+@utility case-type {
+  grid-column: 9 / 13;
+  align-self: center;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  @media (max-width: 1023px) {
+    grid-column: 1 / -1;
+  }
+}
+@utility case-specimen {
+  font-family: var(--font-system);
+  font-weight: 600;
+  font-size: min(18vh, 14vw);
+  line-height: 0.9;
+  letter-spacing: -0.04em;
+  background: linear-gradient(
+    180deg,
+    var(--color-cream) 20%,
+    var(--color-dust) 130%
+  );
+  background-clip: text;
+  color: transparent;
+}
+@utility case-type-note {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  & strong {
+    @apply type-poster-s uppercase;
+    font-family: var(--font-poster);
+    color: var(--color-cream);
+  }
+  & span {
+    @apply type-small;
     color: var(--text-secondary);
   }
 }
-@utility case-chapter-no {
+/* The result: three stills of different weight. */
+@utility case-result {
+  grid-template-rows: auto minmax(0, 1fr) minmax(0, 0.8fr);
+  & > .case-panel {
+    min-height: 28dvh;
+  }
+}
+@utility case-panel {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--space-1);
+  background: var(--color-night);
+  display: grid;
+  place-items: center;
+}
+@utility case-panel-popover {
+  grid-column: 1 / 9;
+  background: radial-gradient(
+    ellipse at 40% 90%,
+    var(--color-pausa-tidy),
+    var(--color-pausa-paper) 70%,
+    var(--color-cream-deep)
+  );
+  @media (max-width: 1023px) {
+    grid-column: 1 / -1;
+  }
+}
+@utility case-panel-wheel {
+  grid-column: 9 / 13;
+  background: radial-gradient(
+    ellipse at 50% 40%,
+    var(--color-grade-teal),
+    var(--color-black) 80%
+  );
+  @media (max-width: 1023px) {
+    grid-column: 1 / -1;
+  }
+}
+@utility case-result-wheel {
+  width: min(78%, 44dvh);
+}
+@utility case-panel-notice {
+  grid-column: 1 / -1;
+  background: var(--color-paper-inset);
+}
+@utility case-panel-in {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+}
+@utility case-menubar {
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline: 0;
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-5);
+  background: color-mix(in srgb, var(--color-ink) 10%, transparent);
+  & > i {
+    width: var(--space-3);
+    aspect-ratio: 1;
+    border-radius: 50%;
+    background: var(--color-fog);
+    &[data-on] {
+      background: var(--color-pausa-move);
+    }
+  }
+}
+/* UI stills drawn in CSS: Pausa's own interface, in the system face. */
+@utility popover {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  width: min(100% - var(--space-6), 360px);
+  padding: var(--space-5);
+  border-radius: var(--space-4);
+  background: var(--color-pausa-panel);
+  color: var(--color-pausa-eyes);
+  font-family: var(--font-system);
+  box-shadow: 0 var(--space-5) var(--space-8)
+    color-mix(in srgb, var(--color-ink) 28%, transparent);
+}
+@utility popover-label {
+  @apply type-label-s uppercase;
+  color: var(--color-dust);
+}
+@utility popover-value {
+  font-size: var(--text-poster-m);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+@utility popover-bar {
+  height: var(--space-2);
+  border-radius: var(--space-1);
+  background: linear-gradient(
+    90deg,
+    var(--color-pausa-move) 0 60%,
+    var(--color-pausa-paper) 60%
+  );
+}
+@utility popover-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-2);
+}
+@utility popover-button {
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--space-2);
+  background: var(--color-pausa-paper);
+  font-size: var(--text-small);
+  font-weight: 600;
+  text-align: center;
+  &[data-primary] {
+    background: var(--color-pausa-eyes);
+    color: var(--color-pausa-panel);
+  }
+}
+@utility case-photo {
+  object-fit: cover;
+  opacity: 0.55;
+  filter: blur(var(--space-4)) saturate(0.8);
+  scale: 1.12;
+}
+@utility notice {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  width: min(100% - var(--space-6), 520px);
+  padding: var(--space-4);
+  border-radius: var(--space-4);
+  background: color-mix(in srgb, var(--color-pausa-panel) 92%, transparent);
+  color: var(--color-pausa-eyes);
+  font-family: var(--font-system);
+  box-shadow: 0 var(--space-4) var(--space-7)
+    color-mix(in srgb, var(--color-ink) 28%, transparent);
+}
+@utility notice-icon {
+  flex: none;
+  width: var(--space-7);
+  aspect-ratio: 1;
+  border-radius: var(--space-3);
+  background: var(--color-pausa-move);
+}
+@utility notice-app {
   @apply type-label-s;
-  color: var(--text-accent);
+  color: var(--color-dust);
+}
+@utility notice-text {
+  font-size: var(--text-small);
+  font-weight: 600;
+  line-height: 1.35;
+}
+/* Section headings: the same poster face as the rest of the site, with a quiet eyebrow at the far side. */
+@utility case-head {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+@utility case-heading {
+  @apply type-poster-l uppercase;
+  grid-column: 1 / -1;
+  font-family: var(--font-poster);
+  font-weight: 800;
+  font-size: min(var(--text-poster-l), 12vw);
+  color: var(--color-cream);
+}
+@utility case-episodes {
+  container-type: inline-size;
+}
+@utility case-episode-list {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  container-type: inline-size;
+}
+@utility case-rating {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--hairline);
+  & > p {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+  }
+  & strong {
+    @apply type-label-s uppercase;
+    color: var(--text-primary);
+  }
+  & > p span {
+    @apply type-label-s uppercase;
+    color: var(--text-tertiary);
+  }
+}
+@utility case-rating-letter {
+  @apply type-poster-m;
+  display: grid;
+  place-items: center;
+  width: var(--space-7);
+  aspect-ratio: 1;
+  background: var(--color-fog);
+  color: var(--color-black);
+  font-family: var(--font-poster);
+}
+@utility case-more {
+  align-content: center;
+}
+@utility more-cards {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--gutter);
+  @media (max-width: 1023px) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@utility more-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  text-decoration: none;
+  color: inherit;
+  transition: transform 300ms var(--ease-cinema);
+  &:hover,
+  &:focus-visible {
+    transform: translateY(calc(-1 * var(--space-1)));
+  }
+}
+@utility more-card-still {
+  aspect-ratio: 16 / 9;
+  background: linear-gradient(160deg, var(--color-smoke), var(--color-night));
+  &[data-tone="0"] {
+    background: linear-gradient(
+      160deg,
+      var(--color-red-deep),
+      var(--color-night)
+    );
+  }
+  &[data-tone="1"] {
+    background: linear-gradient(
+      160deg,
+      var(--color-felt-hi),
+      var(--color-felt-lo)
+    );
+  }
+  &[data-tone="2"] {
+    background: linear-gradient(
+      160deg,
+      var(--color-gold-lo),
+      var(--color-night)
+    );
+  }
+  &[data-tone="3"] {
+    background: linear-gradient(
+      160deg,
+      var(--color-grade-teal),
+      var(--color-night)
+    );
+  }
+}
+@utility more-card-title {
+  @apply type-poster-s uppercase;
+  font-family: var(--font-poster);
+  color: var(--text-primary);
+}
+@utility more-card-meta {
+  @apply type-label-s uppercase;
+  color: var(--text-tertiary);
 }
 /* The auto-advance: the underline is the 7s timer. */
+@utility case-next-title {
+  @apply type-poster-xl uppercase;
+  font-family: var(--font-poster);
+  font-weight: 800;
+  font-size: min(var(--text-poster-xl), 16vw);
+  color: var(--color-cream);
+  text-shadow: 0 0 var(--space-7)
+    color-mix(in srgb, var(--color-light-screen) 22%, transparent);
+}
 @utility case-next {
-  grid-column: 1 / -1;
+  position: relative;
+  z-index: 2;
+  min-height: 60dvh;
+  justify-content: center;
+  padding: var(--space-9) var(--page-margin)
+    calc(var(--bar-height) + var(--space-7));
+  scroll-snap-align: start;
   display: flex;
   flex-direction: column;
   align-items: flex-start;

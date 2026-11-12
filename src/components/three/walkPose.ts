@@ -5,31 +5,31 @@ import { ease, journey, seg } from "@/lib/journey";
 import { CONTACT_AT } from "./contactShot";
 
 /**
- * Projects → About, "the walk-out": one shot along +X, scrubbed by the journey. Journey 1 → 2 is the shot, 0 → 1 of it.
- * World, left to right: the cinema (x 0), a door in its end wall, a short dark passage, the cream sweep of About.
+ * Projects → About, "the walk": one shot along +X, played by the journey. Journey 1 → 2 is the shot, 0 → 1 of it.
+ * One room: he gets up from the cinema and walks on while its dark gives way to the cream of About. No doors, no walls.
  */
-export const DOOR_X = 15;
-/** The passage between the door and the cream room. */
-export const PASSAGE_END = 26;
-/** Where he stops in the cream room (world x). */
-export const MARK_X = 36;
-/** How far he walks on after About, out of frame to the right, on the way to Contact. */
-export const EXIT_LENGTH = 16;
+/** Where he stops (world x). */
+export const MARK_X = 16;
 
 /** Beats of the shot (progress 0 → 1). Each is a beat on the one scrub, so everything plays backwards too. */
 export const SHOT = {
-  rack: [0, 0.12],
-  stand: [0.12, 0.25],
+  rack: [0, 0.1],
+  stand: [0.04, 0.2],
   /** He sets off; he is at the mark at `arrive`. One constant speed. */
-  walk: [0.25, 0.93],
-  door: [0.46, 0.54],
-  daylight: [0.5, 0.72],
-  handoff: [0.56, 0.75],
-  turn: [0.93, 1],
+  walk: [0.2, 0.92],
+  daylight: [0.3, 0.8],
+  /** The camera has followed him all along; it settles into the About frame as he reaches the mark. */
+  handoff: [0.68, 1],
+  turn: [0.92, 1],
 } as const;
-/** Journey positions of About → Contact: he walks off right, then the daylight dims into Contact's dark. */
-export const LEAVE = [2.02, 2.38] as const;
-export const DIM = [2.2, CONTACT_AT] as const;
+/**
+ * Journey positions of About → Contact. He stays on his mark and looks down the lens: the copy goes, the camera pushes
+ * in on his eye, the room's light dies down to that one glint, and the picture falls to black just before the cut.
+ */
+export const ZOOM = [2, 2.44] as const;
+/** The copy is out of the way before the lens is close enough to touch it. */
+export const COPY_GONE = 2.14;
+export const DIM = [2.1, 2.44] as const;
 
 /** Distance travelled by his walk cycle's stride, in world units (measured from the Walking clip: 3.6 u/s × 0.958 s). */
 export const STRIDE = 3.48;
@@ -45,14 +45,10 @@ export const onAbout = () =>
 export const daylight = () =>
   ease(seg(walk(), SHOT.daylight)) * (1 - ease(seg(journey.current, DIM)));
 
-/** Door leaf: 0 closed, 1 open. He pushes it open on the way in and it swings shut behind him. */
-export const doorOpen = () => {
-  const w = walk();
-  return (
-    ease(seg(w, SHOT.door)) *
-    (1 - ease(seg(w, [0.58, 0.66]))) *
-    (journey.current < 2 ? 1 : 0)
-  );
+/** His eye in world space and the way it faces, published by the robot every frame for the zoom to ride. */
+export const eye = {
+  pos: new THREE.Vector3(),
+  facing: new THREE.Vector3(0, 0, 1),
 };
 
 export type Pose = {
@@ -70,29 +66,20 @@ export type Pose = {
 /** Where he is and what he is doing at this journey position. All of it is a function of the scroll. */
 export function walkPose(out: Pose, pos = journey.current): Pose {
   const w = THREE.MathUtils.clamp(pos - 1, 0, 1);
-  const away = seg(pos, LEAVE);
   const run = seg(w, SHOT.walk);
-  const dist = run * MARK_X + away * EXIT_LENGTH;
+  const dist = run * MARK_X;
   out.x = dist;
   out.stand = ease(seg(w, SHOT.stand));
   out.phase = (dist / STRIDE) % 1;
-  const set = ease(seg(w, [0.22, 0.27]));
-  const stop = 1 - ease(seg(w, [0.9, 0.94]));
-  out.moving = Math.max(
-    set * stop,
-    ease(seg(pos, [LEAVE[0], LEAVE[0] + 0.05]))
-  );
-  // Facing the screen when seated, then right along the row, then us at the mark, then right again on the way out.
-  let yaw = THREE.MathUtils.lerp(
+  const set = ease(seg(w, [0.17, 0.22]));
+  const stop = 1 - ease(seg(w, [0.89, 0.93]));
+  out.moving = set * stop;
+  // Facing the screen when seated, then right along the row, then us at the mark.
+  const yaw = THREE.MathUtils.lerp(
     Math.PI,
     Math.PI / 2,
-    ease(seg(w, [0.15, 0.25]))
+    ease(seg(w, [0.08, 0.2]))
   );
-  yaw = THREE.MathUtils.lerp(yaw, 0.12, ease(seg(w, SHOT.turn)));
-  out.yaw = THREE.MathUtils.lerp(
-    yaw,
-    Math.PI / 2,
-    ease(seg(pos, [LEAVE[0] - 0.02, LEAVE[0] + 0.06]))
-  );
+  out.yaw = THREE.MathUtils.lerp(yaw, 0.12, ease(seg(w, SHOT.turn)));
   return out;
 }

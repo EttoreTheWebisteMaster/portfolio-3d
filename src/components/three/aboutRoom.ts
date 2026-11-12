@@ -1,35 +1,31 @@
 import * as THREE from "three";
 
 import { FLOOR_Y } from "./HeroLight";
-import { PASSAGE_END } from "./walkPose";
 
 /** The cream sweep: a floor that curves up into the back wall with no line between. */
+/** The sweep floats just above the cinema floor it overlaps, so the two never fight for the same pixels. */
+const LIFT = 0.03;
 export const SWEEP = {
-  from: PASSAGE_END,
-  to: 66,
+  from: -8,
+  to: 56,
   front: 70,
   back: -9,
   radius: 6,
   top: 18,
 };
-export const PASSAGE = { half: 1.8, height: 5.2 };
-export const OPENING = 1.35;
-export const DOOR_H = 4.6;
-export const DARK = "#0d0b0a";
-
 /** A profile (z, y) swept along x: the floor, a quarter-round cove, then the wall. */
 export function sweepGeometry() {
   const { from, to, front, back, radius, top } = SWEEP;
-  const profile: [number, number][] = [[front, FLOOR_Y]];
+  const profile: [number, number][] = [[front, FLOOR_Y + LIFT]];
   const arc = 24;
   for (let i = 0; i <= arc; i++) {
     const t = (i / arc) * (Math.PI / 2);
     profile.push([
       back - radius * Math.sin(t),
-      FLOOR_Y + radius * (1 - Math.cos(t)),
+      FLOOR_Y + LIFT + radius * (1 - Math.cos(t)),
     ]);
   }
-  profile.push([back - radius, FLOOR_Y + top]);
+  profile.push([back - radius, FLOOR_Y + LIFT + top]);
   const positions: number[] = [];
   const index: number[] = [];
   profile.forEach(([z, y], i) => {

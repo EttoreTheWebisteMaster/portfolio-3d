@@ -107,7 +107,7 @@ export default function ContactScene({
         distance={40}
         decay={2}
         castShadow
-        shadow-mapSize={[2048, 2048]}
+        shadow-mapSize={[1024, 1024]}
         shadow-bias={-0.0004}
       />
       <pointLight

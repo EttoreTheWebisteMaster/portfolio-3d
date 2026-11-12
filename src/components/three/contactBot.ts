@@ -53,6 +53,15 @@ const SLACK = 0.3;
 /** How dark the soft shadow under a robot is, and how wide it is for a standing and a lying body. */
 const BLOB = 0.6;
 const FOOT = { stand: 0.36, lie: 0.55 } as const;
+/** The gestures only move the arms, head and chest: the legs stay on the idle pose, so the feet never leave the floor while a robot talks. */
+function upperBody(clip: THREE.AnimationClip) {
+  const out = clip.clone();
+  out.tracks = out.tracks.filter(
+    track => !/^(Hips|UpperLeg|LowerLeg|Leg|Foot)/.test(track.name)
+  );
+  return out;
+}
+
 const GESTURES = ["Wave", "Yes", "No", "ThumbsUp"] as const;
 /** Seconds a landed robot lies before it fades, and how long the fade takes. */
 const LIE = 11;
@@ -75,6 +84,7 @@ function softDisc() {
   return blobMap;
 }
 const blobGeometry = new THREE.PlaneGeometry(1, 1);
+const foot = new THREE.Vector3();
 
 export const rand = (a: number, b: number) => a + Math.random() * (b - a);
 
@@ -131,7 +141,12 @@ export class Bot {
   private chatT = 0;
   /** Seconds since the Death clip started. */
   private dying = 0;
-  private mats: THREE.MeshPhysicalMaterial[] = [];
+  private mats: THREE.MeshStandardMaterial[] = [];
+  /** The ankle bones, and where the lowest of them sits under the root when standing: the reference every walking frame is pinned to the floor with. */
+  private feet: THREE.Object3D[] = [];
+  private sole = 0;
+  private soleWalk = 0;
+  private lift = 0;
   private turn = new THREE.Quaternion();
   /** What the limp physics reads: the robot, and how loose its limbs are (0 = the pose, 1 = fully limp). */
   robot: THREE.Object3D = this.root;
@@ -145,7 +160,7 @@ export class Bot {
 
   constructor(gltf: GLTF, scale: number, centre: THREE.Vector3) {
     const scene = clone(gltf.scene);
-    const made = new Map<string, THREE.MeshPhysicalMaterial>();
+    const made = new Map<string, THREE.MeshStandardMaterial>();
     scene.traverse(obj => {
       if (!(obj instanceof THREE.Mesh)) return;
       obj.castShadow = true;
@@ -153,9 +168,11 @@ export class Bot {
       if (!p) return;
       let m = made.get(obj.material.name);
       if (!m) {
-        m = new THREE.MeshPhysicalMaterial({
-          ...p,
-          clearcoatRoughness: 0.35,
+        // Standard, not physical: eight of them are on screen twice over, and the lacquer sheen is not worth a second shader.
+        m = new THREE.MeshStandardMaterial({
+          color: p.color,
+          metalness: p.metalness,
+          roughness: p.roughness,
           flatShading: obj.material.flatShading,
           transparent: true,
         });
@@ -178,7 +195,7 @@ export class Bot {
       this.death.clampWhenFinished = true;
       for (const name of GESTURES) {
         const clip = THREE.AnimationClip.findByName(gltf.animations, name);
-        if (clip) this.gestures.push(this.mixer.clipAction(clip));
+        if (clip) this.gestures.push(this.mixer.clipAction(upperBody(clip)));
       }
       const walk = THREE.AnimationClip.findByName(gltf.animations, "Walking");
       if (walk) this.walk = this.mixer.clipAction(walk);
@@ -202,6 +219,59 @@ export class Bot {
     this.root.position.copy(ORIGIN);
     this.root.updateMatrixWorld(true);
     this.limp = makeLimp(this.root);
+    this.feet = ["Foot.L_end", "Foot.R_end"].flatMap(name => {
+      const bone = scene.getObjectByName(name);
+      return bone ? [bone] : [];
+    });
+    this.calibrate();
+  }
+
+  /** Where the lowest ankle sits when each clip stands on the floor: a flat idle and a walking stride put it at different heights, so each gets its own. */
+  private calibrate() {
+    const { idle, walk, mixer } = this;
+    if (!idle || !walk || !mixer || this.feet.length === 0) {
+      this.sole = this.lowestFoot();
+      this.soleWalk = this.sole;
+      return;
+    }
+    const measure = (action: THREE.AnimationAction, samples: number) => {
+      mixer.stopAllAction();
+      action.reset().play();
+      action.paused = true;
+      const length = action.getClip().duration;
+      let low = Infinity;
+      for (let i = 0; i < samples; i++) {
+        action.time = (length * i) / samples;
+        mixer.update(0);
+        low = Math.min(low, this.lowestFoot());
+      }
+      return low;
+    };
+    this.sole = measure(idle, 1);
+    this.soleWalk = measure(walk, 16);
+    this.reset();
+  }
+
+  /** Height of its lowest ankle above the root's origin (the root must be upright). */
+  private lowestFoot() {
+    this.root.updateMatrixWorld(true);
+    let low = Infinity;
+    for (const bone of this.feet) {
+      bone.getWorldPosition(foot);
+      low = Math.min(low, foot.y);
+    }
+    return low - this.root.position.y;
+  }
+
+  /** Keeps the standing body's lowest foot on the floor: the walk and the idle bob the hips, and without this the sole drifts above the shadow. */
+  private ground(dt: number) {
+    if (this.feet.length === 0) return;
+    // Standing flat and striding sit differently on the floor: follow the walk's share of the blend.
+    const striding = this.walk?.getEffectiveWeight() ?? 0;
+    const sole =
+      this.sole + (this.soleWalk - this.sole) * Math.min(striding, 1);
+    const target = sole - this.lowestFoot();
+    this.lift += (target - this.lift) * (1 - Math.exp(-30 * dt));
   }
 
   /** Back to the frozen Idle pose, ready to fall. */
@@ -496,6 +566,10 @@ export class Bot {
     this.face();
     // The clip pivots at the feet, so it lays the body on the floor by itself.
     this.root.position.copy(this.pos);
+    // Standing on its feet: pinned to the floor. Anywhere else (falling, lying) the clip and the physics own the height.
+    if (this.mode === "walk" || this.mode === "chat") this.ground(dt);
+    else this.lift = 0;
+    this.root.position.y += this.lift;
     if (this.jolt > 0.01) {
       this.root.quaternion.multiply(
         this.turn.setFromEuler(

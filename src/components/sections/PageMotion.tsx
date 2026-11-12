@@ -3,11 +3,14 @@
 import { gsap, type SplitText, useGSAP } from "@/lib/gsap";
 import { addEntrance, RISE } from "@/lib/fx";
 import { INTRO, journey, seg } from "@/lib/journey";
+import { COPY_GONE } from "@/components/three/walkPose";
 import { onEnter } from "@/lib/loading";
 import { pointer } from "@/lib/pointer";
 
 /** How much of the journey (in pages) a page takes to arrive and to leave. */
 const SPAN = 0.25;
+/** About and Contact: how much of the journey before the page their copy starts to arrive. */
+const ARRIVE = [0.35, 0.4] as const;
 /** Home's copy decodes over the back half of the opening shot. */
 const INTRO_SECONDS = 2;
 
@@ -150,8 +153,12 @@ export default function PageMotion() {
             rig.intro.kill();
             rig.intro = null;
           }
+          // About's copy clears fast: the lens is already pushing in on his eye.
+          const out = i === 2 ? COPY_GONE - i : SPAN;
+          // About and Contact start their copy early, so it is already rising while the light comes up.
+          const arrive = i >= 2 ? ARRIVE[i - 2] : SPAN;
           const time =
-            pos < i ? seg(pos, [i - SPAN, i]) : 1 + seg(pos, [i, i + SPAN]);
+            pos < i ? seg(pos, [i - arrive, i]) : 1 + seg(pos, [i, i + out]);
           rig.tl.time(time);
           // Inert, not just pointer-events none: a panel that opts back into pointer events must not catch clicks meant for the page in front.
           rig.page.inert = Math.abs(pos - i) >= 0.5;
