@@ -21,6 +21,9 @@ import {
   pickUp,
   ROOM,
   sendOff,
+  faceCamera,
+  listenHands,
+  setCrowdFlag,
   startle,
 } from "./crowdHands";
 import { makeLimp } from "./crowdLimp";
@@ -47,7 +50,6 @@ const NEAR = 4.5;
 const UI = "a, button, input, .projects-list";
 /** The plane a held robot is dragged across: upright, facing the camera, through the point that was grabbed. So the robot goes where the cursor goes, up, down, left and right. */
 const dragPlane = new THREE.Plane();
-const facing = new THREE.Vector3();
 const point = new THREE.Vector3();
 /** How low the hand can take a robot's head above the floor. */
 const HEAD_MIN = 0.6;
@@ -318,7 +320,6 @@ function Crowd({
   // Picking up and dropping. Hover and the floor point are worked out per frame below; these only change who is held.
   useEffect(() => {
     armSound();
-    const root = document.documentElement;
     const state = hot.current;
     const release = () => {
       const w = state.held;
@@ -327,39 +328,22 @@ function Crowd({
       view.held = false;
       letGo(w, walkers, NEAR, reduced);
     };
-    const grab = (e: PointerEvent) => {
+    const grab = () => {
       const w = state.hover;
-      if (!w || e.button !== 0 || e.pointerType === "touch") return;
-      // Stops the browser starting a text selection under the drag.
-      e.preventDefault();
-      window.getSelection()?.removeAllRanges();
+      if (!w) return false;
       state.held = w;
       view.held = true;
       ray.setFromCamera(ndc.set(target.x, -target.y), camera);
-      camera.getWorldDirection(facing);
       // The plane runs through the head, which is what the hand holds.
       if (w.head) w.head.getWorldPosition(point);
       else point.set(w.at.x, FLOOR_Y + 2.8 * w.base, w.at.y);
-      dragPlane.setFromNormalAndCoplanarPoint(facing, point);
+      faceCamera(dragPlane, camera, point);
       pickUp(w, ray.ray.intersectPlane(dragPlane, hit));
+      return true;
     };
-    const move = (e: PointerEvent) => {
-      state.over = e.target instanceof Element && e.target.closest(UI) !== null;
-    };
-    window.addEventListener("pointerdown", grab);
-    window.addEventListener("pointermove", move, { passive: true });
-    window.addEventListener("pointerup", release);
-    window.addEventListener("pointercancel", release);
-    window.addEventListener("blur", release);
-    return () => {
-      window.removeEventListener("pointerdown", grab);
-      window.removeEventListener("pointermove", move);
-      window.removeEventListener("pointerup", release);
-      window.removeEventListener("pointercancel", release);
-      window.removeEventListener("blur", release);
-      release();
-      delete root.dataset.crowd;
-    };
+    return listenHands(grab, release, UI, on => {
+      state.over = on;
+    });
   }, [walkers, camera, reduced]);
 
   useFrame((_, dt) => {
@@ -367,7 +351,6 @@ function Crowd({
     const p = progress.current;
     const aspect = size.width / size.height;
     const live = p >= LIVE_FROM && target.live && !state.over;
-    const root = document.documentElement;
 
     // Leaving the room mid-grab lets go.
     if (state.held && p < LIVE_FROM) {
@@ -392,10 +375,7 @@ function Crowd({
     }
     state.hover = hovered;
     const mode = state.held ? "held" : hovered ? "hover" : null;
-    if (root.dataset.crowd !== (mode ?? undefined)) {
-      if (mode) root.dataset.crowd = mode;
-      else delete root.dataset.crowd;
-    }
+    setCrowdFlag(mode);
 
     // In hand: follow the floor under the cursor, and the neighbours take fright.
     const held = state.held;

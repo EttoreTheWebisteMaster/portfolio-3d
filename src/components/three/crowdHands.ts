@@ -142,10 +142,32 @@ export function startShot(w: Walker) {
 }
 
 const headAt = new THREE.Vector3();
-const feet = new THREE.Vector3();
-const top = new THREE.Vector3();
+export const feet = new THREE.Vector3();
+export const top = new THREE.Vector3();
 
-/** Is the cursor (x, y in -1..1, y up) on this robot? A capsule from its feet to its head, so it holds however the robot is tilted. */
+/** Is the cursor (x, y in -1..1, y up) on the capsule from `feet` to `top` (projected here), `fat` wide in screen terms? */
+export function overCapsule(
+  x: number,
+  y: number,
+  camera: THREE.Camera,
+  aspect: number,
+  fat: number
+) {
+  feet.project(camera);
+  top.project(camera);
+  if (feet.z > 1 || top.z > 1) return false;
+  const ax = feet.x * aspect;
+  const dx = top.x * aspect - ax;
+  const dy = top.y - feet.y;
+  const len2 = dx * dx + dy * dy || 1e-6;
+  const px = x * aspect - ax;
+  const py = y - feet.y;
+  const t = THREE.MathUtils.clamp((px * dx + py * dy) / len2, 0, 1);
+  const r = fat * Math.sqrt(len2) + 0.02;
+  return Math.hypot(px - dx * t, py - dy * t) < r;
+}
+
+/** Is the cursor on this robot? A capsule from its feet to its head, so it holds however the robot is tilted. */
 export function overRobot(
   x: number,
   y: number,
@@ -153,23 +175,66 @@ export function overRobot(
   aspect: number,
   w: Walker
 ) {
-  feet.copy(w.robot.position).project(camera);
+  feet.copy(w.robot.position);
   top
     .set(0, 3.1 * w.base, 0)
     .applyQuaternion(w.robot.quaternion)
-    .add(w.robot.position)
-    .project(camera);
-  if (feet.z > 1 || top.z > 1) return false;
-  const ax = feet.x * aspect;
-  const bx = top.x * aspect;
-  const dx = bx - ax;
-  const dy = top.y - feet.y;
-  const len2 = dx * dx + dy * dy || 1e-6;
-  const px = x * aspect - ax;
-  const py = y - feet.y;
-  const t = THREE.MathUtils.clamp((px * dx + py * dy) / len2, 0, 1);
-  const r = 0.24 * Math.sqrt(len2) + 0.02;
-  return Math.hypot(px - dx * t, py - dy * t) < r;
+    .add(w.robot.position);
+  return overCapsule(x, y, camera, aspect, 0.24);
+}
+
+const facing = new THREE.Vector3();
+
+/** An upright plane facing the camera through `point`: what a held robot is dragged across, so it goes where the cursor goes. */
+export function faceCamera(
+  plane: THREE.Plane,
+  camera: THREE.Camera,
+  point: THREE.Vector3
+) {
+  camera.getWorldDirection(facing);
+  plane.setFromNormalAndCoplanarPoint(facing, point);
+}
+
+/** The cursor's state on `html`: the grab hand over a robot, the grabbing hand while holding one, nothing otherwise. */
+export function setCrowdFlag(mode: "hover" | "held" | null) {
+  const root = document.documentElement;
+  if (root.dataset.crowd === (mode ?? undefined)) return;
+  if (mode) root.dataset.crowd = mode;
+  else delete root.dataset.crowd;
+}
+
+/**
+ * The listeners both rooms share: a left press calls `grab` (true if it took a robot, which stops the browser selecting text),
+ * letting go, cancelling or leaving the window calls `drop`, and `over` says whether the cursor is on the page's own UI (`ui` selector).
+ * Returns the cleanup, which also drops and clears the cursor.
+ */
+export function listenHands(
+  grab: () => boolean,
+  drop: () => void,
+  ui: string,
+  over: (on: boolean) => void
+) {
+  const down = (e: PointerEvent) => {
+    if (e.button !== 0 || e.pointerType === "touch" || !grab()) return;
+    e.preventDefault();
+    window.getSelection()?.removeAllRanges();
+  };
+  const move = (e: PointerEvent) =>
+    over(e.target instanceof Element && e.target.closest(ui) !== null);
+  window.addEventListener("pointerdown", down);
+  window.addEventListener("pointermove", move, { passive: true });
+  window.addEventListener("pointerup", drop);
+  window.addEventListener("pointercancel", drop);
+  window.addEventListener("blur", drop);
+  return () => {
+    window.removeEventListener("pointerdown", down);
+    window.removeEventListener("pointermove", move);
+    window.removeEventListener("pointerup", drop);
+    window.removeEventListener("pointercancel", drop);
+    window.removeEventListener("blur", drop);
+    drop();
+    setCrowdFlag(null);
+  };
 }
 
 /** Picks a robot up by the head: the hand takes the head where it is, so nothing jumps, and the body hangs below. */

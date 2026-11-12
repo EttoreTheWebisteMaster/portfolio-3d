@@ -142,6 +142,11 @@ function prime(limb: Limb) {
   limb.primed = true;
 }
 
+/** Puts every foot back where it sits on the model. */
+export function restFeet(limp: Limp) {
+  for (const limb of limp) limb.foot?.bone.position.copy(limb.foot.rest);
+}
+
 /** Remembers where the animation put the foot, in the shin's frame, as the shin is let go. */
 function noteFoot(foot: Foot, shinBone: THREE.Object3D) {
   shinBone.getWorldQuaternion(shin).invert();
@@ -192,7 +197,7 @@ export function limpStep(
   if (!limp) return;
   if (w.limpW < 0.01) {
     for (const limb of limp) {
-      // Limp is over: the clip never moves the foot, so without this it stays where the leg last carried it, off the ankle.
+      // Limp is over: the clip never moves the foot, so without this it stays where the leg last carried it, off the ankle. Once only: the walking clip moves the feet itself.
       if (limb.primed && limb.foot)
         limb.foot.bone.position.copy(limb.foot.rest);
       limb.primed = false;

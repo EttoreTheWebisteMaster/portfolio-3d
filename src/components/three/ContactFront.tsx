@@ -1,12 +1,13 @@
 "use client";
 
-import { Canvas, useFrame } from "@react-three/fiber";
-import { type RefObject, useRef } from "react";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
+import { type RefObject, useEffect, useRef } from "react";
 import * as THREE from "three";
 
 import { useLoading } from "@/lib/loading";
 
 import ContactScene from "./ContactScene";
+import { stepHands, trackHands } from "./contactHands";
 import { stage } from "./contactRobots";
 import { blackout, contactCamera, onContact } from "./contactShot";
 
@@ -14,9 +15,13 @@ import { blackout, contactCamera, onContact } from "./contactShot";
 function Follow({
   shown,
 }: Readonly<{ shown: RefObject<HTMLDivElement | null> }>) {
-  useFrame(({ camera }, dt) => {
-    if (onContact() && camera instanceof THREE.PerspectiveCamera)
+  const { camera } = useThree();
+  useEffect(() => trackHands(camera), [camera]);
+  useFrame(({ camera, size }, dt) => {
+    if (onContact() && camera instanceof THREE.PerspectiveCamera) {
       contactCamera(camera, performance.now() / 1000, dt, false);
+      stepHands(camera, size.width / size.height);
+    }
   });
   // A render at priority 1 replaces the automatic one.
   useFrame(({ gl, scene, camera }) => {

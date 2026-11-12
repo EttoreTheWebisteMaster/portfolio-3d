@@ -133,9 +133,7 @@ export default class Crowd {
       huddle.members = huddle.members.filter(bot => bot.group === huddle);
       if (huddle.members.length === 1) {
         const [lone] = huddle.members;
-        lone.group = null;
-        lone.goTo(huddle.x, huddle.z);
-        lone.goal = null;
+        lone.disband();
         huddle.members = [];
       }
     }
@@ -187,6 +185,11 @@ export default class Crowd {
     this.tidy();
     for (const bot of this.bots) if (bot.ready && bot.active) this.direct(bot);
     for (const bot of this.bots) bot.step(dt, this.sound, time);
+  }
+
+  /** The robots the visitor can pick up right now. */
+  get grabbable() {
+    return this.bots.filter(bot => bot.grabbable);
   }
 
   private seen: boolean[] = [];

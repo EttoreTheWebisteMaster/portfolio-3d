@@ -243,8 +243,6 @@ export default function HeroCanvas() {
         <AdaptiveDpr />
       </Canvas>
       <CursorTip label="Make Rob dance" />
-      <CursorTip label="Grab" variant="grab" />
-      <CursorTip label="Drop" variant="drop" />
     </div>
   );
 }
