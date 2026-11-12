@@ -1,27 +1,27 @@
+import Image from "next/image";
+
 import CaseStudyMotion from "@/components/sections/CaseStudyMotion";
 import NextProject from "@/components/sections/NextProject";
-import PlayTrailer from "@/components/sections/PlayTrailer";
 import TrailerVideo from "@/components/sections/TrailerVideo";
-import Button from "@/components/ui/Button";
 import CaseEpisodes from "@/components/sections/CaseEpisodes";
 import CaseMore from "@/components/sections/CaseMore";
 import CaseResult from "@/components/sections/CaseResult";
 import CaseStory from "@/components/sections/CaseStory";
 import CaseSystem from "@/components/sections/CaseSystem";
-import { CASE_STUDIES } from "@/lib/caseStudies";
+import { caseStudyOf } from "@/lib/caseStudies";
 import { pad } from "@/lib/pages";
 import { PROJECTS, slugOf, TRAILER_SRC } from "@/lib/projects";
 
 type Project = (typeof PROJECTS)[number];
 
-/** A project's case study. The screen from Projects grows to fill the viewport and settles as the hero; the room keeps Projects' grade. */
+/** A project's case study. The trailer plays as the hero's backdrop, with the title, facts and a longer description laid over it. */
 export default function CaseStudy({
   project,
   index,
   next,
 }: Readonly<{ project: Project; index: number; next: Project }>) {
   // "platform · stack · year": the last part is the year, the rest the details.
-  const content = CASE_STUDIES[slugOf(project.title)];
+  const content = caseStudyOf(project);
   const parts = project.facts.split(" · ");
   const facts = [
     ["Discipline", project.discipline],
@@ -31,12 +31,22 @@ export default function CaseStudy({
   return (
     <article className="case">
       <header className="case-hero">
-        <div className="case-frame" data-pull>
+        <div className="case-backdrop" data-trailer>
           <TrailerVideo
             src={TRAILER_SRC}
-            poster={project.image}
+            poster={project.poster}
             label={`${project.title} trailer`}
           />
+          {project.poster && (
+            <Image
+              src={project.poster}
+              alt=""
+              fill
+              sizes="100vw"
+              className="case-still"
+              data-poster
+            />
+          )}
         </div>
         <div className="case-copy">
           <p data-fx="item" className="fx eyebrow">
@@ -45,9 +55,6 @@ export default function CaseStudy({
           <h1 data-fx="title" className="fx case-title">
             {project.title}
           </h1>
-          <p data-fx="text" className="fx case-lead">
-            {project.lead}
-          </p>
           <dl data-fx="item" className="fx case-facts">
             {facts.map(([label, value]) => (
               <div key={label} className="fact">
@@ -56,30 +63,16 @@ export default function CaseStudy({
               </div>
             ))}
           </dl>
-          {content && (
-            <div data-fx="item" className="fx case-rating">
-              <span className="case-rating-letter">
-                {content.rating.letter}
-              </span>
-              <p>
-                <strong>{content.rating.title}</strong>
-                <span>{content.rating.note}</span>
-              </p>
-            </div>
-          )}
-          <div data-fx="item" className="fx case-actions">
-            <PlayTrailer />
-            <Button href="/projects" variant="secondary">
-              ← Back to projects
-            </Button>
-          </div>
+          <p data-fx="text" className="fx case-lead">
+            {project.summary ?? project.lead}
+          </p>
         </div>
+        <CaseEpisodes content={content} />
       </header>
 
-      {content && <CaseStory content={content} />}
-      {content && <CaseEpisodes content={content} />}
-      {content && <CaseSystem content={content} />}
-      {content && <CaseResult content={content} image={project.image} />}
+      <CaseStory content={content} />
+      <CaseSystem content={content} />
+      <CaseResult content={content} image={project.image} />
       <CaseMore current={index} />
       <NextProject
         href={`/projects/${slugOf(next.title)}`}

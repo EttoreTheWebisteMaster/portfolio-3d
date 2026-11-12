@@ -78,6 +78,7 @@ export default function Button({
     return (
       <Link
         href={href}
+        scroll={false}
         className={cls}
         {...(external ? { target: "_blank", rel: "noreferrer" } : {})}
       >

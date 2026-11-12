@@ -1,4 +1,4 @@
-import type { CaseStudyContent } from "@/lib/caseStudies";
+import { type CaseStudyContent, episodeTitle } from "@/lib/caseStudies";
 
 /** Scene two: the idea in one sentence, and the facts beside it. */
 export default function CaseStory({
@@ -12,6 +12,9 @@ export default function CaseStory({
   ] as const;
   return (
     <section id="idea" className="case-scene case-story" aria-label="The idea">
+      <h2 data-reveal="title" className="case-heading">
+        {episodeTitle(content, "idea")}
+      </h2>
       <p data-reveal="words" className="case-statement">
         {content.statement}
       </p>

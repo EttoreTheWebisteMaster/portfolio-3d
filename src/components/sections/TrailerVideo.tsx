@@ -16,7 +16,8 @@ export default function TrailerVideo({
     if (!video) return;
     const sync = () => {
       video.muted = isMuted();
-      if (video.paused)
+      // Parked (swapped for its still, or reduced motion): the sound switch must not wake it.
+      if (video.paused && video.dataset.parked === undefined)
         void video.play().catch(() => {
           video.muted = true;
           void video.play().catch(() => {});

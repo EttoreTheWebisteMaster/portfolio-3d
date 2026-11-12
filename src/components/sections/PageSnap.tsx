@@ -2,7 +2,7 @@
 
 import { useRef } from "react";
 
-import { diveState, surface, takeReturn, DIVE_SECONDS } from "@/lib/caseStudy";
+import { caseState, diveState } from "@/lib/caseStudy";
 import { gsap, Observer, useGSAP } from "@/lib/gsap";
 import { getLoading } from "@/lib/loading";
 import { cruise, journey, setJourney, travelSeconds } from "@/lib/journey";
@@ -37,7 +37,10 @@ export default function PageSnap() {
           page.path === path.replace(/\/$/, "") ||
           (page.path === "/" && path === "/")
       );
-    const landed = pathIndex(window.location.pathname);
+    // A case study is a layer over Projects: opened from a link, it lands on that page.
+    const landed = window.location.pathname.startsWith("/projects/")
+      ? 1
+      : pathIndex(window.location.pathname);
     let index = landed >= 0 ? landed : nearest();
     let busy = false;
 
@@ -95,7 +98,14 @@ export default function PageSnap() {
 
     const go = (to: number, push = false) => {
       const next = gsap.utils.clamp(0, pages.length - 1, to);
-      if (busy || view.held || next === index || !getLoading().entered) return;
+      if (
+        busy ||
+        view.held ||
+        caseState.open ||
+        next === index ||
+        !getLoading().entered
+      )
+        return;
       const from = index;
       busy = true;
       index = next;
@@ -114,7 +124,7 @@ export default function PageSnap() {
 
     // Drags of the scrollbar and anything else that leaves between pages settle on the nearest one.
     const settle = () => {
-      if (busy || view.held) return;
+      if (busy || view.held || caseState.open) return;
       index = nearest();
       if (Math.abs(top(index) - window.scrollY) > 1)
         gsap.to(window, {
@@ -125,6 +135,7 @@ export default function PageSnap() {
     };
 
     const onKey = (e: KeyboardEvent) => {
+      if (caseState.open) return;
       if (e.target instanceof HTMLElement && e.target !== document.body) return;
       const dir = KEYS_NEXT.has(e.key) ? 1 : KEYS_PREV.has(e.key) ? -1 : 0;
       if (dir === 0) return;
@@ -140,6 +151,12 @@ export default function PageSnap() {
       const to = pathIndex(url.pathname);
       if (to < 0) return;
       e.preventDefault();
+      // From a case study every journey link first closes it, then goes where it was pointing.
+      if (caseState.open) {
+        if (!caseState.closing)
+          caseState.close(to === index ? undefined : () => go(to, true));
+        return;
+      }
       go(to, true);
     };
 
@@ -167,19 +184,7 @@ export default function PageSnap() {
     window.scrollTo(0, top(index));
     publishScroll();
 
-    // Back from a case study: the dive played in reverse. It starts inside the white-out and pulls out to Projects.
     diveState.v = 0;
-    if (takeReturn() && index === 1 && !reduced.matches) {
-      busy = true;
-      diveState.v = 1;
-      gsap.to(diveState, {
-        v: 0,
-        duration: DIVE_SECONDS,
-        delay: 0.6,
-        ease: surface,
-        onComplete: release,
-      });
-    }
 
     const observer = Observer.create({
       type: "wheel,touch",
@@ -195,6 +200,15 @@ export default function PageSnap() {
       },
     });
 
+    // `ignore` resolves its elements once, when the observer is made, and the case study opens later: while it is open the observer simply steps aside, so the wheel and swipes scroll the case study.
+    const stepAside = () => {
+      if (caseState.open === observer.isEnabled) {
+        if (caseState.open) observer.disable();
+        else observer.enable();
+      }
+    };
+    gsap.ticker.add(stepAside);
+
     window.addEventListener("scroll", publishScroll, { passive: true });
     window.addEventListener("scrollend", settle);
     window.addEventListener("keydown", onKey);
@@ -202,6 +216,7 @@ export default function PageSnap() {
     window.addEventListener("resize", onResize);
     window.addEventListener("popstate", onPop);
     return () => {
+      gsap.ticker.remove(stepAside);
       observer.kill();
       window.removeEventListener("scroll", publishScroll);
       window.removeEventListener("scrollend", settle);
