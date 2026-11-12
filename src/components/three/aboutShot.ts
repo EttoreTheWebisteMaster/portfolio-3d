@@ -75,7 +75,7 @@ const START = {
 };
 
 /** Shot progress where the lens settles into following him. */
-const LOCK = 0.62;
+const LOCK = 0.8;
 
 let rigKey = "";
 let rigged: { path: THREE.CatmullRomCurve3; gaze: THREE.CatmullRomCurve3 };
@@ -134,7 +134,7 @@ export function walkCamera(
   path.getPointAt(u, chase);
   gaze.getPointAt(u, aim);
   // Then the page follows him: the lens keeps the exact framing About ends on, travelling with him, so he stays in his final place in the frame the whole walk.
-  const lock = seg(w, [LOCK - 0.22, LOCK]);
+  const lock = ease(seg(w, [LOCK - 0.3, LOCK]));
   const along = MARK_X * seg(w, SHOT.walk) + frame.x - MARK_X;
   chase.lerp(goal.set(along, frame.y, frame.z), lock);
   aim.lerp(face.set(along, frame.y, 0), lock);

@@ -5,7 +5,13 @@ import { useRef } from "react";
 import { caseState, diveState } from "@/lib/caseStudy";
 import { gsap, Observer, useGSAP } from "@/lib/gsap";
 import { getLoading } from "@/lib/loading";
-import { cruise, journey, setJourney, travelSeconds } from "@/lib/journey";
+import {
+  actor,
+  cruise,
+  journey,
+  setJourney,
+  travelSeconds,
+} from "@/lib/journey";
 import { PAGES } from "@/lib/pages";
 import { view } from "@/lib/projects";
 
@@ -96,6 +102,15 @@ export default function PageSnap() {
         .set(target, { clearProps: "opacity,scale" });
     };
 
+    let queued: { to: number; push: boolean } | null = null;
+    const flush = () => {
+      if (actor.acting || !queued) return;
+      gsap.ticker.remove(flush);
+      const { to, push } = queued;
+      queued = null;
+      go(to, push);
+    };
+
     const go = (to: number, push = false) => {
       const next = gsap.utils.clamp(0, pages.length - 1, to);
       if (
@@ -106,6 +121,12 @@ export default function PageSnap() {
         !getLoading().entered
       )
         return;
+      // He is mid-wave (or any other move): let him finish, then change page, so the shot never starts on a cut-off pose.
+      if (actor.acting) {
+        queued = { to, push };
+        gsap.ticker.add(flush);
+        return;
+      }
       const from = index;
       busy = true;
       index = next;
@@ -217,6 +238,7 @@ export default function PageSnap() {
     window.addEventListener("popstate", onPop);
     return () => {
       gsap.ticker.remove(stepAside);
+      gsap.ticker.remove(flush);
       observer.kill();
       window.removeEventListener("scroll", publishScroll);
       window.removeEventListener("scrollend", settle);
