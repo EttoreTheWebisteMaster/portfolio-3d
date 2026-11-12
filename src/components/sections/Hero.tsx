@@ -9,8 +9,6 @@ const stack = [
 export default function Hero() {
   return (
     <section id="home" data-page className="hero page">
-      <h1 className="sr-only">Ettore Serra, designer and engineer</h1>
-
       <div className="hero-copy" data-depth="0.45">
         <h2 data-fx="title" className="fx hero-tagline">
           Designer &amp; engineer.
@@ -29,15 +27,17 @@ export default function Hero() {
         </div>
       </div>
 
-      <p data-fx="item" className="fx hero-billing">
-        <span>Design &amp; development</span> <strong>Ettore Serra</strong>{" "}
-        <span>with</span> <em>ROB-092</em>
-        {stack.map(line => (
-          <span key={line} className="hero-billing-line">
-            {line}
-          </span>
-        ))}
-      </p>
+      <div className="hero-aside" data-depth="0.3">
+        <p data-fx="item" className="fx hero-billing">
+          <span>Design &amp; development</span> <strong>Ettore Serra</strong>{" "}
+          <span>with</span> <em>ROB-092</em>
+          {stack.map(line => (
+            <span key={line} className="hero-billing-line">
+              {line}
+            </span>
+          ))}
+        </p>
+      </div>
     </section>
   );
 }

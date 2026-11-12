@@ -28,12 +28,13 @@ import {
   introFlash,
   type Progress,
   SCREEN_DIST,
+  journey,
   seg,
 } from "@/lib/journey";
 
 import { flare } from "./diveShot";
 import { FLOOR_Y } from "./HeroLight";
-import { daylight, SHOT, walk, walkPose } from "./walkPose";
+import { daylight, SHOT, walk, walkPose, ZOOM } from "./walkPose";
 import { onContact } from "./contactShot";
 
 const forward = new THREE.Vector3();
@@ -83,7 +84,10 @@ export default function HeroEffects({
     }
     // In the cinema the edges fall further into the dark: the screen is the only light.
     // On the cream wall of About it is only a breath.
-    if (vignette.current)
+    if (vignette.current) {
+      // The iris: as the lens goes into his eye the dark closes in from the edges, to a pinhole of light.
+      const iris = onContact() ? 0 : ease(seg(journey.current, ZOOM)) ** 1.5;
+      vignette.current.offset = THREE.MathUtils.lerp(0.2, 0.02, iris);
       vignette.current.darkness = onContact()
         ? 0.85
         : THREE.MathUtils.lerp(
@@ -91,6 +95,13 @@ export default function HeroEffects({
             0.25,
             paper
           );
+      if (!onContact())
+        vignette.current.darkness = THREE.MathUtils.lerp(
+          vignette.current.darkness,
+          1,
+          iris
+        );
+    }
     const fx = dof.current;
     if (!fx) return;
     const p = progress.current;
@@ -127,8 +138,12 @@ export default function HeroEffects({
   });
 
   return (
-    <EffectComposer multisampling={low ? 0 : 4}>
-      <DepthOfField ref={dof} bokehScale={0} resolutionScale={low ? 0.5 : 1} />
+    <EffectComposer multisampling={low ? 0 : 2}>
+      <DepthOfField
+        ref={dof}
+        bokehScale={0}
+        resolutionScale={low ? 0.5 : 0.75}
+      />
       <Bloom
         ref={bloom}
         mipmapBlur

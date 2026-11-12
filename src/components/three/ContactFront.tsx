@@ -8,7 +8,7 @@ import { useLoading } from "@/lib/loading";
 
 import ContactScene from "./ContactScene";
 import { stage } from "./contactRobots";
-import { contactCamera, onContact } from "./contactShot";
+import { blackout, contactCamera, onContact } from "./contactShot";
 
 /** Follows the main canvas's Contact camera, then draws only while the camera is on Contact. */
 function Follow({
@@ -23,6 +23,7 @@ function Follow({
     const on = onContact();
     shown.current?.setAttribute("data-on", String(on));
     if (!on) return;
+    gl.toneMappingExposure = 1.1 * (1 - blackout());
     // This canvas draws the near half of the pool.
     if (stage.near) stage.crowd?.lend(stage.near, true);
     gl.render(scene, camera);
@@ -38,7 +39,7 @@ export default function ContactFront() {
   return (
     <div ref={shown} aria-hidden data-on="false" className="contact-front">
       <Canvas
-        dpr={[1, 1.5]}
+        dpr={[1, 1.25]}
         shadows="percentage"
         camera={{ fov: 28, position: [-200, 0.7, 7.4], near: 0.1, far: 80 }}
         gl={{ antialias: true, alpha: true }}

@@ -1,15 +1,15 @@
 import { gsap } from "@/lib/gsap";
-import { cruise, ease, travelSeconds } from "@/lib/journey";
+import { cruise, ease } from "@/lib/journey";
 import { view } from "@/lib/projects";
 
 let opening = false;
 let leaving = false;
 let returning = false;
 
-/** The Projects → About landing, in seconds: the white holds a beat, softens, and the camera backs out. */
-export const HOLD = 0.07;
-export const SOFTEN = 0.32;
-export const PULL = 1.08;
+/** The case study's landing, in seconds: the white holds, then softens slowly into the room while the screen backs out. Played in reverse on the way out. */
+export const HOLD = 0.35;
+export const SOFTEN = 0.95;
+export const PULL = 1.7;
 /** The camera backing out: mostly one speed, ending gently. */
 export const pullEase = (t: number) => t + (ease(t) - t) * 0.35;
 
@@ -29,7 +29,7 @@ const dive = (t: number) => cruise(t * RUN) / cruise(RUN);
 /** The dive played backwards in time: out of the white to Projects, 0 → 1. */
 export const surface = (t: number) => 1 - dive(1 - t);
 /** Seconds the dive takes (and its reverse). */
-export const DIVE_SECONDS = travelSeconds(1, 2) * RUN;
+export const DIVE_SECONDS = 1.8 * RUN;
 /** Journey arrived from a case study: Projects plays the dive in reverse. Read once. */
 export function takeReturn() {
   const was = returning;
@@ -70,7 +70,18 @@ export function leaveCaseStudy(go: () => void) {
     const white = { f: 0 };
     gsap
       .timeline({ onComplete: done })
-      .to("[data-fx]", { opacity: 0, duration: 0.3, ease: "power2.in" }, 0)
+      // Every image and line of text goes out first; then the screen grows into the white.
+      .to(
+        "[data-fx], .case-scene, .case-next",
+        {
+          opacity: 0,
+          y: -24,
+          duration: 0.45,
+          ease: "power2.in",
+          stagger: 0.04,
+        },
+        0
+      )
       .to(
         frame,
         {
@@ -90,8 +101,8 @@ export function leaveCaseStudy(go: () => void) {
   if (window.scrollY > 8)
     gsap.to(window, {
       scrollTo: { y: 0, autoKill: false },
-      duration: 0.45,
-      ease: "power2.out",
+      duration: 0.7,
+      ease: "power2.inOut",
       onComplete: play,
     });
   else play();

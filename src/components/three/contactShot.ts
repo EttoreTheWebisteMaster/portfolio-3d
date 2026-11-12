@@ -22,17 +22,26 @@ export const halfView = (depth: number, aspect: number) =>
 export const depthAt = (z: number) => CAMERA.distance - z;
 
 /** 0 → 1 as Contact arrives: the lamp comes up out of the tunnel's black while the camera drifts down and in. */
-export const arrival = () => seg(journey.current, [CONTACT_AT, 2.9]);
+export const arrival = () => seg(journey.current, [CONTACT_AT, 3]);
 
 /** The lamp's strength: it comes up out of the black like a big old fixture catching: a few stutters, then it holds. Driven by the journey, so it plays the same backwards. */
 export function lampRise() {
   const pos = journey.current;
   const stutter = Math.sin(pos * 520) > -0.25 ? 1 : 0.2;
-  const hold = seg(pos, [CONTACT_AT + 0.1, CONTACT_AT + 0.22]);
-  // It never starts from nothing: the dimmed lamp is already there when the camera comes out of the tunnel.
+  const hold = seg(pos, [CONTACT_AT + 0.2, CONTACT_AT + 0.4]);
+  // It never starts from nothing: a dim filament is already there when the lens comes out of the black, and the lamp catches slowly.
   return (
-    THREE.MathUtils.lerp(0.2, 1, ease(seg(pos, [CONTACT_AT, 2.75]))) *
+    THREE.MathUtils.lerp(0.06, 1, ease(seg(pos, [CONTACT_AT + 0.05, 2.9]))) *
     THREE.MathUtils.lerp(stutter, 1, hold)
+  );
+}
+
+/** The lens closing and opening: 0 → 1 as the eye goes dark, held in the black for a beat at the cut, then back to 0 slowly as the lamp catches. Multiplies the exposure of both canvases. */
+export function blackout() {
+  const pos = journey.current;
+  return (
+    ease(seg(pos, [CONTACT_AT - 0.16, CONTACT_AT - 0.03])) *
+    (1 - ease(seg(pos, [CONTACT_AT + 0.07, CONTACT_AT + 0.36])))
   );
 }
 

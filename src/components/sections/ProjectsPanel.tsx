@@ -14,7 +14,8 @@ import { pad } from "@/lib/pages";
 
 /** Right column of Projects: what is on the screen, the way into it, and the index. */
 export default function ProjectsPanel() {
-  const [active, setActive] = useState(0);
+  // Coming back from a case study, the project that was opened is the one on the screen.
+  const [active, setActive] = useState(() => view.index);
   const next = (active + 1) % PROJECTS.length;
   const project = PROJECTS[active];
   const router = useRouter();

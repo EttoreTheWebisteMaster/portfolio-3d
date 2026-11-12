@@ -5,6 +5,7 @@ import gsap from "gsap";
 import { Observer } from "gsap/Observer";
 import { ScrambleTextPlugin } from "gsap/ScrambleTextPlugin";
 import { ScrollToPlugin } from "gsap/ScrollToPlugin";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { SplitText } from "gsap/SplitText";
 
 // Register once. Import gsap/plugins only from here.
@@ -12,6 +13,7 @@ gsap.registerPlugin(
   useGSAP,
   Observer,
   ScrollToPlugin,
+  ScrollTrigger,
   SplitText,
   ScrambleTextPlugin
 );

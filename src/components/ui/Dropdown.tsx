@@ -16,7 +16,7 @@ export default function Dropdown({ label, items }: Props) {
       <MenuItems transition anchor="bottom end" className="menu-items">
         {items.map(item => (
           <MenuItem key={item.href}>
-            <Link href={item.href} className="block menu-item">
+            <Link href={item.href} className="menu-item">
               {item.label}
             </Link>
           </MenuItem>

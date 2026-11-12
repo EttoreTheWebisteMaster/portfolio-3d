@@ -48,7 +48,15 @@ function followMute(video: HTMLVideoElement) {
     video.muted = isMuted();
   };
   sync();
-  return subscribeMuted(sync);
+  const off = subscribeMuted(sync);
+  // Sound is blocked until the visitor does something: the trailer may have started silent, so the first gesture hands the page's setting back.
+  window.addEventListener("pointerdown", sync, { once: true });
+  window.addEventListener("keydown", sync, { once: true });
+  return () => {
+    off();
+    window.removeEventListener("pointerdown", sync);
+    window.removeEventListener("keydown", sync);
+  };
 }
 
 /** Corner radius as a share of the screen's height: soft, Apple-display proportions. */
