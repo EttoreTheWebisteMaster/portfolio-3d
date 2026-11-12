@@ -58,16 +58,22 @@ function openLane(seats: readonly THREE.Vector2[]) {
   return best;
 }
 
-/** `live` = the room is the page. He only sets off while it is, and finishes his walk either way. */
+/** `live` = the room is the page. He only walks while it is, and is hidden the instant it is not. */
 export function stepStroller(
   s: Stroller,
   dt: number,
   live: boolean,
   seats: readonly THREE.Vector2[]
 ) {
+  // Any transition (in or out) cuts his walk: he is never on screen unless the room is the page.
+  if (!live) {
+    s.active = false;
+    s.robot.visible = false;
+    s.wait = Math.max(s.wait, EVERY.min);
+    return;
+  }
   if (!s.active) {
     s.robot.visible = false;
-    if (!live) return;
     s.wait -= dt;
     if (s.wait > 0) return;
     s.active = true;
