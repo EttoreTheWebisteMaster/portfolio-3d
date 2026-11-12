@@ -22,6 +22,7 @@ import { isMuted, subscribeMuted } from "@/lib/sound";
 
 import { dustTexture } from "./HeroLight";
 import { warm } from "./Warmup";
+import { cinemaFade } from "./walkPose";
 
 /** Cold-white, slightly cyan: a projected picture, not a neon sign. */
 const SCREEN_LIGHT = "#b4dbe6";
@@ -199,13 +200,16 @@ export default function ProjectsScreen({
     }
     // Hot enough to bloom as a line, then settles to the picture's own light.
     if (mat.current)
-      mat.current.color.setScalar(THREE.MathUtils.lerp(2, 1, open));
+      mat.current.color.setScalar(
+        THREE.MathUtils.lerp(2, 1, open) * cinemaFade()
+      );
     // Horizontal lens streak: hottest while the line draws, gone once the picture is up.
     if (streak.current) {
       streak.current.position.set(x, y, z + 0.05);
       streak.current.scale.set(w * (1.2 + 1.6 * draw), h * 0.07, 1);
     }
-    if (streakMat.current) streakMat.current.opacity = 0.03 * draw * (1 - open);
+    if (streakMat.current)
+      streakMat.current.opacity = 0.03 * draw * (1 - open) * cinemaFade();
     // The key of the cinema: a screen-sized panel facing the audience.
     if (light.current) {
       light.current.position.set(x, y, z + 0.3);
@@ -213,7 +217,7 @@ export default function ProjectsScreen({
       light.current.height = h * 1.5;
       light.current.lookAt(x, y - 2, z + 14);
       light.current.intensity =
-        (0.4 * draw * (1 - open) + 0.85 * open) * flicker;
+        (0.4 * draw * (1 - open) + 0.85 * open) * flicker * cinemaFade();
     }
   });
 

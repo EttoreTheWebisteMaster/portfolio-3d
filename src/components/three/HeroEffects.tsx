@@ -34,14 +34,22 @@ import {
 
 import { flare } from "./diveShot";
 import { FLOOR_Y } from "./HeroLight";
-import { daylight, SHOT, walk, walkPose, ZOOM } from "./walkPose";
+import {
+  closeUp,
+  daylight,
+  newPose,
+  SHOT,
+  walk,
+  walkPose,
+  ZOOM,
+} from "./walkPose";
 import { onContact } from "./contactShot";
 
 const forward = new THREE.Vector3();
 const scratch = new THREE.Vector3();
 const head = new THREE.Vector3(...HEAD);
 const mark = new THREE.Vector3();
-const pose = { x: 0, yaw: 0, stand: 0, phase: 0, moving: 0 };
+const pose = newPose();
 const screen = new THREE.Vector3(
   CAM_END[0] - 4.7,
   CAM_END[1] + 2.2,
@@ -95,12 +103,25 @@ export default function HeroEffects({
             0.25,
             paper
           );
-      if (!onContact())
+      if (!onContact()) {
         vignette.current.darkness = THREE.MathUtils.lerp(
           vignette.current.darkness,
           1,
           iris
         );
+        // The close-up: the edges close in dark around his face.
+        const cu = closeUp();
+        vignette.current.offset = THREE.MathUtils.lerp(
+          vignette.current.offset,
+          0.12,
+          cu
+        );
+        vignette.current.darkness = THREE.MathUtils.lerp(
+          vignette.current.darkness,
+          1,
+          cu
+        );
+      }
     }
     const fx = dof.current;
     if (!fx) return;
@@ -124,16 +145,23 @@ export default function HeroEffects({
     // The walk-out: focus racks off the screen onto him and follows him; the screen goes soft, then the cream room keeps a gentle depth.
     const w = walk();
     if (w > 0) {
-      const s = ease(seg(w, SHOT.rack));
+      const s = seg(w, SHOT.rack);
       walkPose(pose);
-      mark.set(pose.x, FLOOR_Y + 2, 0);
+      mark.set(pose.x, FLOOR_Y + 2, pose.z);
       fx.cocMaterial.focusDistance = THREE.MathUtils.lerp(
         depth(screen),
         depth(mark),
         s
       );
-      fx.cocMaterial.focusRange = THREE.MathUtils.lerp(3, 5, s);
-      fx.bokehScale = THREE.MathUtils.lerp(0, 7, s) * (1 - 0.65 * paper);
+      // In the close-up the plane of focus is a thin slice on his face: all the rest melts.
+      const cu = closeUp();
+      fx.cocMaterial.focusRange = THREE.MathUtils.lerp(
+        THREE.MathUtils.lerp(3, 5, s),
+        3,
+        cu
+      );
+      fx.bokehScale =
+        THREE.MathUtils.lerp(0, 7, s) * (1 - 0.65 * paper) + 6 * cu;
     }
   });
 

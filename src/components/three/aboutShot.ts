@@ -14,6 +14,8 @@ import {
   SHOT,
   walk,
   ZOOM,
+  closeUp,
+  newPose,
   walkPose,
   type Pose,
 } from "./walkPose";
@@ -60,11 +62,10 @@ export function aboutFrame(width: number, height: number) {
 
 const frame = { x: 0, y: 0, z: 0, fov: 0 };
 const chase = new THREE.Vector3();
+const face = new THREE.Vector3();
 const aim = new THREE.Vector3();
-const from = new THREE.Vector3();
 const goal = new THREE.Vector3();
-const settled = new THREE.Vector3();
-const pose: Pose = { x: 0, yaw: 0, stand: 0, phase: 0, moving: 0 };
+const pose: Pose = newPose();
 
 /** Where the Projects camera ends: the same spot the hero move lands on. */
 const START = {
@@ -72,6 +73,45 @@ const START = {
   fov: 32,
   aim: new THREE.Vector3(0, 6, -13),
 };
+
+/** Shot progress where the lens settles into following him. */
+const LOCK = 0.62;
+
+let rigKey = "";
+let rigged: { path: THREE.CatmullRomCurve3; gaze: THREE.CatmullRomCurve3 };
+
+/**
+ * The camera's flight and where it looks, as two smooth curves through the shot's key frames: the cinema, a medium shot off his shoulder
+ * while he gets up, the tracking frame beside him on the move, and the About frame. Sampled by arc length, so the speed is constant.
+ */
+function rig(f: typeof frame, narrow: boolean) {
+  const key = `${f.x}|${f.y}|${f.z}|${narrow}`;
+  if (key === rigKey) return rigged;
+  rigKey = key;
+  // Where he is part way through the walk, when the lens is tracking him.
+  const x = MARK_X * seg(LOCK, SHOT.walk);
+  rigged = {
+    path: new THREE.CatmullRomCurve3(
+      [
+        START.pos.clone(),
+        new THREE.Vector3(3, 0.9, 9),
+        new THREE.Vector3(x + f.x - MARK_X, f.y, f.z),
+      ],
+      false,
+      "centripetal"
+    ),
+    gaze: new THREE.CatmullRomCurve3(
+      [
+        START.aim.clone(),
+        new THREE.Vector3(0.6, 1, 0),
+        new THREE.Vector3(x + f.x - MARK_X, f.y, 0),
+      ],
+      false,
+      "centripetal"
+    ),
+  };
+  return rigged;
+}
 
 /**
  * The shot's camera. It drops from the cinema frame to eye level beside him, then follows him with him dead centre while he walks,
@@ -87,27 +127,20 @@ export function walkCamera(
   Object.assign(frame, { x: a.x, y: a.y, z: a.z, fov: a.fov });
   walkPose(pose);
   const narrow = width < height;
-  const drop = ease(seg(w, [0, 0.2]));
-  const hand = ease(seg(w, SHOT.handoff));
-  // Chasing: a little behind him, always looking at him, so he stays the centre of the shot.
-  const rx = pose.x;
-  const dist = narrow ? 20 : 14;
-  chase.set(
-    rx - 2.4,
-    THREE.MathUtils.lerp(START.pos.y, 0.4, drop),
-    THREE.MathUtils.lerp(START.pos.z, dist, drop)
-  );
-  aim.set(
-    rx,
-    THREE.MathUtils.lerp(START.aim.y, -0.4, drop),
-    THREE.MathUtils.lerp(START.aim.z, 0, drop)
-  );
-  from.copy(chase).lerp(START.pos, 0);
-  goal.set(frame.x, frame.y, frame.z);
-  camera.position.copy(from).lerp(goal, hand);
-  const look = aim.lerp(settled.set(frame.x, frame.y, 0), hand);
-  const fov = THREE.MathUtils.lerp(START.fov, 30, drop);
-  camera.fov = THREE.MathUtils.lerp(fov, frame.fov, hand);
+  const hand = seg(w, SHOT.handoff);
+  // One free, flowing path from the cinema frame to the About frame, flown at a single constant speed (by arc length): no segment starts or stops.
+  const { path, gaze } = rig(frame, narrow);
+  const u = Math.min(w / LOCK, 1);
+  path.getPointAt(u, chase);
+  gaze.getPointAt(u, aim);
+  // Then the page follows him: the lens keeps the exact framing About ends on, travelling with him, so he stays in his final place in the frame the whole walk.
+  const lock = seg(w, [LOCK - 0.22, LOCK]);
+  const along = MARK_X * seg(w, SHOT.walk) + frame.x - MARK_X;
+  chase.lerp(goal.set(along, frame.y, frame.z), lock);
+  aim.lerp(face.set(along, frame.y, 0), lock);
+  camera.position.copy(chase);
+  const look = aim;
+  camera.fov = THREE.MathUtils.lerp(START.fov, frame.fov, seg(w, [0, LOCK]));
   // A touch of parallax once the frame is locked.
   const live = seg(w, [0.95, 1]) * (1 - seg(journey.current, ZOOM));
   camera.position.x += pointer.x * 0.12 * live;
@@ -126,6 +159,8 @@ export function walkCamera(
     camera.fov *= 1 - 0.05 * zoom * beat;
   }
   camera.lookAt(look);
+  // A breath of roll through the move, level again once it is locked.
+  camera.rotateZ(0.015 * Math.sin(Math.PI * w));
   // Phone: the frame is shifted up by the lens (no tilt), so he stands in the top of the screen.
   const shift = a.shift * hand * (1 - zoom);
   if (shift > 0.5) camera.setViewOffset(width, height, 0, shift, width, height);
@@ -138,7 +173,12 @@ export function exposure(base: number) {
   const w = walk();
   const bloom = Math.sin(Math.PI * seg(w, SHOT.daylight) ** 0.8) * 0.25;
   const dim = ease(seg(journey.current, DIM));
-  return (base + 2.4 * flare() + bloom) * (1 - 0.8 * dim) * (1 - blackout());
+  return (
+    (base + 2.4 * flare() + bloom) *
+    (1 - 0.8 * dim) *
+    (1 - 0.3 * closeUp()) *
+    (1 - blackout())
+  );
 }
 
 let measured = "";
@@ -166,7 +206,7 @@ export function publishAbout(width: number, height: number) {
   else delete root.dataset.blur;
   const pos = journey.current;
   // The theme turns to paper once the frame is mostly cream, and back as About dims into Contact.
-  if (pos >= 1.68 && pos < DIM[0]) root.dataset.paper = "";
+  if (pos >= 1.6 && pos < DIM[0]) root.dataset.paper = "";
   else delete root.dataset.paper;
   if (pos >= 1.97 && pos < ZOOM[0]) root.dataset.aboutReady = "";
   else delete root.dataset.aboutReady;

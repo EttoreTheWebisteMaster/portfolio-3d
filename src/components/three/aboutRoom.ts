@@ -64,3 +64,45 @@ export function blobTexture() {
     [1, "rgba(40,30,20,0)"],
   ]);
 }
+
+/**
+ * The cream of the sweep, lit like any surface but see-through where the daylight has not reached yet: its alpha rises with world x past a front
+ * (`front.value`) that comes in from the right, so the cream spills over the cinema's dark as a soft gradient, never as a switch.
+ */
+export function spillMaterial(soft: number) {
+  const front = { value: 1e3 };
+  const material = new THREE.MeshStandardMaterial({
+    color: "#ece4d0",
+    roughness: 1,
+    side: THREE.DoubleSide,
+    envMapIntensity: 0,
+    transparent: true,
+    depthWrite: false,
+  });
+  material.onBeforeCompile = shader => {
+    shader.uniforms.uFront = front;
+    shader.uniforms.uSoft = { value: soft };
+    shader.vertexShader = shader.vertexShader
+      .replace("void main() {", "varying float vSpillX;\nvoid main() {")
+      .replace(
+        "#include <begin_vertex>",
+        "#include <begin_vertex>\nvSpillX = (modelMatrix * vec4(transformed, 1.0)).x;"
+      );
+    shader.fragmentShader = shader.fragmentShader
+      .replace(
+        "void main() {",
+        "uniform float uFront;\nuniform float uSoft;\nvarying float vSpillX;\nvoid main() {"
+      )
+      .replace(
+        "#include <alphamap_fragment>",
+        "#include <alphamap_fragment>\ndiffuseColor.a *= smoothstep(uFront - uSoft, uFront + uSoft, vSpillX);"
+      );
+  };
+  material.customProgramCacheKey = () => "cream-spill";
+  return {
+    material,
+    setFront: (x: number) => {
+      front.value = x;
+    },
+  };
+}

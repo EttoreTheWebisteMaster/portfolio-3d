@@ -12,7 +12,7 @@ import CrowdDust from "./CrowdDust";
 import { PROJECTOR } from "./crowdLight";
 import ProjectsCrowd from "./ProjectsCrowd";
 import ProjectsScreen from "./ProjectsScreen";
-import { daylight, walk } from "./walkPose";
+import { cinemaFade, crowdFade, daylight } from "./walkPose";
 import { warm } from "./Warmup";
 
 /** Projector light: cold white, close to neutral. */
@@ -49,7 +49,7 @@ function Beam({ progress }: Readonly<{ progress: Progress }>) {
   const cones = useMemo(() => CONES.map(c => cone(c.alpha)), []);
 
   useFrame(() => {
-    const on = ease(seg(progress.current, BEAT.picture));
+    const on = ease(seg(progress.current, BEAT.picture)) * cinemaFade();
     const { x, y, z, w, h } = view.screen;
     at.set(x, y, z);
     dir.copy(PROJECTOR).sub(at);
@@ -116,8 +116,8 @@ export default function ProjectsRoom({
     // Cool ambient bounce so the room never goes black while the hero key hands over.
     const day = daylight();
     if (fill.current) fill.current.intensity = 0.2 * cinema * (1 - 0.7 * day);
-    // Once the camera is in the cream room the cinema is behind it: it stops being drawn. Its lights stay (a changing light count would recompile everything).
-    if (set.current) set.current.visible = walk() < 0.82 || warm.on;
+    // Once the camera has settled in the cream room the cinema is far behind it: it stops being drawn (nothing of it is in frame by then). Its lights stay (a changing light count would recompile everything).
+    if (set.current) set.current.visible = crowdFade() > 0 || warm.on;
     // The warm accent: a low house light grazing the crowd's crowns against the cold screen.
     if (top.current) top.current.intensity = 0.3 * show * (1 - day);
   });

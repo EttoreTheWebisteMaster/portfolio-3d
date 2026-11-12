@@ -11,7 +11,7 @@ import { pointer } from "@/lib/pointer";
 /** How much of the journey (in pages) a page takes to arrive and to leave. */
 const SPAN = 0.25;
 /** About and Contact: how much of the journey before the page their copy starts to arrive. */
-const ARRIVE = [0.35, 0.4] as const;
+const ARRIVE = [0.28, 0.4] as const;
 /** Home's copy decodes over the back half of the opening shot. */
 const INTRO_SECONDS = 2;
 
@@ -37,7 +37,7 @@ export default function PageMotion() {
         tl: gsap.core.Timeline | null;
         intro: gsap.core.Tween | null;
       };
-      const rigs: Rig[] = pages.map(page => {
+      const rigs: Rig[] = pages.map((page, index) => {
         const items = gsap.utils.toArray<HTMLElement>("[data-fx]", page);
         // Pages without marked copy (Projects) have nothing to pose.
         if (items.length === 0) return { page, tl: null, intro: null };
@@ -53,7 +53,7 @@ export default function PageMotion() {
             el,
             at,
             undefined,
-            i === 2 ? "left" : "below"
+            index === 2 ? "left" : "below"
           );
           if (!split) {
             leave.to(

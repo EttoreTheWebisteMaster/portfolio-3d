@@ -8,8 +8,17 @@ import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { asking, greet } from "@/lib/interview";
 import { play } from "@/lib/sound";
 import { pointer, target as cursor } from "@/lib/pointer";
-import { BEAT, ease, intro, journey, type Progress, seg } from "@/lib/journey";
+import {
+  BEAT,
+  ease,
+  heading,
+  intro,
+  journey,
+  type Progress,
+  seg,
+} from "@/lib/journey";
 
+import { rimLit } from "./crowdLight";
 import { FLOOR_Y } from "./HeroLight";
 import {
   driveMoves,
@@ -18,8 +27,17 @@ import {
   type Moves,
   paintCoats,
   resetMoves,
+  rimCoats,
 } from "./robotShot";
-import { eye, type Pose, STRIDE, walkPose, ZOOM } from "./walkPose";
+import {
+  daylight,
+  eye,
+  type Pose,
+  STRIDE,
+  walkPose,
+  newPose,
+  ZOOM,
+} from "./walkPose";
 import {
   type Bounds,
   type Mood,
@@ -90,6 +108,7 @@ export default function HeroRobot({
       let mat = made.get(old.name);
       if (!mat) {
         mat = steel(old.name, old.flatShading);
+        rimLit(mat);
         made.set(old.name, mat);
       }
       obj.material = mat;
@@ -110,7 +129,7 @@ export default function HeroRobot({
 
   const coats = useRef<ReturnType<typeof makeCoats>>([]);
   const moves = useRef<Moves | null>(null);
-  const pose = useRef<Pose>({ x: 0, yaw: 0, stand: 0, phase: 0, moving: 0 });
+  const pose = useRef<Pose>(newPose());
   const arrived = useRef(false);
   const steps = useRef(0);
   const live = useRef(false);
@@ -233,14 +252,26 @@ export default function HeroRobot({
     if (step !== steps.current && p.moving > 0.5 && pos > 1.2) play("step");
     steps.current = step;
     // His paint turns from the hero's polished metal to the matte palette as the daylight takes over.
-    const k = ease(seg(pos, [1.35, 1.65]));
-    if (k !== matte.current) {
-      matte.current = k;
-      paintCoats(coats.current, k);
+    // As Projects lands he trades the hero's metal for the crowd's own dim paint, so he is one of them in the row, in the same light.
+    const crowd = ease(seg(pos, [0.7, 1]));
+    const k = ease(seg(pos, [1.15, 1.65]));
+    const mix = crowd + k * 10;
+    if (mix !== matte.current) {
+      matte.current = mix;
+      paintCoats(coats.current, crowd, k);
     }
+    // The projector's cold rim on his edges, as on the rest of the audience, fading as the daylight takes over.
+    const rim =
+      0.3 *
+      crowd *
+      ease(seg(progress.current, BEAT.picture)) *
+      (1 - daylight());
+    rimCoats(coats.current, rim);
     // Arrived on his mark: the interview opens.
     if (!arrived.current && pos >= 1.995) {
       arrived.current = true;
+      // He turns to us and waves as he arrives, then the interview opens.
+      if (heading.dir > 0 && !oneShot.current) playOnce("Wave", 0.35);
       greet();
     } else if (arrived.current && pos < 1.9) arrived.current = false;
 
@@ -277,14 +308,15 @@ export default function HeroRobot({
     if (turn.current) {
       // A small wind-up against the turn, then round to face the screen.
       const t = seg(progress.current, BEAT.turn);
-      turn.current.rotation.y =
-        pos > 1
-          ? p.yaw
-          : Math.PI * ease(t) -
-            0.12 * Math.sin(Math.PI * seg(t, [0, 0.25])) +
-            // He turns a touch toward the pointer, so the scene answers the hand.
-            pointer.x * 0.18 * (1 - t);
+      // Home's own turn (a wind-up, then round to face the screen) rules until he sets off; then it is the walk's facing.
+      const home =
+        Math.PI * ease(t) -
+        0.12 * Math.sin(Math.PI * seg(t, [0, 0.25])) +
+        // He turns a touch toward the pointer, so the scene answers the hand.
+        pointer.x * 0.18 * (1 - t);
+      turn.current.rotation.y = THREE.MathUtils.lerp(home, p.yaw, p.lean);
       turn.current.position.x = p.x;
+      turn.current.position.z = p.z;
     }
   });
 
