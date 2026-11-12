@@ -4,40 +4,53 @@ import { useFrame } from "@react-three/fiber";
 import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 
-import { cinemaLight, ease, journey, seg } from "@/lib/journey";
+import { ease, journey, seg } from "@/lib/journey";
 import { roomTone } from "@/lib/sound";
 
-import { daylight, eye, MARK_X, walk, walkPose, ZOOM } from "./walkPose";
-import { blobTexture, sweepGeometry } from "./aboutRoom";
+import {
+  closeUp,
+  daylight,
+  eye,
+  MARK_X,
+  newPose,
+  SPILL,
+  spillFront,
+  walk,
+  walkPose,
+  ZOOM,
+} from "./walkPose";
+import { blobTexture, spillMaterial, sweepGeometry } from "./aboutRoom";
 import { FLOOR_Y } from "./HeroLight";
 import { warm } from "./Warmup";
 
-const KEY = 240;
-const FILL = 55;
+const KEY = 520;
+const FILL = 26;
 const RIM = 120;
 /** Neutral daylight bouncing in the room: lifts the sweep to cream without a second key. */
-const SKY = 0.9;
-const TRAILER = 150;
+const SKY = 0.5;
 /** The glint: one small cold light in front of his face that outlives the room while the lens pushes in. */
 const GLINT = 14;
+/** The close-up's light on his face. */
+const CLOSE = 70;
 
-const pose = { x: 0, yaw: 0, stand: 0, phase: 0, moving: 0 };
+const pose = newPose();
 
 /** The About set: a cream sweep under soft studio light on him (wide key, cool rim, gentle fill), lit as the walk goes on. */
 export default function AboutScene() {
   const key = useRef<THREE.SpotLight>(null);
   const fill = useRef<THREE.PointLight>(null);
   const rim = useRef<THREE.SpotLight>(null);
-  const trailer = useRef<THREE.PointLight>(null);
   const glint = useRef<THREE.PointLight>(null);
+  const lens = useRef<THREE.PointLight>(null);
   const sky = useRef<THREE.HemisphereLight>(null);
   const room = useRef<THREE.Group>(null);
   const blob = useRef<THREE.Mesh>(null);
   const target = useMemo(() => new THREE.Object3D(), []);
   const sweep = useMemo(() => sweepGeometry(), []);
+  const { material, setFront } = useMemo(() => spillMaterial(SPILL.soft), []);
   const shadow = useMemo(() => blobTexture(), []);
   useEffect(() => {
-    target.position.set(MARK_X, FLOOR_Y, 0);
+    target.position.set(MARK_X, FLOOR_Y + 2.2, 0);
     if (key.current) key.current.target = target;
     if (rim.current) rim.current.target = target;
   }, [target]);
@@ -51,17 +64,10 @@ export default function AboutScene() {
     // A cold rim outlines him against the dark of the cinema as he sets off, then the room's light takes over.
     if (rim.current)
       rim.current.intensity =
-        RIM * Math.max(d, 0.8 * ease(seg(walk(), [0.04, 0.25])) * (1 - d));
+        RIM * Math.max(d, 0.8 * ease(seg(walk(), [0, 0.12])) * (1 - d));
     if (sky.current) sky.current.intensity = SKY * d;
-    // The trailer's light on his head and shoulders: cold, from the screen's side. It stays put and he walks out of it.
-    if (trailer.current) {
-      walkPose(pose);
-      trailer.current.intensity =
-        TRAILER *
-        cinemaLight(Math.min(journey.current, 1)) *
-        (1 - ease(seg(pose.x, [0, 12]))) *
-        (1 - d);
-    }
+    // The soft light of the close-up: on his face while the lens is on him, gone as he walks off. It stays where it is; only its strength follows the shot.
+    if (lens.current) lens.current.intensity = CLOSE * closeUp();
     if (glint.current) {
       const pos = journey.current;
       glint.current.position
@@ -73,10 +79,12 @@ export default function AboutScene() {
         ease(seg(pos, [ZOOM[0] + 0.04, ZOOM[0] + 0.24])) *
         (1 - ease(seg(pos, [ZOOM[1] - 0.06, ZOOM[1] + 0.04])));
     }
-    if (room.current) room.current.visible = d > 0.001 || warm.on;
+    // Drawn from the first frame of the walk: it is transparent where the daylight has not reached yet, so nothing switches on.
+    if (room.current) room.current.visible = journey.current > 1 || warm.on;
+    setFront(spillFront());
     if (blob.current) {
       walkPose(pose);
-      blob.current.position.x = pose.x;
+      blob.current.position.set(pose.x, FLOOR_Y + 0.05, pose.z);
       (blob.current.material as THREE.MeshBasicMaterial).opacity = 0.55 * d;
     }
   });
@@ -85,17 +93,18 @@ export default function AboutScene() {
       <primitive object={target} />
       <spotLight
         ref={key}
-        position={[MARK_X - 6, 9, 13]}
-        color="#fff3e2"
+        position={[MARK_X + 6, 2.8, 14]}
+        color="#fff6e8"
         intensity={0}
-        angle={0.62}
-        penumbra={1}
-        distance={60}
+        angle={0.4}
+        penumbra={0.35}
+        distance={70}
         decay={2}
         castShadow
-        shadow-mapSize={[512, 512]}
-        shadow-radius={8}
+        shadow-mapSize={[2048, 2048]}
+        shadow-radius={3}
         shadow-bias={-0.0004}
+        shadow-normalBias={0.05}
       />
       <spotLight
         ref={rim}
@@ -109,11 +118,11 @@ export default function AboutScene() {
       />
       <hemisphereLight ref={sky} args={["#fff8ee", "#d8cfba", 0]} />
       <pointLight
-        ref={trailer}
-        position={[0.5, 4, 2.5]}
-        color="#cfe6ee"
+        ref={lens}
+        position={[2.5, 1.8, 4.5]}
+        color="#ffe2c0"
         intensity={0}
-        distance={30}
+        distance={16}
         decay={2}
       />
       <pointLight
@@ -132,16 +141,12 @@ export default function AboutScene() {
         decay={2}
       />
       <group ref={room} visible={false}>
-        <mesh geometry={sweep} receiveShadow>
-          <meshStandardMaterial
-            color="#ece4d0"
-            roughness={1}
-            side={THREE.DoubleSide}
-            envMapIntensity={0}
-          />
+        <mesh geometry={sweep} receiveShadow renderOrder={1}>
+          <primitive object={material} attach="material" />
         </mesh>
         <mesh
           ref={blob}
+          renderOrder={2}
           position={[MARK_X, FLOOR_Y + 0.05, 0]}
           rotation={[-Math.PI / 2, 0, 0]}
         >

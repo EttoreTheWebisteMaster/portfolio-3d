@@ -4,7 +4,12 @@ export type Progress = { current: number };
 /** Page position as a float page index: 0 on Home, 1 on Projects, 0.5 halfway between. Written by the page snapper. */
 export const journey: Progress = { current: 0 };
 
+/** Which way the journey last moved: 1 towards Contact, -1 back towards Home. Actors face the way they travel. */
+export const heading = { dir: 1 };
+
 export function setJourney(p: number) {
+  if (Math.abs(p - journey.current) > 1e-4)
+    heading.dir = p > journey.current ? 1 : -1;
   journey.current = p;
 }
 
@@ -26,7 +31,7 @@ export const ease = (t: number) => t * t * t * (t * (t * 6 - 15) + 10);
 export const TRANSITION_SECONDS = 3.2;
 
 /** Seconds each hop between neighbouring pages takes: Home → Projects, Projects → About, About → Contact. */
-const HOP_SECONDS = [TRANSITION_SECONDS, 3.8, 3.2] as const;
+const HOP_SECONDS = [TRANSITION_SECONDS, TRANSITION_SECONDS, 3.2] as const;
 
 /** Seconds a change from page `from` to page `to` takes: the hops it crosses, added up. */
 export function travelSeconds(from: number, to: number) {

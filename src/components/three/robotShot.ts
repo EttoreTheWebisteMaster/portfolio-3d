@@ -47,33 +47,57 @@ export function resetMoves(moves: Moves) {
   moves.idle?.setEffectiveWeight(1);
 }
 
+type Look = { color: THREE.Color; metalness: number; roughness: number };
 type Coat = {
   m: THREE.MeshPhysicalMaterial;
-  steel: { color: THREE.Color; metalness: number; roughness: number };
-  paint: { color: THREE.Color; metalness: number; roughness: number };
+  steel: Look;
+  /** The audience's own paint: the palette, dimmed, with no clearcoat and little reflection. */
+  crowd: Look;
+  paint: Look;
 };
 
+/** The crowd's paint keeps this much of ROB-092's colour; he wears the same while he sits among them. */
+export const CROWD_DIM = 0.34;
+
 export function makeCoats(made: Map<string, THREE.MeshPhysicalMaterial>) {
-  return [...made.entries()].map(([name, m]): Coat => ({
-    m,
-    steel: {
-      color: m.color.clone(),
-      metalness: m.metalness,
-      roughness: m.roughness,
-    },
-    paint: {
+  return [...made.entries()].map(([name, m]): Coat => {
+    const paint: Look = {
       color: new THREE.Color(PALETTE[name].color),
       metalness: PALETTE[name].metalness,
       roughness: PALETTE[name].roughness,
-    },
-  }));
+    };
+    return {
+      m,
+      steel: {
+        color: m.color.clone(),
+        metalness: m.metalness,
+        roughness: m.roughness,
+      },
+      crowd: { ...paint, color: paint.color.clone().multiplyScalar(CROWD_DIM) },
+      paint,
+    };
+  });
 }
 
-/** His paint from the hero's polished metal (0) to the matte palette (1). */
-export function paintCoats(coats: Coat[], k: number) {
-  for (const { m, steel, paint } of coats) {
-    m.color.lerpColors(steel.color, paint.color, k);
-    m.metalness = THREE.MathUtils.lerp(steel.metalness, paint.metalness, k);
-    m.roughness = THREE.MathUtils.lerp(steel.roughness, paint.roughness, k);
+const base = new THREE.Color();
+
+/** His paint: the hero's polished metal (both 0), the audience's dim paint (`crowd` 1), then the matte palette in daylight (`day` 1). */
+export function paintCoats(coats: Coat[], crowd: number, day: number) {
+  for (const { m, steel, crowd: dim, paint } of coats) {
+    base.lerpColors(steel.color, dim.color, crowd);
+    m.color.lerpColors(base, paint.color, day);
+    const metal = THREE.MathUtils.lerp(steel.metalness, dim.metalness, crowd);
+    m.metalness = THREE.MathUtils.lerp(metal, paint.metalness, day);
+    const rough = THREE.MathUtils.lerp(steel.roughness, dim.roughness, crowd);
+    m.roughness = THREE.MathUtils.lerp(rough, paint.roughness, day);
+    m.envMapIntensity = THREE.MathUtils.lerp(0.9, 0.2, crowd * (1 - day));
+  }
+}
+
+/** The projector's rim light on his edges, as on the rest of the audience (0 = none). */
+export function rimCoats(coats: Coat[], amount: number) {
+  for (const { m } of coats) {
+    const rim = m.userData.rim as { value: number } | undefined;
+    if (rim) rim.value = amount;
   }
 }

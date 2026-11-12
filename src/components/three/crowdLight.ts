@@ -102,3 +102,14 @@ export function fadeCast(material: THREE.Material, p: number) {
 export function fadePools(material: THREE.Material, p: number) {
   material.opacity = ease(seg(p, BEAT.floor));
 }
+
+/** Takes the crowd's paint and rim light down to `k` of what it is (1 = as lit, 0 = gone into the dark). */
+export function darken(
+  skins: readonly THREE.MeshPhysicalMaterial[],
+  k: number
+) {
+  for (const skin of skins) {
+    skin.color.copy(skin.userData.base as THREE.Color).multiplyScalar(k);
+    skin.userData.rim.value *= k;
+  }
+}
