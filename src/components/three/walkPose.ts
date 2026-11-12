@@ -23,7 +23,7 @@ export const SHOT = {
   /** He sets off; he is at the mark at `arrive`. One constant speed. */
   walk: [0.36, 0.93],
   /** The cinema dims into the dark and daylight spills in from the right while he is on the move. */
-  daylight: [0.3, 0.88],
+  daylight: [0.22, 0.9],
   /** The camera has followed him all along; it settles into the About frame as he reaches the mark. */
   handoff: [0.62, 1],
   arrive: [0.92, 1],
@@ -60,13 +60,13 @@ export const spillFront = () =>
     ease(seg(walk(), SHOT.daylight)) * (1 - ease(seg(journey.current, DIM)))
   );
 
-/** 1 on Projects, 0 once the cinema has gone into the dark behind him: the crowd, the screen and the beam all follow it down together. */
-export const cinemaFade = () => 1 - ease(seg(walk(), [0.05, 0.48]));
+/** 1 on Projects; the screen and beam sink to a dim, blurred glow behind him (never fully dark) and are gone only as the daylight covers them. */
+export const cinemaFade = () =>
+  THREE.MathUtils.lerp(1, 0.25, ease(seg(walk(), [0.05, 0.4]))) *
+  (1 - ease(seg(walk(), [0.3, 0.85]))) ** 1.5;
 
 /** The audience while he walks out: it sinks to a dim presence behind him (he never walks in the pitch dark) and is gone before the first glimpse of daylight. */
-export const crowdFade = () =>
-  THREE.MathUtils.lerp(1, 0.3, ease(seg(walk(), [0.05, 0.26]))) *
-  (1 - ease(seg(walk(), [0.26, 0.4])));
+export const crowdFade = () => 1 - ease(seg(walk(), [0.05, 0.42]));
 
 /** 0 → 1 → 0: the lens is on his face, close, while he gets up and turns. Everything softens and darkens around him. */
 export const closeUp = () =>

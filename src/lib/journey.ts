@@ -7,6 +7,9 @@ export const journey: Progress = { current: 0 };
 /** Which way the journey last moved: 1 towards Contact, -1 back towards Home. Actors face the way they travel. */
 export const heading = { dir: 1 };
 
+/** True while he is in the middle of a one-off move (a wave, a dance): the page change waits for him to finish. */
+export const actor = { acting: false };
+
 export function setJourney(p: number) {
   if (Math.abs(p - journey.current) > 1e-4)
     heading.dir = p > journey.current ? 1 : -1;
