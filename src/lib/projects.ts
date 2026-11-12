@@ -5,8 +5,12 @@ type Project = {
   discipline: string;
   /** Hover thumbnail in /public. Rows without one show the felt card. */
   image?: string;
+  /** The case study backdrop once its trailer has softened away: a still of the trailer. Falls back to nothing (the footage keeps playing). */
+  poster?: string;
   /** Two lines at most. */
   lead: string;
+  /** The longer description on the case study hero; falls back to `lead`. */
+  summary?: string;
 };
 
 /**
@@ -20,7 +24,10 @@ export const PROJECTS: readonly Project[] = [
     facts: "macOS menu-bar app · SwiftUI · 2026",
     discipline: "Product",
     image: "/projects/pausa.jpg",
+    poster: "/projects/pausa-poster.jpg",
     lead: "Rest makes you better. A menu-bar app that turns the break into a small event.",
+    summary:
+      "Work sessions don't end; they just get interrupted. Pausa lives in the macOS menu bar and, when it's time to stop, spins a wheel across eight kinds of break: move, breathe, snack, step outside and more. I designed the product, the visual system and the SwiftUI app, so the pause stops being a chore and becomes a small event.",
   },
   {
     title: "Antonino",
@@ -46,6 +53,8 @@ export const PROJECTS: readonly Project[] = [
     facts: "Next.js · Three.js · GSAP · 2026",
     discipline: "Next.js · 3D",
     lead: "The site you are on: one persistent 3D set, scrolled like a film.",
+    summary:
+      "The site you are on. A single persistent 3D set built with React Three Fiber, where every page is a different camera and light on the same room. GSAP drives the scroll and transitions, and the whole thing stays accessible, responsive and respectful of reduced motion.",
   },
   {
     title: "Photo Curator",

@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import ProjectsIndex from "@/components/sections/ProjectsIndex";
 import { ButtonArrow, ButtonLabel } from "@/components/ui/Button";
 import { gsap, useGSAP } from "@/lib/gsap";
-import { openCaseStudy } from "@/lib/caseStudy";
+import { caseState, openCaseStudy } from "@/lib/caseStudy";
 import { journey } from "@/lib/journey";
 import { PROJECTS, slugOf, TRAILER_SECONDS, view } from "@/lib/projects";
 import { pad } from "@/lib/pages";
@@ -38,14 +38,6 @@ export default function ProjectsPanel() {
   };
 
   useEffect(() => router.prefetch(href), [router, href]);
-  // Leaving mid-dive (or for good) hands the scroll back.
-  useEffect(
-    () => () => {
-      view.held = false;
-    },
-    []
-  );
-
   // The screen is a DOM box the 3D screen is pinned to: measured, never copied, so they cannot drift apart.
   useEffect(() => {
     const measure = () => {
@@ -64,6 +56,11 @@ export default function ProjectsPanel() {
   // The Next timer is the trailer's own clock: the underline fills as the video plays, and the next one starts when it ends.
   useEffect(() => {
     const tick = () => {
+      // A case study is open over this page: the clock holds, and the programme lands on the project it opened.
+      if (caseState.open) {
+        if (view.index !== active) show(view.index);
+        return;
+      }
       const video = view.video;
       // The walk-out has begun: the trailer plays on as light, but its timer and the next-project clock hold.
       if (!video || journey.current > 1.001) return;
@@ -135,7 +132,9 @@ export default function ProjectsPanel() {
           <button
             type="button"
             className="btn-primary"
-            onClick={() => openCaseStudy(() => router.push(href))}
+            onClick={() =>
+              openCaseStudy(() => router.push(href, { scroll: false }))
+            }
           >
             <ButtonLabel>View the case study</ButtonLabel>
           </button>

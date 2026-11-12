@@ -1,24 +1,21 @@
 import { gsap } from "@/lib/gsap";
-import { cruise, ease } from "@/lib/journey";
-import { view } from "@/lib/projects";
+import { cruise } from "@/lib/journey";
 
-let opening = false;
-let leaving = false;
-let returning = false;
+/** The case study's landing, in seconds: the white holds, then softens slowly into the room. */
+export const HOLD = 0;
+export const SOFTEN = 0.3;
 
-/** The case study's landing, in seconds: the white holds, then softens slowly into the room while the screen backs out. Played in reverse on the way out. */
-export const HOLD = 0.35;
-export const SOFTEN = 0.95;
-export const PULL = 1.7;
-/** The camera backing out: mostly one speed, ending gently. */
-export const pullEase = (t: number) => t + (ease(t) - t) * 0.35;
-
-/** The white-out at strength `f`, 0–1: the same two variables the journey's flare reads. */
-export function setFlare(f: number) {
-  const style = document.documentElement.style;
-  style.setProperty("--flare", f.toFixed(3));
-  style.setProperty("--flare-r", (6 + 140 * f).toFixed(1));
-}
+/**
+ * The case study is an overlay on Projects, so the page behind (3D set, navbar, programme) never reloads.
+ * `open` from the first frame of the dive until the overlay is gone; `closing` while it plays out.
+ * `close` is set by the overlay: links to other pages call it, then carry on once it has left (`after`).
+ */
+export const caseState = {
+  open: false,
+  closing: false,
+  close: (_after?: () => void) => {},
+  after: null as (() => void) | null,
+};
 
 /** How far the camera has flown into the Projects screen, 0 (the cinema) → 1 (the white-out). Read by the 3D rig. */
 export const diveState = { v: 0 };
@@ -26,96 +23,29 @@ export const diveState = { v: 0 };
 const RUN = 0.4;
 /** The dive from Projects to the white-out: one speed all the way. */
 const dive = (t: number) => cruise(t * RUN) / cruise(RUN);
-/** The dive played backwards in time: out of the white to Projects, 0 → 1. */
-export const surface = (t: number) => 1 - dive(1 - t);
-/** Seconds the dive takes (and its reverse). */
-export const DIVE_SECONDS = 1.8 * RUN;
-/** Journey arrived from a case study: Projects plays the dive in reverse. Read once. */
-export function takeReturn() {
-  const was = returning;
-  returning = false;
-  return was;
+/** Seconds the dive takes. */
+const DIVE_SECONDS = 1.8 * RUN;
+
+/** The page's text and bars away (`true`) or back (`false`): they fade, and stay away for the whole transition. `bar` is the top bar alone. */
+export function hush(on: boolean, bar = on) {
+  const html = document.documentElement;
+  if (on) html.dataset.hush = "";
+  else delete html.dataset.hush;
+  if (bar) html.dataset.hushBar = "";
+  else delete html.dataset.hushBar;
 }
 
-export const markReturn = () => {
-  returning = true;
-};
-
-/** Where the screen frame must sit to fill the viewport, from its resting place: the dive's end (and the landing's start). */
-export function cover(frame: HTMLElement) {
-  const r = frame.getBoundingClientRect();
-  return {
-    scale: Math.max(window.innerWidth / r.width, window.innerHeight / r.height),
-    x: window.innerWidth / 2 - (r.left + r.width / 2),
-    y: window.innerHeight / 2 - (r.top + r.height / 2),
-    rotate: 2.9,
-  };
-}
-
-/** Case study → Projects: the landing in reverse. The screen grows to fill the viewport, the white-out rises, then `go` navigates. */
-export function leaveCaseStudy(go: () => void) {
-  if (leaving) return;
-  leaving = true;
-  returning = true;
-  const done = () => {
-    leaving = false;
-    go();
-  };
-  const frame = document.querySelector<HTMLElement>("[data-pull]");
-  if (!frame || window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-    done();
-    return;
-  }
-  const play = () => {
-    const white = { f: 0 };
-    gsap
-      .timeline({ onComplete: done })
-      // Every image and line of text goes out first; then the screen grows into the white.
-      .to(
-        "[data-fx], .case-scene, .case-next",
-        {
-          opacity: 0,
-          y: -24,
-          duration: 0.45,
-          ease: "power2.in",
-          stagger: 0.04,
-        },
-        0
-      )
-      .to(
-        frame,
-        {
-          ...cover(frame),
-          duration: PULL,
-          ease: (t: number) => 1 - pullEase(1 - t),
-        },
-        0
-      )
-      .to(
-        white,
-        { f: 1, duration: SOFTEN, ease, onUpdate: () => setFlare(white.f) },
-        PULL - HOLD - SOFTEN
-      );
-  };
-  // The screen sits at the top of the page: bring the page there first.
-  if (window.scrollY > 8)
-    gsap.to(window, {
-      scrollTo: { y: 0, autoKill: false },
-      duration: 0.7,
-      ease: "power2.inOut",
-      onComplete: play,
-    });
-  else play();
-}
+let opening = false;
 
 /**
  * Projects → case study: the Projects → About run-up, played to its white-out. The camera flies into the screen at the
- * transition's own speed, and `go` fires once the flash has filled the frame; the new page lands out of it.
+ * transition's own speed, and `go` fires once the flash has filled the frame; the overlay lands out of it.
  */
 export function openCaseStudy(go: () => void) {
-  if (opening) return;
+  if (opening || caseState.open) return;
   opening = true;
-  view.held = true;
+  caseState.open = true;
+  hush(true);
   const done = () => {
     opening = false;
     go();
@@ -124,10 +54,26 @@ export function openCaseStudy(go: () => void) {
     done();
     return;
   }
+  // The dive starts on the click; the interface fades out under it.
   gsap.to(diveState, {
     v: 1,
     duration: DIVE_SECONDS,
     ease: dive,
     onComplete: done,
+  });
+}
+
+/** Case study → Projects: the dive played backwards. The camera backs out of the screen, the white-out clearing as it goes. */
+export function retreatFromCase(done?: () => void) {
+  gsap.to(diveState, {
+    v: 0,
+    duration: DIVE_SECONDS,
+    ease: dive,
+    overwrite: true,
+    onComplete: () => {
+      // Only now do the text and bars come back.
+      hush(false);
+      done?.();
+    },
   });
 }

@@ -425,7 +425,9 @@
   grid-template-columns: 1fr auto 1fr;
   align-items: center;
   color: var(--color-cream);
-  transition: background-color 320ms var(--ease-cinema);
+  transition:
+    background-color 320ms var(--ease-cinema),
+    opacity 400ms var(--ease-cinema);
   & > :last-child {
     justify-self: end;
   }
@@ -479,8 +481,13 @@
 /* Always transparent: no bars. A soft veil past the row keeps the lettering readable over the scene; on About's cream wall it goes cream and the lettering turns ink, with a dark yellow for the accents. */
 @utility bar-veil {
   --veil: 1;
+  /* The ink and the cream swap over a beat, never in one frame. */
+  & :where(a, button, span, p, svg) {
+    transition: color 0.7s ease;
+  }
   html[data-paper] & {
-    --veil: 0.7;
+    /* No pale band over the studio wall: the lettering sits straight on it. */
+    --veil: 0;
     --color-letterbox: var(--color-paper-veil);
     --color-cream: var(--color-ink);
     /* Semantic tokens resolve on :root, so the bar's buttons need their own ink. */
@@ -1167,56 +1174,59 @@
   }
 }
 
-/* Episode row — case-study chapter. Add aria-current to the active one */
+/* Chapters under the hero copy: a compact row of numbered cards, still on the left. */
+@utility case-chapters {
+  position: relative;
+  z-index: 4;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-3) var(--gutter);
+  @media (max-width: 1023px) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  & > .case-chapters-label {
+    grid-column: 1 / -1;
+  }
+}
 @utility episode {
   display: grid;
-  grid-template-columns: 56px 200px minmax(0, 1fr);
-  gap: var(--space-5);
+  grid-template-columns: 56px minmax(0, 1fr);
+  grid-template-areas:
+    "still title"
+    "still text";
+  column-gap: var(--space-3);
   align-items: center;
-  padding: var(--space-5);
+  padding: var(--space-3);
+  border-radius: var(--space-1);
+  background: color-mix(in srgb, var(--bg-base) 72%, transparent);
   text-decoration: none;
   color: inherit;
-  transition: background 160ms;
-  /* The list's own width decides: the still goes first, then the numeral shrinks, so the text never gets a sliver. */
-  @container (width < 560px) {
-    grid-template-columns: 56px minmax(0, 1fr);
-    & .episode-still {
-      display: none;
-    }
+  transition: background 200ms;
+  &:hover,
+  &:focus-visible {
+    background: color-mix(in srgb, var(--bg-raised) 85%, transparent);
   }
-  @container (width < 400px) {
-    grid-template-columns: 40px minmax(0, 1fr);
-    gap: var(--space-3);
-    padding: var(--space-4) var(--space-2);
-    & .episode-no {
-      font-size: 32px;
-    }
+  & > .episode-still {
+    grid-area: still;
   }
-  &:hover {
-    background: color-mix(in srgb, var(--bg-raised) 60%, transparent);
+  & > .episode-title {
+    grid-area: title;
   }
-  &[aria-current] {
-    background: var(--bg-raised);
+  & > .episode-text {
+    grid-area: text;
   }
 }
 @utility episode-no {
-  @apply type-poster-m;
-  font-size: 48px;
-  font-weight: 800;
-  text-align: center;
-  color: var(--text-tertiary);
-  [aria-current] > & {
-    color: var(--text-accent);
-    text-shadow: 0 0 20px
-      color-mix(in srgb, var(--color-yellow) 35%, transparent);
-  }
+  @apply type-label-s;
+  margin-right: var(--space-2);
+  color: var(--text-accent);
 }
 @utility episode-still {
-  height: 88px;
+  width: 56px;
+  aspect-ratio: 1;
+  border-radius: var(--space-1);
   background: linear-gradient(160deg, var(--color-smoke), var(--color-night));
   &[data-still="wheel"] {
-    justify-self: center;
-    width: 88px;
     border-radius: 50%;
     @apply wheel-paint;
   }
@@ -1237,29 +1247,16 @@
     );
   }
 }
-@utility episode-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: var(--space-4);
-  margin-bottom: var(--space-2);
-}
 @utility episode-title {
-  @apply type-poster-s uppercase;
+  @apply type-label-l uppercase;
   color: var(--text-primary);
-}
-@utility episode-length {
-  @apply type-label-s uppercase;
-  white-space: nowrap;
-  color: var(--text-tertiary);
 }
 @utility episode-text {
   @apply type-label;
   font-family: var(--font-reading);
   font-weight: 400;
   letter-spacing: 0;
-  line-height: 1.5;
-  max-width: 52ch;
+  line-height: 1.4;
   margin: 0;
   color: var(--text-secondary);
 }
@@ -1929,6 +1926,11 @@
   padding: calc(var(--bar-height) + var(--space-8)) var(--page-margin)
     calc(var(--bar-height) + var(--space-5));
   pointer-events: none;
+  transition: opacity 450ms var(--ease-cinema);
+  /* A case study is opening or closing: the programme is gone until it is over. */
+  html[data-hush] & {
+    opacity: 0;
+  }
   /* Stacked: the screen and the full details must both fit, so the room above the screen is tighter. */
   @media (max-width: 1023px) and (max-aspect-ratio: 1/1) {
     padding-top: calc(var(--bar-height) + var(--space-4));
@@ -2638,90 +2640,90 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
-/* Case study: the Projects screen grows to fill the viewport and becomes the hero. Same dark grade as Projects: the screen is the only light, grain and vignette from `scene`. */
+/* Case study: the trailer plays full-bleed behind the hero; title, facts and description sit over it at the bottom-left. Same dark grade as Projects. */
 @utility case {
   @apply scene scene-screen-light;
-  /* Scenes settle on a clean frame, like the rest of the site; gentle so the page never fights the hand. */
-  html:has(&) {
-    scroll-snap-type: y proximity;
-  }
   --light-x: 30%;
   --light-y: 38%;
   --light-strength: 24%;
   min-height: 100dvh;
 }
 @utility case-hero {
-  display: grid;
-  grid-template-columns: repeat(12, minmax(0, 1fr));
-  column-gap: var(--gutter);
-  row-gap: var(--space-7);
-  align-items: center;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: var(--space-7);
   min-height: 100dvh;
   padding: calc(var(--bar-height) + var(--space-8)) var(--page-margin)
-    var(--space-8);
+    calc(var(--bar-height) + var(--space-5));
 }
-/* The screen: lit by its own picture, the only light in the room. */
-@utility case-frame {
-  grid-column: 1 / 8;
-  position: relative;
-  z-index: 4;
-  aspect-ratio: 16 / 9;
+/* The trailer, edge to edge, graded down so the copy reads: darker on the copy side and into the page below. */
+@utility case-backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
   overflow: hidden;
-  border-radius: var(--space-1);
   background: var(--color-black);
-  box-shadow:
-    0 0 var(--space-9)
-      color-mix(in srgb, var(--color-light-screen) 22%, transparent),
-    0 0 var(--space-5)
-      color-mix(in srgb, var(--color-light-screen) 14%, transparent);
-  & video {
+  /* The footage dissolves into the page below, no seam. */
+  mask-image: linear-gradient(to bottom, var(--color-black) 60%, transparent);
+  /* The picture sits back: dimmed and a touch desaturated, so the copy is the brightest thing on screen. */
+  & video,
+  & .case-still {
     width: 100%;
     height: 100%;
     object-fit: cover;
+    filter: brightness(0.5) saturate(0.8) blur(var(--trailer-blur, 0px));
+    /* Hides the soft edges the blur leaves. */
+    scale: 1.06;
   }
-  @media (max-width: 1023px) {
-    grid-column: 1 / -1;
+  /* The project's still sits over the footage with the same grade, and fades in once the footage is soft. */
+  & .case-still {
+    opacity: 0;
+  }
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      to right,
+      color-mix(in srgb, var(--bg-base) 95%, transparent) 0%,
+      color-mix(in srgb, var(--bg-base) 70%, transparent) 40%,
+      transparent 80%
+    );
   }
 }
 @utility case-copy {
-  grid-column: 8 / 13;
+  position: relative;
+  z-index: 4;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: var(--space-5);
-  @media (max-width: 1023px) {
-    grid-column: 1 / -1;
-  }
+  gap: var(--space-4);
+  width: min(100%, 44rem);
+  text-shadow: 0 1px var(--space-4)
+    color-mix(in srgb, var(--color-black) 70%, transparent);
 }
 @utility case-title {
-  @apply type-poster-xl uppercase;
+  @apply type-poster-l uppercase;
+  font-weight: 900;
   /* Phones: the longest word ("Morning") has to fit the column. */
-  font-size: min(var(--text-poster-xl), 22vw);
+  font-size: min(var(--text-poster-l), 16vw);
   color: var(--color-cream);
-  text-shadow: 0 0 var(--space-7)
-    color-mix(in srgb, var(--color-light-screen) 28%, transparent);
 }
 @utility case-lead {
-  @apply type-lead;
-  max-width: 40ch;
-  color: var(--color-cream-deep);
+  @apply type-body;
+  max-width: 56ch;
+  color: var(--color-cream);
 }
 @utility case-facts {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-6);
-  padding-top: var(--space-4);
-  border-top: 1px solid var(--hairline);
+  gap: var(--space-2) var(--space-6);
   & .fact-value {
-    @apply type-label-l uppercase;
-    font-family: var(--font-poster);
-    font-weight: 700;
+    @apply type-label uppercase;
+    color: var(--text-primary);
   }
-}
-@utility case-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
 }
 /* Case study scenes: full-height, one idea each, little text. Motion is scroll-driven (CaseStudyMotion); at rest they read as stills. */
 @utility case-scene {
@@ -2731,11 +2733,8 @@
   grid-template-columns: repeat(12, minmax(0, 1fr));
   column-gap: var(--gutter);
   align-content: center;
-  row-gap: var(--space-6);
-  min-height: 100dvh;
-  padding: calc(var(--bar-height) + var(--space-7)) var(--page-margin)
-    calc(var(--bar-height) + var(--space-7));
-  border-top: 1px solid var(--hairline);
+  row-gap: var(--space-7);
+  padding: var(--space-9) var(--page-margin);
   scroll-snap-align: start;
   & > .eyebrow {
     grid-column: 1 / -1;
@@ -2747,7 +2746,7 @@
 }
 @utility case-system {
   overflow: hidden;
-  align-content: center;
+  align-content: start;
 }
 @utility case-statement {
   @apply type-lead;
@@ -2822,26 +2821,46 @@
     clip-path: polygon(0 0, 100% 0, 50% 100%);
   }
 }
-/* Palette & type */
+/* Design system: one spread, four blocks under hairlines (colour, typeface, scale, shape), set like a style guide. */
+@utility system-block {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  min-width: 0;
+}
+@utility system-label {
+  @apply type-label-s uppercase;
+  color: var(--text-tertiary);
+  & > span {
+    margin-inline-end: var(--space-2);
+    color: var(--text-secondary);
+  }
+}
 @utility case-swatches {
-  grid-column: 1 / 9;
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: var(--space-3);
+  grid-template-columns: repeat(10, minmax(0, 1fr));
+  gap: var(--space-2);
   @media (max-width: 1023px) {
-    grid-column: 1 / -1;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
   }
 }
 @utility swatch {
   display: flex;
-  align-items: flex-end;
-  aspect-ratio: 3 / 4;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: var(--space-1);
+  aspect-ratio: 1 / 2.2;
   padding: var(--space-3);
   border-radius: var(--space-1);
   transform-origin: 50% 100%;
   color: var(--color-ink);
   box-shadow: 0 var(--space-4) var(--space-6)
     color-mix(in srgb, var(--color-black) 55%, transparent);
+  @media (max-width: 1023px) {
+    aspect-ratio: 3 / 4;
+    padding: var(--space-2);
+  }
   &[data-tone="move"] {
     background: var(--color-pausa-move);
     color: var(--color-pausa-panel);
@@ -2883,34 +2902,55 @@
     letter-spacing: 0;
   }
 }
+@utility swatch-hex {
+  @apply type-label-s;
+  font-variant-numeric: tabular-nums;
+  opacity: 0.6;
+  @media (max-width: 767px) {
+    font-size: 9px;
+    letter-spacing: 0;
+  }
+}
 @utility case-type {
-  grid-column: 9 / 13;
-  align-self: center;
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  column-gap: var(--gutter);
+  row-gap: var(--space-5);
+  align-items: center;
+}
+/* A heavy and a light, side by side: the whole range of the face in two letters. */
+@utility case-specimen {
+  grid-column: 1 / 6;
   display: flex;
-  flex-direction: column;
-  gap: var(--space-4);
+  align-items: baseline;
+  font-family: var(--font-system);
+  font-size: min(30vh, 22vw);
+  line-height: 0.9;
+  letter-spacing: -0.05em;
+  & > span {
+    background: linear-gradient(
+      180deg,
+      var(--color-cream) 20%,
+      var(--color-dust) 130%
+    );
+    background-clip: text;
+    color: transparent;
+  }
+  & > span:first-child {
+    font-weight: 800;
+  }
+  & > span:last-child {
+    font-weight: 300;
+  }
   @media (max-width: 1023px) {
     grid-column: 1 / -1;
   }
 }
-@utility case-specimen {
-  font-family: var(--font-system);
-  font-weight: 600;
-  font-size: min(18vh, 14vw);
-  line-height: 0.9;
-  letter-spacing: -0.04em;
-  background: linear-gradient(
-    180deg,
-    var(--color-cream) 20%,
-    var(--color-dust) 130%
-  );
-  background-clip: text;
-  color: transparent;
-}
 @utility case-type-note {
+  grid-column: 1 / 6;
   display: flex;
   flex-direction: column;
-  gap: var(--space-1);
+  gap: var(--space-2);
   & strong {
     @apply type-poster-s uppercase;
     font-family: var(--font-poster);
@@ -2918,14 +2958,180 @@
   }
   & span {
     @apply type-small;
+    max-width: 36ch;
+    color: var(--text-secondary);
+  }
+  @media (max-width: 1023px) {
+    grid-column: 1 / -1;
+  }
+}
+@utility case-weights {
+  grid-column: 7 / 13;
+  grid-row: 1 / span 2;
+  display: flex;
+  flex-direction: column;
+  @media (max-width: 1023px) {
+    grid-column: 1 / -1;
+    grid-row: auto;
+  }
+}
+@utility weight {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding-block: var(--space-2);
+  & > .weight-sample {
+    font-family: var(--font-system);
+    font-size: min(var(--text-poster-s), 6vw);
+    letter-spacing: -0.01em;
+    text-align: end;
+    color: var(--color-cream);
+  }
+  &[data-weight="300"] > .weight-sample {
+    font-weight: 300;
+  }
+  &[data-weight="400"] > .weight-sample {
+    font-weight: 400;
+  }
+  &[data-weight="500"] > .weight-sample {
+    font-weight: 500;
+  }
+  &[data-weight="600"] > .weight-sample {
+    font-weight: 600;
+  }
+  &[data-weight="700"] > .weight-sample {
+    font-weight: 700;
+  }
+  &[data-weight="800"] > .weight-sample {
+    font-weight: 800;
+  }
+}
+@utility weight-name {
+  @apply type-label-s uppercase;
+  flex: none;
+  color: var(--text-tertiary);
+  & > b {
+    margin-inline-start: var(--space-1);
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
     color: var(--text-secondary);
   }
 }
+/* Every character of the face as an outline that slides sideways with the scroll. */
+@utility system-glyphs {
+  width: max-content;
+  font-family: var(--font-system);
+  font-weight: 800;
+  font-size: min(var(--text-poster-l), 12vw);
+  line-height: 1;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+  color: transparent;
+  -webkit-text-stroke: 1px var(--text-tertiary);
+}
+@utility case-scale {
+  display: flex;
+  flex-direction: column;
+}
+@utility scale-row {
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(0, 9fr);
+  align-items: baseline;
+  gap: var(--gutter);
+  padding-block: var(--space-3);
+  @media (max-width: 767px) {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-1);
+  }
+}
+@utility scale-role {
+  @apply type-label-s uppercase;
+  color: var(--text-tertiary);
+  & > b {
+    margin-inline-start: var(--space-2);
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    color: var(--text-secondary);
+  }
+}
+@utility scale-sample {
+  font-family: var(--font-system);
+  color: var(--color-cream);
+  &[data-step="display"] {
+    font-size: min(72px, 15vw);
+    line-height: 1.05;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+  }
+  &[data-step="title"] {
+    font-size: 34px;
+    line-height: 1.18;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+  }
+  &[data-step="body"] {
+    font-size: 15px;
+    line-height: 1.47;
+    font-weight: 400;
+  }
+  &[data-step="caption"] {
+    font-size: 11px;
+    line-height: 1.27;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+}
+@utility case-shape {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--gutter);
+  @media (max-width: 767px) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@utility shape-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  border-radius: var(--space-1);
+  background: color-mix(in srgb, var(--color-cream) 5%, transparent);
+}
+@utility shape-demo {
+  height: var(--space-9);
+  margin-bottom: var(--space-3);
+  background: var(--color-pausa-panel);
+  &[data-kind="radius"] {
+    border-radius: var(--space-2) var(--space-4) var(--space-7) var(--space-1);
+  }
+  &[data-kind="grid"] {
+    background-color: var(--color-night);
+    background-image:
+      linear-gradient(var(--hairline) 1px, transparent 1px),
+      linear-gradient(90deg, var(--hairline) 1px, transparent 1px);
+    background-size: var(--space-3) var(--space-3);
+  }
+  &[data-kind="shadow"] {
+    margin-inline: var(--space-5);
+    border-radius: var(--space-4);
+    box-shadow: 0 var(--space-4) var(--space-6)
+      color-mix(in srgb, var(--color-black) 70%, transparent);
+  }
+}
+@utility shape-label {
+  @apply type-label-s uppercase;
+  color: var(--text-tertiary);
+}
+@utility shape-value {
+  @apply type-body;
+  color: var(--color-cream);
+}
 /* The result: three stills of different weight. */
 @utility case-result {
-  grid-template-rows: auto minmax(0, 1fr) minmax(0, 0.8fr);
   & > .case-panel {
-    min-height: 28dvh;
+    min-height: 24dvh;
   }
 }
 @utility case-panel {
@@ -2935,6 +3141,20 @@
   background: var(--color-night);
   display: grid;
   place-items: center;
+  @apply curtain;
+}
+/* A page-coloured cover over a tile. --cover (1 closed, 0 open) is tweened by the scroll reveal. */
+@utility curtain {
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 3;
+    pointer-events: none;
+    background: var(--bg-base);
+    transform: scaleY(var(--cover, 0));
+    transform-origin: 50% 100%;
+  }
 }
 @utility case-panel-popover {
   grid-column: 1 / 9;
@@ -3077,13 +3297,6 @@
   line-height: 1.35;
 }
 /* Section headings: the same poster face as the rest of the site, with a quiet eyebrow at the far side. */
-@utility case-head {
-  grid-column: 1 / -1;
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: var(--space-4);
-}
 @utility case-heading {
   @apply type-poster-l uppercase;
   grid-column: 1 / -1;
@@ -3092,45 +3305,42 @@
   font-size: min(var(--text-poster-l), 12vw);
   color: var(--color-cream);
 }
-@utility case-episodes {
-  container-type: inline-size;
+/* Gallery: two rows of footage and stills; wide tiles take two thirds. */
+@utility case-gallery {
+  overflow: hidden;
 }
-@utility case-episode-list {
+@utility case-media-grid {
   grid-column: 1 / -1;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-  container-type: inline-size;
-}
-@utility case-rating {
-  display: flex;
-  align-items: center;
-  gap: var(--space-4);
-  padding: var(--space-3) var(--space-4);
-  border: 1px solid var(--hairline);
-  & > p {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-1);
-  }
-  & strong {
-    @apply type-label-s uppercase;
-    color: var(--text-primary);
-  }
-  & > p span {
-    @apply type-label-s uppercase;
-    color: var(--text-tertiary);
-  }
-}
-@utility case-rating-letter {
-  @apply type-poster-m;
   display: grid;
-  place-items: center;
-  width: var(--space-7);
-  aspect-ratio: 1;
-  background: var(--color-fog);
-  color: var(--color-black);
-  font-family: var(--font-poster);
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  grid-auto-rows: clamp(200px, 26vw, 380px);
+  gap: var(--space-3);
+  @media (max-width: 1023px) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@utility case-media {
+  position: relative;
+  grid-column: span 4;
+  overflow: hidden;
+  border-radius: var(--space-1);
+  background: var(--color-night);
+  @apply curtain;
+  &[data-wide] {
+    grid-column: span 8;
+  }
+  & > video,
+  & > img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  @media (max-width: 1023px) {
+    grid-column: auto;
+    &[data-wide] {
+      grid-column: auto;
+    }
+  }
 }
 @utility case-more {
   align-content: center;
@@ -3210,9 +3420,8 @@
 @utility case-next {
   position: relative;
   z-index: 2;
-  min-height: 60dvh;
   justify-content: center;
-  padding: var(--space-9) var(--page-margin)
+  padding: var(--space-8) var(--page-margin)
     calc(var(--bar-height) + var(--space-7));
   scroll-snap-align: start;
   display: flex;
@@ -3220,7 +3429,6 @@
   align-items: flex-start;
   gap: var(--space-4);
   padding-top: var(--space-6);
-  border-top: 1px solid var(--hairline);
 }
 
 /* Projects → About: the screen's light swells to a quick white flash (the cut hides in it), then the cream wall is there. --flare and --flare-r come from the 3D rig; the bloom starts at the screen itself. */
@@ -3247,4 +3455,73 @@
   pointer-events: none;
   opacity: 0;
   background: var(--color-black);
+}
+
+/* The case study is a layer over Projects: nothing behind it reloads. It sits under the navbar and over the white-out flare. */
+@utility case-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9;
+  background: var(--bg-base);
+}
+@utility case-scroll {
+  position: absolute;
+  inset: 0;
+  overflow: hidden auto;
+  /* Scrolling to its end must never carry on into the journey behind. */
+  overscroll-behavior: contain;
+  /* Scenes settle on a clean frame, like the rest of the site; gentle so the page never fights the hand. */
+  scroll-snap-type: y proximity;
+  transform-origin: 50% 40%;
+  outline: none;
+}
+/* The landing's white: the overlay's own, so it never fights the 3D rig's flare. */
+@utility case-flash {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background: var(--color-flare);
+}
+/* The corner X, under the navbar. Closes the case study; Esc does the same. */
+@utility case-close {
+  position: fixed;
+  inset-block-start: calc(var(--bar-height) + var(--space-3));
+  inset-inline-end: var(--page-margin);
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: var(--space-7);
+  aspect-ratio: 1;
+  border: 1px solid var(--hairline);
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--color-black) 55%, transparent);
+  color: var(--color-cream);
+  cursor: pointer;
+  transition:
+    scale 250ms var(--ease-cinema),
+    background-color 250ms var(--ease-cinema);
+  & > svg {
+    width: var(--space-4);
+    height: var(--space-4);
+  }
+  &:hover,
+  &:focus-visible {
+    scale: 1.08;
+    background: color-mix(in srgb, var(--color-black) 80%, transparent);
+  }
+}
+/* While a case study opens or closes the footer is gone, and comes back with Projects. */
+@utility bar-foot {
+  html[data-hush] & {
+    opacity: 0;
+    pointer-events: none;
+  }
+}
+/* The top bar leaves with the programme, but comes back with the case study's landing, and leaves again as it closes. */
+@utility bar-top {
+  html[data-hush-bar] & {
+    opacity: 0;
+    pointer-events: none;
+  }
 }

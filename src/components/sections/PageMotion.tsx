@@ -1,5 +1,6 @@
 "use client";
 
+import { caseState } from "@/lib/caseStudy";
 import { gsap, type SplitText, useGSAP } from "@/lib/gsap";
 import { addEntrance, RISE } from "@/lib/fx";
 import { INTRO, journey, seg } from "@/lib/journey";
@@ -46,7 +47,14 @@ export default function PageMotion() {
         items.forEach((el, i) => {
           const kind = el.dataset.fx as Kind;
           const at = i * 0.12;
-          const split = addEntrance(enter, el, at);
+          // About's copy and controls arrive from the left, following him in.
+          const split = addEntrance(
+            enter,
+            el,
+            at,
+            undefined,
+            i === 2 ? "left" : "below"
+          );
           if (!split) {
             leave.to(
               el,
@@ -161,7 +169,7 @@ export default function PageMotion() {
             pos < i ? seg(pos, [i - arrive, i]) : 1 + seg(pos, [i, i + out]);
           rig.tl.time(time);
           // Inert, not just pointer-events none: a panel that opts back into pointer events must not catch clicks meant for the page in front.
-          rig.page.inert = Math.abs(pos - i) >= 0.5;
+          rig.page.inert = Math.abs(pos - i) >= 0.5 || caseState.open;
         });
       };
       gsap.ticker.add(tick);
@@ -187,7 +195,7 @@ export default function PageMotion() {
         const y = window.scrollY;
         pages.forEach((page, i) => {
           // Faded-out pages must not be reachable with Tab.
-          page.inert = Math.abs(pos - i) >= 0.5;
+          page.inert = Math.abs(pos - i) >= 0.5 || caseState.open;
           gsap.set(page, {
             y: y - page.offsetTop,
             opacity: 1 - Math.min(Math.abs(pos - i) * 2, 1),

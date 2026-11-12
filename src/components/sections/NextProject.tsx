@@ -34,7 +34,7 @@ export default function NextProject({
             Math.ceil(SECONDS - clock.t)
           ).padStart(2, "0");
       },
-      onComplete: () => router.push(href),
+      onComplete: () => router.push(href, { scroll: false }),
     });
     const events = ["wheel", "touchmove", "keydown", "pointerdown"] as const;
     let armed = 0;
@@ -83,7 +83,7 @@ export default function NextProject({
       </p>
       <h2 className="case-next-title">{title}</h2>
       <Button href={href} variant="timer" arrow>
-        Play now
+        View project
       </Button>
     </div>
   );
