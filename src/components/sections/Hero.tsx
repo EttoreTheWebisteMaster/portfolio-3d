@@ -1,8 +1,8 @@
 import Button from "@/components/ui/Button";
 
 const stack = [
-  "React · Next.js · Three.js · GSAP · TypeScript",
-  "Swift · Python · Figma · Generative AI",
+  "Next.js · React · TypeScript · Agentic coding",
+  "Three.js · GSAP · Tailwind",
 ];
 
 /** Home page: the copy layer over the fixed 3D set (name, ROB-092, light, dust live in `Stage`). */
@@ -16,9 +16,9 @@ export default function Hero() {
           One person.
         </h2>
         <p data-fx="text" className="fx hero-body">
-          Six years turning ideas into interfaces people remember. Full stack,
-          with a designer&apos;s eye: React, Next.js and Three.js, from Turin to
-          anywhere.
+          <strong>Six years</strong> forging <strong>interactive worlds</strong>
+          , from the first sketch to the <strong>final frame</strong>. Based in
+          Turin, <strong>open to the world</strong>.
         </p>
         <div data-fx="item" className="fx hero-actions">
           <Button href="/projects" arrow>

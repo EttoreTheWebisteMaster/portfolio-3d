@@ -2186,7 +2186,7 @@ html[data-scrub] .timecode .track::after {
   /* Phone: the name is also capped by the height, so it never reaches the copy that sits at the foot of the page. */
   @media (max-width: 639px) {
     top: calc(var(--bar-height) + var(--space-4));
-    font-size: min(28vw, 11dvh);
+    font-size: min((100vw - 2 * var(--page-margin)) / 2.75, 15dvh);
     white-space: normal;
   }
 }
@@ -2281,6 +2281,10 @@ html[data-scrub] .timecode .track::after {
   @apply type-body;
   max-width: 40ch;
   color: var(--color-cream-deep);
+  & strong {
+    color: var(--color-cream);
+    font-weight: 700;
+  }
   @media (max-height: 520px) {
     font-size: 16px;
   }
@@ -2289,6 +2293,13 @@ html[data-scrub] .timecode .track::after {
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-3);
+  /* Phone: the call to action runs the full width of the copy, an easy thumb target. */
+  @media (max-width: 639px) {
+    & > a {
+      flex: 1 1 100%;
+      justify-content: center;
+    }
+  }
 }
 /* Carries the billing's place on the page, so the depth parallax moves it without touching its entrance. */
 @utility hero-aside {

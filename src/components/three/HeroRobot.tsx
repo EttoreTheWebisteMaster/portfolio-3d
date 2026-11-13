@@ -154,6 +154,7 @@ export default function HeroRobot({
   const oneShot = useRef<THREE.AnimationAction | null>(null);
   const hover = useRef(false);
   const wantDance = useRef(false);
+  const cta = useRef(false);
   const mood = useRef<Mood>([...REST]);
   const bounds = useRef<Bounds | null>(null);
 
@@ -164,9 +165,21 @@ export default function HeroRobot({
       if (e.target instanceof Element && e.target.closest("a, button")) return;
       wantDance.current = true;
     };
+    // The hero's call to action gets his attention too: he wears the same surprise as when the cursor is on him.
+    const over = (e: PointerEvent) => {
+      cta.current =
+        e.target instanceof Element && !!e.target.closest(".hero-actions a");
+    };
     window.addEventListener("click", click);
+    const out = () => {
+      cta.current = false;
+    };
+    window.addEventListener("pointerover", over);
+    document.addEventListener("pointerleave", out);
     return () => {
       window.removeEventListener("click", click);
+      window.removeEventListener("pointerover", over);
+      document.removeEventListener("pointerleave", out);
       delete document.documentElement.dataset.robHover;
     };
   }, []);
@@ -229,7 +242,13 @@ export default function HeroRobot({
     }
     // Brows lift in surprise while the cursor is on him, and into a warm smile while he waves; otherwise a kind, alive rest.
     const waving = oneShot.current?.getClip().name === "Wave";
-    stepMood(mood.current, hovering, waving, clock.elapsedTime, dt);
+    stepMood(
+      mood.current,
+      hovering || (cta.current && home && !oneShot.current),
+      waving,
+      clock.elapsedTime,
+      dt
+    );
 
     // The shot: seated in the audience, then up, along the room, to his mark. All of it is the scroll position.
     const pos = journey.current;
