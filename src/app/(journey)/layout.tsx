@@ -1,6 +1,5 @@
 import Loader from "@/components/sections/Loader";
 import Navbar from "@/components/sections/Navbar";
-import BarsMotion from "@/components/sections/BarsMotion";
 import BottomBar from "@/components/sections/BottomBar";
 import About from "@/components/sections/About";
 import Contact from "@/components/sections/Contact";
@@ -29,7 +28,6 @@ export default function JourneyLayout({
         <BottomBar />
         <PageSnap />
         <PageMotion />
-        <BarsMotion />
         {/* Above every canvas, so a held robot never covers its own label. */}
         <CursorTip label="Grab" variant="grab" />
         <CursorTip label="Drop" variant="drop" />

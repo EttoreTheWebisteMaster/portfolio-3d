@@ -16,6 +16,7 @@
   --color-ash: #a9a296;
   --color-fog: #8c857a;
   --color-dust: #5c5549;
+  --color-dust-deep: #373229;
   --color-cream: #f2edda;
   --color-cream-deep: #e2dac0;
   --color-ink: #15120f;
@@ -469,10 +470,10 @@
     --color-cream: var(--color-ink);
     /* Semantic tokens resolve on :root, so the bar's buttons need their own ink. */
     --text-primary: var(--color-ink);
-    --color-nav: var(--color-dust);
-    --color-nav-dim: var(--color-dust);
-    --color-fog: var(--color-dust);
-    --color-ash: var(--color-dust);
+    --color-nav: var(--color-dust-deep);
+    --color-nav-dim: var(--color-dust-deep);
+    --color-fog: var(--color-dust-deep);
+    --color-ash: var(--color-dust-deep);
     --color-yellow: var(--color-yellow-deep);
   }
   /* A veil that reaches past the row, so the lettering stays readable over the lit room. */
@@ -529,11 +530,48 @@
 }
 @utility bar-cue {
   @apply type-label-s uppercase;
+  position: relative;
   display: inline-flex;
   align-items: center;
+  gap: var(--space-2);
   min-height: 44px;
   color: var(--color-yellow);
   text-decoration: none;
+  /* Hover and focus: the label rolls out upward and its twin rolls in, as on the buttons; the arrow leans the way the page lies. Press: the arrow goes the whole way. */
+  &:is(:hover, :focus-visible) .btn-label > span:first-child {
+    transform: translateY(-110%);
+  }
+  &:is(:hover, :focus-visible) .btn-label > span:last-child {
+    transform: none;
+  }
+  /* The arrow is the buttons' own hand-off (one leaves, one enters), turned to point where the page lies. Press: it leans on the way. */
+  & .btn-arrow {
+    transition:
+      translate 320ms var(--ease-cinema),
+      rotate 450ms var(--ease-cinema);
+  }
+  & .btn-arrow svg {
+    width: 12px;
+    height: 12px;
+  }
+  &[data-dir="down"] .btn-arrow {
+    rotate: 90deg;
+  }
+  &[data-dir="up"] .btn-arrow {
+    rotate: -90deg;
+  }
+  &[data-dir="down"]:active .btn-arrow {
+    translate: 0 6px;
+  }
+  &[data-dir="up"]:active .btn-arrow {
+    translate: 0 -6px;
+  }
+  &[data-dir="right"]:active .btn-arrow {
+    translate: 6px 0;
+  }
+  &:active {
+    opacity: 0.7;
+  }
 }
 @utility bar-progress {
   @apply type-label-s;
@@ -673,9 +711,24 @@
     color: var(--color-nav);
     transition: color 160ms var(--ease-cinema);
   }
-  & a:hover,
-  & a[aria-current="page"] {
-    color: var(--color-cream);
+  /* Hover and keyboard focus: the letters turn from grey to white in a wipe from the left (and leave to the right), the count turns yellow. */
+  /* The link of the page being travelled to is lit from the click, and stays lit with the pointer gone (PageSnap sets html[data-to]). */
+  html[data-to="projects"] & a[data-nav="projects"],
+  html[data-to="about"] & a[data-nav="about"],
+  html[data-to="contact"] & a[data-nav="contact"] {
+    background-size:
+      100% 100%,
+      100% 100%;
+    background-position:
+      0 0,
+      0 0;
+  }
+  & sup {
+    transition: color 380ms var(--ease-cinema);
+  }
+  & a[data-nav]:is(:hover, :focus-visible) sup,
+  html[data-to="projects"] & a[data-nav="projects"] sup {
+    color: var(--color-yellow);
   }
   /* A link lights up while the journey is on its page (--at) and eases off either side. */
   & a[data-nav="projects"] {
@@ -689,11 +742,32 @@
   }
   & a[data-nav] {
     --on: clamp(0, calc(1 - abs(var(--pos, 0) - var(--at)) * 3), 1);
-    color: color-mix(
+    --base: color-mix(
       in srgb,
       var(--color-cream) calc(var(--on) * 100%),
       var(--color-nav)
     );
+    color: transparent;
+    background-image:
+      linear-gradient(var(--color-cream), var(--color-cream)),
+      linear-gradient(var(--base), var(--base));
+    background-repeat: no-repeat;
+    background-size:
+      0% 100%,
+      100% 100%;
+    background-position:
+      100% 0,
+      0 0;
+    background-clip: text;
+    transition: background-size 380ms var(--ease-cinema);
+    &:is(:hover, :focus-visible) {
+      background-size:
+        100% 100%,
+        100% 100%;
+      background-position:
+        0 0,
+        0 0;
+    }
     & sup {
       color: color-mix(
         in srgb,
@@ -711,21 +785,8 @@
     color: var(--color-nav-dim);
     font-variant-numeric: tabular-nums;
   }
+  /* The dot sits outside the row, so it can come and go without moving a single link. */
   & a[data-nav]::before {
-    content: "";
-    flex: none;
-    width: 6px;
-    height: 6px;
-    margin-inline-end: var(--space-2);
-    border-radius: 50%;
-    background: var(--color-yellow);
-    box-shadow: 0 0 8px var(--color-yellow);
-    opacity: var(--on);
-  }
-  & a[aria-current="page"] sup {
-    color: var(--color-yellow);
-  }
-  & a[aria-current="page"]::before {
     content: "";
     position: absolute;
     left: calc(-1 * var(--space-4));
@@ -735,8 +796,11 @@
     margin-top: -3px;
     border-radius: 50%;
     background: var(--color-yellow);
-    box-shadow: 0 0 8px 1px
-      color-mix(in srgb, var(--color-yellow) 75%, transparent);
+    box-shadow: 0 0 8px var(--color-yellow);
+    opacity: var(--on);
+  }
+  & a[aria-current="page"] sup {
+    color: var(--color-yellow);
   }
 }
 /* Timecode — children: .tc (label) .ff (frames) .track (scroll position via --scroll 0→1) */
@@ -755,14 +819,25 @@
   & .ff {
     color: var(--color-nav);
   }
+  /* The track is a handle: drag it to scrub the whole site. The hit area reaches past the hairline. */
   & .track {
     position: relative;
     display: block;
+    cursor: grab;
+    touch-action: none;
     width: 44px;
     height: 1px;
     background: color-mix(in srgb, var(--color-cream) 22%, transparent);
   }
+  & .track::before {
+    content: "";
+    position: absolute;
+    inset: -16px -8px;
+  }
   & .track::after {
+    transition:
+      top 200ms var(--ease-cinema),
+      height 200ms var(--ease-cinema);
     content: "";
     position: absolute;
     left: calc(var(--scroll, 0) * 100%);
@@ -774,6 +849,32 @@
   }
 }
 
+/* Reduced motion for the navbar pieces above: their own transitions would otherwise win over the base reset, so every change is instant. */
+@media (prefers-reduced-motion: reduce) {
+  .menu-overlay,
+  .menu-overlay *,
+  .logo,
+  .logo *,
+  .nav-links *,
+  .bar-cue *,
+  .bar-cue::after,
+  .sound-toggle *,
+  .menu-button *,
+  .timecode .track::after {
+    transition: none !important;
+  }
+}
+
+/* While the timecode is being dragged the whole screen shows the closed hand. */
+html[data-scrub],
+html[data-scrub] * {
+  cursor: grabbing !important;
+}
+html[data-scrub] .timecode .track::after {
+  top: -6px;
+  height: 13px;
+}
+
 /* Logo — the name as type. Markup: <a class="logo"><span>Ettore</span><span>Serra</span></a> */
 @utility logo {
   @apply type-logo uppercase;
@@ -781,17 +882,66 @@
   align-items: center;
   min-height: 44px;
   gap: 0.5em;
+  /* Only the letters count as the logo: the grid column is wider, and must not answer to the pointer. */
+  justify-self: start;
   text-decoration: none;
-  & > :first-child {
+  & > span {
+    display: inline-flex;
     color: var(--color-cream);
   }
-  & > :last-child {
-    font-weight: 600;
-    color: var(--color-nav);
-    transition: color 260ms var(--ease-cinema);
+  transition: gap 420ms var(--ease-cinema);
+  /* Home shows the whole name. On every other page the rest of each word slips away to the left and only E S stays; hover or focus brings it back, letter by letter. */
+  & b {
+    font-weight: inherit;
   }
-  &:hover > :last-child {
-    color: var(--color-cream);
+  & i,
+  & em {
+    font-style: normal;
+  }
+  & i {
+    display: grid;
+    grid-template-columns: 1fr;
+    transition: grid-template-columns 420ms var(--ease-cinema);
+  }
+  & em {
+    display: flex;
+    min-width: 0;
+    overflow: hidden;
+  }
+  & em > span {
+    transition:
+      translate 380ms var(--ease-cinema),
+      opacity 260ms var(--ease-cinema);
+    transition-delay: calc(var(--k, 0) * 40ms);
+  }
+  & em > span:nth-child(2) {
+    --k: 1;
+  }
+  & em > span:nth-child(3) {
+    --k: 2;
+  }
+  & em > span:nth-child(4) {
+    --k: 3;
+  }
+  & em > span:nth-child(5) {
+    --k: 4;
+  }
+  html[data-now]:not([data-now="home"], [data-to="home"], [data-menu])
+    &:not(:hover, :focus-visible) {
+    gap: 0;
+  }
+  html[data-now]:not([data-now="home"], [data-to="home"], [data-menu])
+    &:not(:hover, :focus-visible)
+    i {
+    grid-template-columns: 0fr;
+  }
+  html[data-now]:not([data-now="home"], [data-to="home"], [data-menu])
+    &:not(:hover, :focus-visible)
+    em
+    > span {
+    translate: -0.8em 0;
+    opacity: 0;
+    transition-delay: calc((4 - var(--k, 0)) * 30ms);
   }
 }
 
@@ -802,6 +952,7 @@
   }
 }
 @utility sound-toggle {
+  position: relative;
   display: inline-grid;
   place-items: center;
   width: 44px;
@@ -830,22 +981,230 @@
     transform-origin: 17px 7px;
     transition: transform 420ms var(--ease-cinema);
   }
-  &[aria-pressed="false"] .wave {
-    transform: scaleY(0.01);
+  /* On: one clean sine, always travelling at the same speed. Off: the same wave, smaller (the look it had on hover). */
+  &[data-on="false"] .wave {
+    transform: scaleY(0.45);
   }
-  &:hover svg,
-  &:focus-visible svg {
+  &:is(:hover, :focus-visible) svg {
     filter: drop-shadow(
       0 0 6px color-mix(in srgb, var(--color-yellow) 90%, transparent)
     );
   }
   @media (prefers-reduced-motion: no-preference) {
     & .travel {
-      animation: wave-travel 1200ms linear infinite paused;
+      animation: wave-travel 2000ms linear infinite;
     }
-    &:hover .travel {
-      animation-play-state: running;
+  }
+  /* What the key does, in words: "Mute" / "Unmute" under it on hover and focus. */
+  & .sound-tip {
+    @apply type-label-s uppercase;
+    position: absolute;
+    top: 100%;
+    right: 0;
+    white-space: nowrap;
+    color: var(--color-cream);
+    opacity: 0;
+    translate: 0 -4px;
+    pointer-events: none;
+    transition:
+      opacity 200ms var(--ease-cinema),
+      translate 200ms var(--ease-cinema);
+  }
+  &:focus-visible .sound-tip {
+    opacity: 1;
+    translate: 0 0;
+  }
+  @media (hover: hover) {
+    &:hover .sound-tip {
+      opacity: 1;
+      translate: 0 0;
     }
+  }
+}
+
+/* Menu overlay — the phone's menu: a full screen between the top and bottom bars; numbered rows, hairlines, big poster type. On the cream About page it turns cream with the bars. */
+@utility menu-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--space-6);
+  padding: calc(var(--bar-height) + var(--space-4)) var(--page-margin)
+    calc(var(--bar-height) + var(--space-4));
+  overflow-y: auto;
+  background: var(--color-black);
+  color: var(--color-cream);
+  visibility: hidden;
+  opacity: 0;
+  /* Leaving after a link: the menu holds, then dissolves, so it is gone as the new page lands (Navbar sets --menu-hold and --menu-out). */
+  transition:
+    opacity var(--menu-out, 320ms) var(--ease-cinema) var(--menu-hold, 0s),
+    visibility 0s linear calc(var(--menu-out, 320ms) + var(--menu-hold, 0s));
+  &[data-tone="paper"] {
+    background: var(--color-paper-veil);
+    color: var(--color-ink);
+    --color-nav: var(--color-dust-deep);
+    --color-nav-dim: var(--color-dust-deep);
+    --color-yellow: var(--color-yellow-deep);
+  }
+  &[data-open="true"] {
+    visibility: visible;
+    opacity: 1;
+    transition-delay: 0s;
+  }
+  & ol {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  & li {
+    opacity: 0;
+    translate: 0 16px;
+    /* Closing: every row sinks and fades, one after another... */
+    transition:
+      opacity 240ms var(--ease-cinema) calc(var(--i, 0) * 20ms),
+      translate 240ms var(--ease-cinema) calc(var(--i, 0) * 20ms);
+  }
+  &[data-open="true"] li {
+    opacity: 1;
+    translate: 0 0;
+    transition:
+      opacity 420ms var(--ease-cinema) calc(80ms + var(--i, 0) * 60ms),
+      translate 420ms var(--ease-cinema) calc(80ms + var(--i, 0) * 60ms);
+  }
+  /* ...except the one that was pressed (PageSnap sets html[data-to]): it swipes down at once to sit just above the line at the foot (Navbar measures --menu-drop), and the menu dissolves around it (Navbar sets --menu-hold and --menu-out). */
+  html[data-to="home"] &[data-open="false"] li:has(> a[data-nav="home"]),
+  html[data-to="projects"]
+    &[data-open="false"]
+    li:has(> a[data-nav="projects"]),
+  html[data-to="about"] &[data-open="false"] li:has(> a[data-nav="about"]),
+  html[data-to="contact"] &[data-open="false"] li:has(> a[data-nav="contact"]) {
+    opacity: 1;
+    translate: 0 var(--menu-drop, 0px);
+    transition:
+      opacity 0s linear calc(var(--menu-out, 320ms) + var(--menu-hold, 0s)),
+      translate 460ms var(--ease-cinema);
+  }
+  & li:nth-child(2) {
+    --i: 1;
+  }
+  & li:nth-child(3) {
+    --i: 2;
+  }
+  & li:nth-child(4) {
+    --i: 3;
+  }
+  & a {
+    display: flex;
+    align-items: baseline;
+    gap: var(--space-4);
+    min-height: 44px;
+    padding-block: var(--space-3);
+    text-decoration: none;
+    color: var(--color-nav);
+    transition: color 200ms var(--ease-cinema);
+  }
+  & a:is(:hover, :focus-visible, [aria-current="page"]) {
+    color: currentColor;
+  }
+  & a > span {
+    @apply type-label-s;
+    color: var(--color-nav-dim);
+    font-variant-numeric: tabular-nums;
+    transition: color 200ms var(--ease-cinema);
+  }
+  & a[aria-current="page"] > span {
+    color: var(--color-yellow);
+  }
+  /* Pressed: the row of the page being travelled to lights up from the click (PageSnap sets html[data-to]) and the row it came from lets go, as in the desktop nav. */
+  html[data-to] & a[aria-current="page"] {
+    color: var(--color-nav);
+  }
+  html[data-to] & a[aria-current="page"] > span {
+    color: var(--color-nav-dim);
+  }
+  html[data-to="home"] & a[data-nav="home"],
+  html[data-to="projects"] & a[data-nav="projects"],
+  html[data-to="about"] & a[data-nav="about"],
+  html[data-to="contact"] & a[data-nav="contact"] {
+    color: currentColor;
+  }
+  html[data-to="home"] & a[data-nav="home"] > span,
+  html[data-to="projects"] & a[data-nav="projects"] > span,
+  html[data-to="about"] & a[data-nav="about"] > span,
+  html[data-to="contact"] & a[data-nav="contact"] > span {
+    color: var(--color-yellow);
+  }
+  & a > b {
+    font-family: var(--font-poster);
+    font-weight: 800;
+    font-size: clamp(2rem, min(12vw, 11dvh), 4.5rem);
+    line-height: 1;
+    letter-spacing: var(--tracking-logo);
+    text-transform: uppercase;
+    transition: translate 320ms var(--ease-cinema);
+  }
+  & a:is(:hover, :focus-visible) > b {
+    translate: 8px 0;
+  }
+  & a > sup {
+    @apply type-label-s;
+    color: var(--color-yellow);
+  }
+  & .menu-meta {
+    @apply type-label-s uppercase;
+    margin: 0;
+    color: var(--color-nav-dim);
+  }
+}
+
+/* Menu button — three hairlines; open, they cross into an X. The short line grows to full width on hover. */
+@utility menu-button {
+  display: inline-grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  color: var(--color-cream);
+  & i {
+    grid-area: 1 / 1;
+    width: 22px;
+    height: 1.5px;
+    background: currentColor;
+    transition:
+      translate 420ms var(--ease-cinema),
+      rotate 420ms var(--ease-cinema),
+      width 320ms var(--ease-cinema),
+      opacity 200ms var(--ease-cinema);
+  }
+  & i:nth-child(1) {
+    translate: 0 -7px;
+  }
+  & i:nth-child(3) {
+    translate: 4px 7px;
+    width: 14px;
+  }
+  &:is(:hover, :focus-visible) i:nth-child(3) {
+    translate: 0 7px;
+    width: 22px;
+  }
+  &[data-open] i:nth-child(1) {
+    translate: 0 0;
+    rotate: 45deg;
+  }
+  &[data-open] i:nth-child(2) {
+    opacity: 0;
+  }
+  &[data-open] i:nth-child(3) {
+    translate: 0 0;
+    rotate: -45deg;
+    width: 22px;
   }
 }
 
@@ -1662,30 +2021,6 @@
   font-weight: 800;
   letter-spacing: var(--tracking-logo);
   text-transform: uppercase;
-}
-@utility menu-items {
-  padding: var(--space-1);
-  border: 1px solid var(--hairline);
-  background: var(--bg-raised);
-  transition:
-    opacity 150ms,
-    scale 150ms;
-  &[data-closed] {
-    opacity: 0;
-    scale: 0.95;
-  }
-}
-@utility menu-item {
-  @apply type-label uppercase;
-  display: flex;
-  align-items: center;
-  min-height: 44px;
-  padding: var(--space-2) var(--space-3);
-  color: var(--text-secondary);
-  &[data-focus] {
-    background: var(--bg-inset);
-    color: var(--text-primary);
-  }
 }
 @utility eyebrow {
   @apply type-label-s uppercase;

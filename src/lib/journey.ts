@@ -7,6 +7,9 @@ export const journey: Progress = { current: 0 };
 /** Which way the journey last moved: 1 towards Contact, -1 back towards Home. Actors face the way they travel. */
 export const heading = { dir: 1 };
 
+/** The timecode scrubber: while `on`, the visitor drags the whole site by hand and the page snapper steps aside. PageSnap fills `start` and `end`. */
+export const scrub = { on: false, start: () => {}, end: () => {} };
+
 export function setJourney(p: number) {
   if (Math.abs(p - journey.current) > 1e-4)
     heading.dir = p > journey.current ? 1 : -1;

@@ -23,8 +23,8 @@ export default function SoundToggle() {
     <button
       type="button"
       className="sound-toggle"
-      aria-pressed={on}
-      aria-label="Sound"
+      data-on={on}
+      aria-label={on ? "Mute sound" : "Unmute sound"}
       onClick={toggleMuted}
     >
       <svg viewBox="0 0 34 14" aria-hidden="true">
@@ -52,6 +52,9 @@ export default function SoundToggle() {
           </g>
         </g>
       </svg>
+      <span className="sound-tip" aria-hidden="true">
+        {on ? "Mute" : "Unmute"}
+      </span>
     </button>
   );
 }
