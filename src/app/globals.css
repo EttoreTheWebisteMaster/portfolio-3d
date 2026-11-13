@@ -854,7 +854,7 @@
   0% {
     transform: translateX(-130%);
   }
-  16%,
+  31%,
   100% {
     transform: translateX(130%);
   }
@@ -993,7 +993,10 @@
   }
   @media (prefers-reduced-motion: no-preference) {
     &::after {
-      animation: btn-glint 7s var(--ease-cinema) 2.5s infinite;
+      animation: btn-glint 7s ease-in-out 2.5s infinite;
+    }
+    &:is(:hover, :focus-visible, :active)::after {
+      animation-play-state: paused;
     }
   }
   &:is(:hover, :focus-visible) {
@@ -1315,6 +1318,22 @@
     grid-area: 1 / 1;
     opacity: 0;
   }
+  /* Reduced motion plays no animation, so the loader steps the numeral itself (data-step 0–3 → 3, 2, 1, 0). */
+  @media (prefers-reduced-motion: reduce) {
+    &[data-step="0"] b > :nth-child(1),
+    &[data-step="1"] b > :nth-child(2),
+    &[data-step="2"] b > :nth-child(3),
+    &[data-step="3"] b > :nth-child(4) {
+      opacity: 1;
+    }
+  }
+}
+/* The percent sign is set in the reading face: the poster face's is too fine to read at label size. */
+@utility loader-pct {
+  &::after {
+    content: "%";
+    font-family: var(--font-reading);
+  }
 }
 /* The countdown: JS only sets --count and [data-count]. Everything below is transform and opacity, linear, so it never waits on the main thread. */
 @keyframes lens {
@@ -1421,6 +1440,15 @@
   @media (scripting: none) {
     display: none;
   }
+  /* Short screens (a phone on its side): a smaller countdown, so the info and the keys stay clear of its rings. */
+  @media (max-height: 520px) {
+    & .leader {
+      width: 160px;
+    }
+    & .leader b {
+      font-size: 60px;
+    }
+  }
   @media (max-width: 639px) {
     place-items: start center;
     padding-top: calc(var(--bar-height) + var(--space-10));
@@ -1525,14 +1553,94 @@
 @utility loader-corner-b {
   inset-inline-end: var(--page-margin);
 }
-@utility loader-info {
+/* The loading page's foot: the progress block on the left, the sound choice on the right (stacked, choice first, on a phone). */
+@utility loader-foot {
   position: absolute;
-  inset-inline-start: var(--page-margin);
+  inset-inline: var(--page-margin);
   bottom: calc(var(--bar-height) + var(--space-6));
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-6);
+  @media (max-width: 639px) {
+    flex-direction: column-reverse;
+    align-items: stretch;
+    gap: var(--space-6);
+  }
+}
+@utility loader-info {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
-  width: min(320px, 100% - 2 * var(--page-margin));
+  width: min(320px, 100%);
+  @media (max-height: 520px) {
+    width: min(260px, 100%);
+  }
+}
+/* First visit: "Best with sound on" over the two keys. Once one is pressed they fade and leave the tab order. */
+@utility loader-choice {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  width: min(280px, 100%);
+  transition:
+    opacity 300ms var(--ease-cinema),
+    visibility 300ms;
+  & > .btn-primary,
+  & > .btn-secondary {
+    justify-content: center;
+  }
+  &[data-chosen] {
+    opacity: 0;
+    visibility: hidden;
+  }
+  /* While nothing is pressed the silence key fills with the countdown: its hover shutter, scrubbed by --p (0 → 1). */
+  &[data-auto] > .btn-secondary::before {
+    clip-path: polygon(
+      0 0,
+      calc(116% * var(--p, 0)) 0,
+      calc(116% * var(--p, 0) - 16%) 100%,
+      calc(-16% * var(--p, 0)) 100%
+    );
+    transition: none;
+  }
+  /* The first light crosses the key as soon as it is on screen. */
+  & > .btn-primary::after {
+    animation-delay: 0.4s;
+  }
+  @media (max-width: 639px) {
+    width: 100%;
+  }
+  @media (max-height: 520px) {
+    width: min(240px, 100%);
+    & > .btn-primary,
+    & > .btn-secondary {
+      height: 44px;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
+}
+/* The note points at the primary key with a hairline, like the countdown's crosshair. */
+@utility loader-note {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--color-cream);
+  &::after {
+    content: "";
+    width: 1px;
+    height: var(--space-4);
+    background: linear-gradient(var(--color-yellow), transparent);
+    transform: scaleY(-1);
+  }
+  @media (max-width: 639px) {
+    &::after {
+      display: none;
+    }
+  }
 }
 @utility loader-line {
   display: block;

@@ -19,12 +19,13 @@ function stored() {
 export function armSound() {
   if (armed || typeof window === "undefined") return;
   armed = true;
-  const open = () => {
-    ctx ??= new AudioContext();
-    void ctx.resume();
-  };
-  window.addEventListener("pointerdown", open, { once: true });
-  window.addEventListener("keydown", open, { once: true });
+  window.addEventListener("pointerdown", unlock, { once: true });
+  window.addEventListener("keydown", unlock, { once: true });
+}
+
+function unlock() {
+  ctx ??= new AudioContext();
+  void ctx.resume();
 }
 
 export function isMuted() {
@@ -39,14 +40,46 @@ export function subscribeMuted(listener: () => void) {
   };
 }
 
-export function toggleMuted() {
-  muted = !isMuted();
+let choice: boolean | null = null;
+let passed = false;
+
+/** Whether the visitor has picked sound or silence before: the loading page asks only the first time. */
+export function hasSoundChoice() {
+  if (typeof window === "undefined" || passed) return true;
+  try {
+    choice ??= window.localStorage.getItem(KEY) !== null;
+  } catch {
+    choice ??= false;
+  }
+  return choice;
+}
+
+function save(next: boolean) {
+  muted = next;
+  choice = true;
   try {
     window.localStorage.setItem(KEY, muted ? "1" : "0");
   } catch {
     // Storage can be blocked: the choice then lasts for this visit only.
   }
   listeners.forEach(l => l());
+}
+
+export function toggleMuted() {
+  save(!isMuted());
+}
+
+/** The visitor pressed nothing: this visit is silent, but nothing is saved, so the question comes back next time. */
+export function enterSilently() {
+  passed = true;
+  muted = true;
+  listeners.forEach(l => l());
+}
+
+/** The loading page's two buttons: a click is the gesture that lets the browser play audio. */
+export function chooseSound(withSound: boolean) {
+  unlock();
+  save(!withSound);
 }
 
 function tone(
