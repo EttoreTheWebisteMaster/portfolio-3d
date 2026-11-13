@@ -35,13 +35,16 @@ try {
     });
     const page = await context.newPage();
     await page.emulateMedia({ reducedMotion });
-    await page.goto(base + route, { waitUntil: "networkidle", timeout: 30000 });
+    await page.goto(base + route, {
+      waitUntil: "domcontentloaded",
+      timeout: 120000,
+    });
     await page.evaluate(() => document.fonts.ready);
     // The loader covers the page until the scene is ready: wait it out, then let the entry shot settle.
     await page
       .locator('[role="dialog"][aria-label="Loading"]')
-      .waitFor({ state: "detached", timeout: 45000 })
-      .catch(() => console.warn("loader still on screen after 45s"));
+      .waitFor({ state: "detached", timeout: 150000 })
+      .catch(() => console.warn("loader still on screen after 150s"));
     await page.waitForTimeout(reducedMotion === "reduce" ? 1000 : 6000);
     const size = `${width}x${height}`;
     if (scrolls.length === 0) {

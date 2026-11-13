@@ -37,7 +37,6 @@ export default function CaseShell({
   const scroll = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const html = document.documentElement;
     shells++;
     caseState.open = true;
     caseState.shown = true;
@@ -60,11 +59,10 @@ export default function CaseShell({
       if (diveState.v >= 1) land();
     };
     if (caseState.diving) gsap.ticker.add(fade);
-    // The top bar comes back with the landing; the programme behind stays away until the case study has closed.
+    // The programme behind stays away until the case study has closed.
     const stopWait = whenLanded(() => {
       gsap.ticker.remove(fade);
       gsap.set(root.current, { clearProps: "opacity" });
-      delete html.dataset.hushBar;
     });
 
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)");

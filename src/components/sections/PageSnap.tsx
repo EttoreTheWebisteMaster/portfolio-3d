@@ -5,7 +5,13 @@ import { useRef } from "react";
 import { caseState, diveState } from "@/lib/caseMotion";
 import { gsap, Observer, useGSAP } from "@/lib/gsap";
 import { getLoading } from "@/lib/loading";
-import { cruise, journey, setJourney, travelSeconds } from "@/lib/journey";
+import {
+  cruise,
+  journey,
+  scrub,
+  setJourney,
+  travelSeconds,
+} from "@/lib/journey";
 import { PAGES } from "@/lib/pages";
 import { view } from "@/lib/projects";
 
@@ -87,6 +93,7 @@ export default function PageSnap() {
       hold?.kill();
       hold = gsap.delayedCall(0.4, () => {
         busy = false;
+        delete document.documentElement.dataset.to;
         if (document.activeElement === document.body) {
           const page = pages[index];
           page.tabIndex = -1;
@@ -129,6 +136,7 @@ export default function PageSnap() {
       const next = gsap.utils.clamp(0, pages.length - 1, to);
       if (
         busy ||
+        scrub.on ||
         view.held ||
         caseState.open ||
         next === index ||
@@ -138,6 +146,8 @@ export default function PageSnap() {
       const from = index;
       busy = true;
       index = next;
+      // The nav link of the page being travelled to lights up at once and stays lit, even if the pointer has already left it.
+      document.documentElement.dataset.to = PAGES[next].label.toLowerCase();
       setUrl(next, push);
       if (instant || Math.abs(next - from) > 1) {
         cut(next);
@@ -154,7 +164,7 @@ export default function PageSnap() {
 
     // Drags of the scrollbar and anything else that leaves between pages settle on the nearest one.
     const settle = () => {
-      if (busy || view.held || caseState.open) return;
+      if (busy || scrub.on || view.held || caseState.open) return;
       index = nearest();
       if (Math.abs(top(index) - window.scrollY) > 1)
         gsap.to(window, {
@@ -165,14 +175,16 @@ export default function PageSnap() {
     };
 
     const onKey = (e: KeyboardEvent) => {
-      if (caseState.open) return;
+      if (caseState.open || scrub.on) return;
       // Typing and the controls that own the arrows keep them; everywhere else the keys turn the page.
       if (
         e.target instanceof HTMLElement &&
         e.target !== document.body &&
         (e.key === " " ||
           e.target.isContentEditable ||
-          e.target.closest("input, textarea, select, [role=listbox]"))
+          e.target.closest(
+            "input, textarea, select, [role=listbox], .menu-overlay"
+          ))
       )
         return;
       const dir = KEYS_NEXT.has(e.key) ? 1 : KEYS_PREV.has(e.key) ? -1 : 0;
@@ -195,6 +207,8 @@ export default function PageSnap() {
           caseState.close(to === index ? undefined : () => go(to, true));
         return;
       }
+      // The page already shown, or the one a move in flight is heading for: nothing to do, the move finishes on its own.
+      if (to === index) return;
       // Mid-move, a link takes over at once: the move in flight is dropped and the page cuts straight to the new one.
       const moving = gsap.isTweening(window) || !!cutTl?.isActive();
       if (busy) {
@@ -206,6 +220,8 @@ export default function PageSnap() {
 
     // Back and forward between journey pages play the same move as a link.
     const onPop = () => {
+      // A case study closing under a drag of the timecode: the visitor chooses where to land.
+      if (scrub.on) return;
       const to = pathIndex(window.location.pathname);
       if (to < 0) return;
       retitle(to);
@@ -234,7 +250,7 @@ export default function PageSnap() {
 
     // Wheel and touch over a scrolling box belong to the box: they never reach the page snapper, so the list scrolls freely.
     // (The observer's own `ignore` resolves its elements once, so a list that mounts later was left out.)
-    const OWN = ".projects-index, .about-ask";
+    const OWN = ".projects-index, .about-ask, .menu-overlay";
     const box = (e: Event) =>
       e.target instanceof Element ? e.target.closest<HTMLElement>(OWN) : null;
     const keep = (e: Event) => {
@@ -281,12 +297,31 @@ export default function PageSnap() {
 
     // `ignore` resolves its elements once, when the observer is made, and the case study opens later: while it is open the observer simply steps aside, so the wheel and swipes scroll the case study.
     const stepAside = () => {
-      if (caseState.open === observer.isEnabled) {
-        if (caseState.open) observer.disable();
+      const aside = caseState.open || scrub.on;
+      if (aside === observer.isEnabled) {
+        if (aside) observer.disable();
         else observer.enable();
       }
     };
     gsap.ticker.add(stepAside);
+
+    // The timecode scrubber: a drag takes the moves over; on release the site settles on the nearest page.
+    scrub.start = () => {
+      stop();
+      busy = false;
+      scrub.on = true;
+    };
+    scrub.end = () => {
+      scrub.on = false;
+      index = nearest();
+      setUrl(index, false);
+      gsap.to(window, {
+        scrollTo: { y: top(index), autoKill: false },
+        duration: reduced.matches ? 0 : 0.8,
+        ease: "power2.out",
+        onComplete: release,
+      });
+    };
 
     window.addEventListener("scroll", publishScroll, { passive: true });
     window.addEventListener("scrollend", settle);
@@ -295,6 +330,10 @@ export default function PageSnap() {
     window.addEventListener("resize", onResize);
     window.addEventListener("popstate", onPop);
     return () => {
+      scrub.on = false;
+      scrub.start = () => {};
+      scrub.end = () => {};
+      delete document.documentElement.dataset.to;
       gsap.ticker.remove(stepAside);
       hold?.kill();
       observer.kill();

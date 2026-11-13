@@ -39,13 +39,11 @@ const dive = (t: number) => cruise(t * RUN) / cruise(RUN);
 /** Seconds the dive takes. */
 const DIVE_SECONDS = 1.8 * RUN;
 
-/** The page's text and bars away (`true`) or back (`false`): they fade, and stay away for the whole transition. `bar` is the top bar alone. */
-export function hush(on: boolean, bar = on) {
+/** The page's text away (`true`) or back (`false`): it fades, and stays away for the whole transition. The top and bottom bars never go. */
+export function hush(on: boolean) {
   const html = document.documentElement;
   if (on) html.dataset.hush = "";
   else delete html.dataset.hush;
-  if (bar) html.dataset.hushBar = "";
-  else delete html.dataset.hushBar;
 }
 
 /** True while the page's interface must be away: the dive in or out of a case study, and the case study itself. */
