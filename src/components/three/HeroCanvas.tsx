@@ -34,7 +34,7 @@ import { contactCamera, onContact } from "./contactShot";
 import ContactScene from "./ContactScene";
 import HeroEffects from "./HeroEffects";
 import HeroEnvironment from "./HeroEnvironment";
-import HeroLight, { FLOOR_Y } from "./HeroLight";
+import HeroLight from "./HeroLight";
 import HeroRobot from "./HeroRobot";
 import ProjectsRoom from "./ProjectsRoom";
 import Warmup from "./Warmup";
@@ -251,14 +251,6 @@ export default function HeroCanvas() {
           <Rig reduced={reduced} progress={smooth} />
           {modelUrl && <Warmup />}
         </Suspense>
-        <mesh
-          rotation={[-Math.PI / 2, 0, 0]}
-          position={[0, FLOOR_Y, 0]}
-          receiveShadow
-        >
-          <planeGeometry args={[60, 60]} />
-          <shadowMaterial opacity={0.45} />
-        </mesh>
         <HeroLight reduced={reduced} low={low} progress={smooth} />
         <HeroEffects low={low} progress={smooth} />
         <AdaptiveDpr />

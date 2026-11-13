@@ -4,7 +4,14 @@ import { useFrame, useThree } from "@react-three/fiber";
 import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 
-import { heroLight, introKey, introRim, type Progress } from "@/lib/journey";
+import {
+  ease,
+  heroLight,
+  introKey,
+  introRim,
+  type Progress,
+  seg,
+} from "@/lib/journey";
 
 import { FLOOR_Y } from "./HeroLight";
 
@@ -73,6 +80,7 @@ export default function HeroEnvironment({
   const fill = useRef<THREE.DirectionalLight>(null);
   const sky = useRef<THREE.HemisphereLight>(null);
   const pool = useRef<THREE.MeshBasicMaterial>(null);
+  const shade = useRef<THREE.ShadowMaterial>(null);
   const gl = useThree(s => s.gl);
   const glow = useMemo(() => glowTexture(), []);
   const env = useMemo(() => {
@@ -100,6 +108,12 @@ export default function HeroEnvironment({
     if (fill.current) fill.current.intensity = 0.4 * key;
     if (under.current) under.current.intensity = 0.2 * key;
     if (pool.current) pool.current.opacity = 0.14 * key;
+    // His shadow on the floor is the hero's: it is gone before the camera cranes up, where it would stretch across the backdrop.
+    if (shade.current) {
+      const fade = 1 - ease(seg(progress.current, [0, 0.2]));
+      shade.current.opacity = 0.45 * fade;
+      shade.current.visible = fade > 0;
+    }
   });
 
   return (
@@ -143,6 +157,14 @@ export default function HeroEnvironment({
         intensity={16}
         distance={16}
       />
+      <mesh
+        rotation={[-Math.PI / 2, 0, 0]}
+        position={[0, FLOOR_Y, 0]}
+        receiveShadow
+      >
+        <planeGeometry args={[60, 60]} />
+        <shadowMaterial ref={shade} opacity={0.45} />
+      </mesh>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, FLOOR_Y + 0.01, 0]}>
         <planeGeometry args={[14, 14]} />
         <meshBasicMaterial
