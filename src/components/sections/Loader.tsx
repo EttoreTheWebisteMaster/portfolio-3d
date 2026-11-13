@@ -72,12 +72,10 @@ export default function Loader() {
   const [count] = useState(() =>
     hasSoundChoice() ? COUNT_MS : FIRST_COUNT_MS
   );
-  // Silence is picked for the visitor when the countdown ends, unless they hover, touch or tab to a button first.
-  const auto = useRef(true);
-  const [holding, setHolding] = useState(false);
-  const hold = () => {
-    auto.current = false;
-    setHolding(true);
+  // The countdown stands still while the visitor has a pointer or the keyboard focus on a button, and picks silence once they have left.
+  const over = useRef({ pointer: false, focus: false });
+  const pause = (key: "pointer" | "focus", on: boolean) => {
+    over.current[key] = on;
   };
 
   // Next keeps this layout alive, hidden, while a case study is open, and runs these effects again on Back: once the visitor has entered they must do nothing,
@@ -142,26 +140,28 @@ export default function Loader() {
         percent = pct;
         label.current.textContent = `Loading · ${pct}%`;
       }
+      // Once a choice is made the keys fade away, and a pointer left on them must not hold the countdown.
+      const paused =
+        !hasSoundChoice() && (over.current.pointer || over.current.focus);
       const anims = counted.current;
       if (anims) {
         // Real time at most, and never past the load: slow loads stretch the countdown, fast ones keep the 1.5s floor.
+        const step = paused ? 0 : dt;
         countT =
           countT < count
-            ? Math.min(countT + dt, Math.max(countT, loaded * count))
-            : countT + dt;
+            ? Math.min(countT + step, Math.max(countT, loaded * count))
+            : countT + step;
         anims.forEach(a => {
           a.currentTime = countT;
         });
       }
       const landed = countT >= count;
       // The silence key fills with the countdown (the hover shutter, scrubbed), and presses itself when it ends.
-      if (auto.current) {
-        choice.current?.style.setProperty(
-          "--p",
-          String(Math.min(countT / count, 1))
-        );
-        if (landed && !hasSoundChoice()) enterSilently();
-      }
+      choice.current?.style.setProperty(
+        "--p",
+        String(Math.min(countT / count, 1))
+      );
+      if (landed && !paused && !hasSoundChoice()) enterSilently();
       // Loaded and counted down, it holds on 0 until the visitor has chosen sound or silence.
       if (landed && started && hasSoundChoice()) {
         if (held < 0 && leader.current) {
@@ -269,10 +269,12 @@ export default function Loader() {
           <div
             ref={choice}
             className="loader-choice"
-            data-auto={holding ? undefined : ""}
+            data-auto=""
             data-chosen={asking ? undefined : ""}
-            onPointerEnter={hold}
-            onFocus={hold}
+            onPointerEnter={() => pause("pointer", true)}
+            onPointerLeave={() => pause("pointer", false)}
+            onFocus={() => pause("focus", true)}
+            onBlur={() => pause("focus", false)}
           >
             <p className="loader-note load-label">Best with sound on</p>
             <Button onClick={() => chooseSound(true)}>Enter with sound</Button>
