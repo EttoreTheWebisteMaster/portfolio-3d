@@ -16,7 +16,7 @@ import {
   seg,
 } from "@/lib/journey";
 
-import { caseState } from "@/lib/caseStudy";
+import { caseState } from "@/lib/caseMotion";
 import { onEnter } from "@/lib/loading";
 import { TRAILER_SRC, view } from "@/lib/projects";
 import { isMuted, subscribeMuted } from "@/lib/sound";

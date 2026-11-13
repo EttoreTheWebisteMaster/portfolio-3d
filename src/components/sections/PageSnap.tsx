@@ -2,7 +2,7 @@
 
 import { useRef } from "react";
 
-import { caseState, diveState } from "@/lib/caseStudy";
+import { caseState, diveState } from "@/lib/caseMotion";
 import { gsap, Observer, useGSAP } from "@/lib/gsap";
 import { getLoading } from "@/lib/loading";
 import { cruise, journey, setJourney, travelSeconds } from "@/lib/journey";

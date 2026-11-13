@@ -5,7 +5,7 @@ import { useRef } from "react";
 import { addEntrance } from "@/lib/fx";
 import { scrollScenes } from "@/lib/caseScroll";
 import { gsap, type SplitText as Split, useGSAP } from "@/lib/gsap";
-import { LAND, LAND_SCALE, whenLanded } from "@/lib/caseStudy";
+import { LAND, LAND_SCALE, whenLanded } from "@/lib/caseMotion";
 import { view } from "@/lib/projects";
 
 /** The trailer is blurry for this long before it cuts to its still, in seconds after the landing. */

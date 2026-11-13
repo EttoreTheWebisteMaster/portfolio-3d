@@ -1,6 +1,6 @@
 "use client";
 
-import { caseState } from "@/lib/caseStudy";
+import { caseState } from "@/lib/caseMotion";
 import { gsap, type SplitText, useGSAP } from "@/lib/gsap";
 import { addEntrance, RISE } from "@/lib/fx";
 import { INTRO, journey, seg } from "@/lib/journey";

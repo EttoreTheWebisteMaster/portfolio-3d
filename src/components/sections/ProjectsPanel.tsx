@@ -8,7 +8,7 @@ import ProjectsIndex from "@/components/sections/ProjectsIndex";
 import { ButtonArrow, ButtonLabel } from "@/components/ui/Button";
 import { gsap, useGSAP } from "@/lib/gsap";
 import useProgrammeMotion from "@/lib/useProgrammeMotion";
-import { caseState, openCaseStudy } from "@/lib/caseStudy";
+import { caseState, openCaseStudy } from "@/lib/caseMotion";
 import { journey } from "@/lib/journey";
 import { PROJECTS, slugOf, TRAILER_SECONDS, view } from "@/lib/projects";
 import { pad } from "@/lib/pages";

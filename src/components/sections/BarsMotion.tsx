@@ -1,6 +1,6 @@
 "use client";
 
-import { hushed } from "@/lib/caseStudy";
+import { hushed } from "@/lib/caseMotion";
 import { gsap, useGSAP } from "@/lib/gsap";
 
 const TRAVEL = 16;

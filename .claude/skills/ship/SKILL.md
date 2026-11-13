@@ -4,7 +4,7 @@ description: Branch, commit with Conventional Commits, push and open a PR.
 disable-model-invocation: true
 ---
 
-1. `npm run check`. Stop on failure.
+1. `npm run check`. Stop on failure. Then, in parallel, run the `reviewer` agent on the diff (and `qa` with the changed route when the change is visual). Any P0 row or `fix needed` verdict stops the ship; show it.
 2. Not on a feature branch → `git switch -c <type>/<short-slug>`.
 3. Stage only files belonging to this task. Commit `type(scope): summary` (≤72 chars, imperative). Body only if the why isn't obvious.
 4. `git push -u origin HEAD`, then `gh pr create --fill` using `.github/pull_request_template.md`; title = commit subject.

@@ -1,6 +1,6 @@
 import * as THREE from "three";
 
-import { diveState } from "@/lib/caseStudy";
+import { diveState } from "@/lib/caseMotion";
 import { ease, journey, seg } from "@/lib/journey";
 import { pointer } from "@/lib/pointer";
 

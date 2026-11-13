@@ -12,7 +12,7 @@ import {
   LAND_SCALE,
   retreatFromCase,
   whenLanded,
-} from "@/lib/caseStudy";
+} from "@/lib/caseMotion";
 import { gsap } from "@/lib/gsap";
 import { ease, seg } from "@/lib/journey";
 

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react";
 
-import { caseState, whenLanded } from "@/lib/caseStudy";
+import { caseState, whenLanded } from "@/lib/caseMotion";
 import { view } from "@/lib/projects";
 
 /** The case study's backdrop: the Projects trailer carrying on, silent. It is a transition element, never a player, so it ignores the sound switch. */

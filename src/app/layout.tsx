@@ -8,6 +8,7 @@ import {
 } from "next/font/google";
 import ButtonFx from "@/components/ui/ButtonFx";
 import { MODEL_URL } from "@/lib/assets";
+import { SITE_URL } from "@/lib/site";
 
 import "./globals.css";
 
@@ -27,6 +28,8 @@ const reading = Instrument_Sans({
 const pencil = Caveat({ subsets: ["latin"], variable: "--font-pencil-src" });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
+  alternates: { canonical: "./" },
   title: {
     default: "Ettore Serra · Designer & engineer",
     template: "%s · Ettore Serra",

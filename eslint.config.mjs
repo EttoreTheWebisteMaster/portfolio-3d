@@ -59,6 +59,9 @@ export default defineConfig([
     "out/**",
     "build/**",
     "coverage/**",
+    "design/**",
+    ".agents/**",
+    "shots/**",
     "next-env.d.ts",
   ]),
 ]);
