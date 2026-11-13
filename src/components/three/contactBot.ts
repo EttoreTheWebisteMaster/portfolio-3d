@@ -127,7 +127,7 @@ const hold = new THREE.Vector3();
 
 export const rand = (a: number, b: number) => a + Math.random() * (b - a);
 
-export type Mode = "idle" | "fall" | "rest" | "rise" | "walk" | "chat" | "held";
+type Mode = "idle" | "fall" | "rest" | "rise" | "walk" | "chat" | "held";
 
 /** A knot of robots standing in a ring, talking. */
 export type Huddle = { x: number; z: number; phase: number; members: Bot[] };

@@ -21,6 +21,8 @@ export const caseState = {
   held: false,
   /** The dive is still flying: the overlay is mounted under it, unseen, and lands when it ends. */
   diving: false,
+  /** It was opened from the programme, so the entry before it is Projects: closing steps back to it instead of piling up history. */
+  programme: false,
   close: (_after?: () => void) => {},
   after: null as (() => void) | null,
 };
@@ -89,12 +91,14 @@ export function openCaseStudy(go: () => void) {
   if (opening || caseState.open) return;
   opening = true;
   caseState.open = true;
+  caseState.programme = true;
   hush(true);
   // The route never came (offline, a failed navigation): the room is given back rather than left empty.
   const guard = () =>
     window.setTimeout(() => {
       if (caseState.shown || !caseState.open || caseState.closing) return;
       caseState.open = false;
+      caseState.programme = false;
       abandonDive();
       retreatFromCase();
     }, 8000);

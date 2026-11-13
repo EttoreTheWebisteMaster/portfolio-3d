@@ -61,6 +61,11 @@ export default function BottomBar() {
           cue.href = next.href;
           set("cue", next.text);
         }
+        document.querySelectorAll("[data-nav]").forEach(link => {
+          if (link.getAttribute("data-nav") === PAGES[i].label.toLowerCase())
+            link.setAttribute("aria-current", "page");
+          else link.removeAttribute("aria-current");
+        });
         ticks.forEach((tick, n) => {
           if (n === i) tick.setAttribute("aria-current", "page");
           else tick.removeAttribute("aria-current");

@@ -4,7 +4,7 @@ import { diveState, LAND_SCALE } from "@/lib/caseStudy";
 import { view } from "@/lib/projects";
 
 /** Projects → case study: the camera dives into the screen. How far the camera has flown into the Projects screen (the case-study dive), 0 → 1. */
-export const approach = () => diveState.v;
+const approach = () => diveState.v;
 
 const tan = (fov: number) => Math.tan(THREE.MathUtils.degToRad(fov / 2));
 

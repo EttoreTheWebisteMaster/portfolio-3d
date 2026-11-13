@@ -219,6 +219,7 @@
     }
   }
   html {
+    overscroll-behavior: none;
     scrollbar-width: none;
     background: var(--bg-base);
     color: var(--text-primary);
@@ -255,12 +256,6 @@
   line-height: var(--text-marquee-xl--line-height);
   font-weight: 400;
   letter-spacing: var(--tracking-display);
-}
-@utility type-marquee-l {
-  font-family: var(--font-marquee);
-  font-size: var(--text-marquee-l);
-  line-height: var(--text-marquee-l--line-height);
-  font-weight: 400;
 }
 @utility type-marquee-m {
   font-family: var(--font-marquee);
@@ -341,31 +336,6 @@
   line-height: var(--text-small--line-height);
   font-weight: 500;
 }
-@utility type-subtitle {
-  font-family: var(--font-reading);
-  font-size: var(--text-subtitle);
-  line-height: var(--text-subtitle--line-height);
-  font-weight: 600;
-}
-@utility type-dialogue {
-  font-family: var(--font-reading);
-  font-size: var(--text-dialogue);
-  line-height: var(--text-dialogue--line-height);
-  font-weight: 400;
-}
-@utility type-note {
-  font-family: var(--font-pencil);
-  font-size: var(--text-note);
-  line-height: var(--text-note--line-height);
-  font-weight: 700;
-}
-@utility type-gibberish {
-  font-family: var(--font-pencil);
-  font-size: var(--text-gibberish);
-  line-height: var(--text-gibberish--line-height);
-  font-weight: 700;
-}
-
 /* ─── Components ─────────────────────────────────────────── */
 
 /* Scene — ground, one motivated light, grain, vignette. Set --light-x/--light-y/--light-strength inline via utilities; add scene-screen-light for a screen source */
@@ -1093,7 +1063,7 @@
   }
 }
 
-/* Marquee title — Tac One, lit by the scene. Variants: marquee-gold | marquee-yellow | marquee-red · marquee-dim for the letter-by-letter reveal */
+/* Marquee title — Tac One, lit by the scene. */
 @utility marquee {
   font-family: var(--font-marquee);
   font-weight: 400;
@@ -1101,104 +1071,6 @@
   line-height: 0.9;
   margin: 0;
 }
-@utility marquee-gold {
-  @apply marquee;
-  background: linear-gradient(
-    var(--light-angle, 165deg),
-    var(--color-gold-hi) 0%,
-    var(--color-gold) 42%,
-    var(--color-gold-lo) 100%
-  );
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  filter: drop-shadow(
-    0 0 28px color-mix(in srgb, var(--color-gold) 28%, transparent)
-  );
-  [data-theme="paper"] & {
-    background: none;
-    color: var(--color-ink);
-    filter: none;
-  }
-}
-@utility marquee-yellow {
-  @apply marquee;
-  color: var(--color-yellow);
-  text-shadow: 0 0 32px color-mix(in srgb, var(--color-yellow) 40%, transparent);
-  [data-theme="paper"] & {
-    color: var(--color-ink);
-    text-shadow: none;
-  }
-}
-@utility marquee-red {
-  @apply marquee;
-  color: var(--text-loud);
-  text-shadow: var(--shadow-glow-red);
-}
-@utility marquee-dim {
-  opacity: 0.28;
-  transition: opacity 60ms;
-}
-
-/* Robot subtitle — gibberish line over a subtitle box; <span class="who"> only when ROB-092 is off-screen */
-@utility robot-say {
-  display: inline-flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-  text-align: center;
-}
-@utility robot-gibberish {
-  @apply type-gibberish;
-  color: var(--text-annotation);
-}
-@utility robot-subtitle {
-  @apply type-subtitle;
-  max-width: 34ch;
-  padding: 8px 16px;
-  background: color-mix(in srgb, var(--color-black) 84%, transparent);
-  color: var(--color-cream);
-  & .who {
-    font-family: var(--font-poster);
-    font-weight: 700;
-    font-size: var(--text-label);
-    letter-spacing: var(--tracking-label-s);
-    margin-right: 0.5em;
-    vertical-align: 2px;
-    color: var(--color-yellow);
-  }
-}
-
-/* Annotation — Caveat note + hand-drawn svg arrow */
-@utility note {
-  @apply type-note;
-  display: inline-flex;
-  align-items: flex-end;
-  gap: 8px;
-  color: var(--text-annotation);
-  & svg {
-    width: 72px;
-    height: 48px;
-    fill: none;
-    stroke: currentColor;
-    stroke-width: 2.25;
-    stroke-linecap: round;
-    stroke-linejoin: round;
-  }
-}
-
-/* Genre tag */
-@utility genre-tag {
-  @apply type-label-s uppercase;
-  display: inline-block;
-  padding: var(--space-1) var(--space-2);
-  border: 1px solid var(--hairline-strong);
-  border-radius: var(--radius-ui);
-  letter-spacing: 0.12em;
-  white-space: nowrap;
-  color: var(--text-secondary);
-}
-
 /* Fact — label over value */
 @utility fact {
   display: inline-flex;
@@ -1216,11 +1088,6 @@
   color: var(--text-primary);
 }
 
-/* Programme list — Projects index. Row children: .no .ti (+ GenreTag) .yr */
-@utility prog {
-  width: 100%;
-  max-width: 520px;
-}
 @utility prog-row {
   display: grid;
   grid-template-columns: 40px 1fr auto 48px;
@@ -1687,13 +1554,6 @@
   font-weight: 800;
   letter-spacing: var(--tracking-logo);
   text-transform: uppercase;
-}
-/* Starter helpers (re-pointed at the new tokens) */
-@utility case-card {
-  padding: var(--space-5);
-  border: 1px solid var(--hairline);
-  background: var(--bg-raised);
-  box-shadow: var(--shadow-screen-spill);
 }
 @utility menu-items {
   padding: var(--space-1);
@@ -2217,15 +2077,6 @@
     width: calc(var(--p, 0) * 100%);
     background: var(--color-yellow);
     box-shadow: 0 0 8px color-mix(in srgb, var(--color-yellow) 60%, transparent);
-  }
-}
-@utility next-head {
-  @apply type-label-s;
-  display: flex;
-  justify-content: space-between;
-  font-variant-numeric: tabular-nums;
-  & span {
-    color: var(--color-yellow);
   }
 }
 @utility projects-list {
@@ -3411,10 +3262,6 @@
   font-weight: 800;
   font-size: min(var(--text-poster-l), 12vw);
   color: var(--color-cream);
-}
-/* Gallery: two rows of footage and stills; wide tiles take two thirds. */
-@utility case-gallery {
-  overflow: hidden;
 }
 @utility case-media-grid {
   grid-column: 1 / -1;

@@ -2,9 +2,10 @@
 
 import { useEffect, useRef } from "react";
 
+import { pad } from "@/lib/pages";
+
 const FPS = 24;
 const LENGTH = 90; // seconds of "film" the full page scroll maps to
-const pad = (n: number) => String(n).padStart(2, "0");
 
 /** Scroll-driven timecode (TC HH:MM:SS:FF); the track tick shows scroll position. */
 export default function Timecode() {

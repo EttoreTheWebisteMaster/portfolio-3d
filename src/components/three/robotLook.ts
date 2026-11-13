@@ -76,32 +76,3 @@ export function stepMood(
   mood[0] = THREE.MathUtils.damp(mood[0], s + alive, rate, dt);
   mood[1] = THREE.MathUtils.damp(mood[1], k, rate, dt);
 }
-
-const AXES = {
-  x: new THREE.Vector3(1, 0, 0),
-  y: new THREE.Vector3(0, 1, 0),
-  z: new THREE.Vector3(0, 0, 1),
-};
-const turn = new THREE.Quaternion();
-
-/** Turns a bone `by` radians about one axis of its parent's space, on top of whatever the mixer just posed. Quaternion maths, so a bone posed near 90° never flips. */
-export function bend(
-  bone: THREE.Object3D | undefined,
-  axis: "x" | "y" | "z",
-  by: number
-) {
-  bone?.quaternion.premultiply(turn.setFromAxisAngle(AXES[axis], by));
-}
-
-/** Poses a bone the clip does not animate: its rest rotation, turned `by` radians about one axis of its parent's space. Set, not added, so it never piles up frame after frame. */
-export function pose(
-  bone: THREE.Object3D | undefined,
-  rest: THREE.Quaternion | undefined,
-  axis: "x" | "y" | "z",
-  by: number
-) {
-  if (bone && rest)
-    bone.quaternion
-      .copy(rest)
-      .premultiply(turn.setFromAxisAngle(AXES[axis], by));
-}

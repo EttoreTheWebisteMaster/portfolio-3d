@@ -34,7 +34,7 @@ const ROBOT_TOP = 4.5;
 const EYE_DISTANCE = 2;
 
 /** The settled About frame for a viewport: a long lens, level, him on the left columns with his feet on a fixed line (mobile: him on top). */
-export function aboutFrame(width: number, height: number) {
+function aboutFrame(width: number, height: number) {
   const aspect = width / height;
   const narrow = aspect < 1;
   const fov = 24;
