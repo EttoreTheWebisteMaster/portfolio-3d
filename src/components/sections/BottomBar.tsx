@@ -56,14 +56,13 @@ export default function BottomBar() {
         };
         set("index", pad(i + 1));
         set("label", PAGES[i].label);
-        set("count", `${pad(i + 1)} / ${pad(PAGES.length)}`);
+        set("count", pad(i + 1));
         if (cue) {
           cue.href = next.href;
-          if (animate && !reduced.matches) swap(cue, next.text);
-          else cue.textContent = next.text;
+          set("cue", next.text);
         }
         ticks.forEach((tick, n) => {
-          if (n === i) tick.setAttribute("aria-current", "true");
+          if (n === i) tick.setAttribute("aria-current", "page");
           else tick.removeAttribute("aria-current");
         });
       };
@@ -99,25 +98,34 @@ export default function BottomBar() {
           {PAGES[0].label}
         </span>
       </p>
-      <Link href={PAGES[1].path} className="bar-cue bar-field" data-bar-cue>
-        {PAGES[1].label} ↓
+      <Link href={PAGES[1].path} className="bar-cue" data-bar-cue>
+        <span className="bar-field" data-bar="cue">
+          {PAGES[1].label} ↓
+        </span>
       </Link>
-      <p className="bar-progress whitespace-nowrap">
-        <span className="bar-field" data-bar="count">
-          {pad(1)} / {pad(PAGES.length)}
-        </span>
-        <span className="hidden md:block">
-          <span className="bar-ticks" aria-hidden="true">
-            {PAGES.map((page, i) => (
-              <i
-                key={page.id}
-                data-tick
-                aria-current={i === 0 ? "true" : undefined}
-              />
-            ))}
+      <div className="bar-progress whitespace-nowrap">
+        <span>
+          <span className="bar-field" data-bar="count">
+            {pad(1)}
           </span>
+          {` / ${pad(PAGES.length)}`}
         </span>
-      </p>
+        <nav className="bar-ticks hidden md:flex" aria-label="Pages">
+          {PAGES.map((page, i) => (
+            <Link
+              key={page.id}
+              href={page.path}
+              data-tick
+              aria-label={page.label}
+              aria-current={i === 0 ? "page" : undefined}
+            >
+              <i>
+                <span>{page.label}</span>
+              </i>
+            </Link>
+          ))}
+        </nav>
+      </div>
     </footer>
   );
 }

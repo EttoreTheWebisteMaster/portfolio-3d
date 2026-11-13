@@ -435,8 +435,10 @@
   & > * {
     opacity: 0;
   }
+  /* The animation only holds its first frame during the delay; afterwards the bar's children are plain, so nothing clips or overrides them (the tall tick bars rise above the row). */
   html[data-in] & > * {
-    animation: bar-text-in 900ms var(--ease-cinema) both;
+    opacity: 1;
+    animation: bar-text-in 900ms var(--ease-cinema) backwards;
     animation-delay: var(--intro-text, 0s);
   }
   html[data-in] & > :nth-child(2) {
@@ -566,17 +568,117 @@
   font-variant-numeric: tabular-nums;
   color: var(--color-ash);
 }
+/* Page ticks: four same-width bars. Only height moves, and it moves as a transform (a scaled background, never a layout height) so it stays on the GPU and reverses cleanly mid-hover. The current page's bar is a touch taller in yellow; hovering one rises it into a tall bar with the page's name upright. The hit area is a scaled twin of the bar, so only the bar itself (plus 3px) reacts. Each is a link. */
 @utility bar-ticks {
-  display: flex;
+  align-items: center;
   gap: var(--space-2);
-  & i {
+  --tick-full: 70;
+  --tick-rest: 2;
+  --tick-now: 4;
+  --tick-ease: cubic-bezier(0.16, 1, 0.3, 1);
+  & a {
+    position: relative;
+    display: block;
     width: var(--space-4);
-    height: 2px;
-    background: color-mix(in srgb, var(--color-cream) 28%, transparent);
+    height: 44px;
+    cursor: pointer;
+    text-decoration: none;
+    pointer-events: none;
   }
-  & i[aria-current] {
-    background: var(--color-yellow);
-    box-shadow: var(--shadow-glow-yellow);
+  /* The hit area: full height, squashed to the bar's size at rest, so the pointer only finds the bar. */
+  & a::before {
+    content: "";
+    position: absolute;
+    inset-inline: 0;
+    bottom: 18px;
+    height: calc(var(--tick-full) * 1px + 6px);
+    pointer-events: auto;
+    transform-origin: bottom;
+    transform: scaleY(calc((var(--tick-rest) + 6) / (var(--tick-full) + 6)));
+    transition: transform 520ms var(--tick-ease);
+  }
+  & a[aria-current]::before {
+    transform: scaleY(calc((var(--tick-now) + 6) / (var(--tick-full) + 6)));
+  }
+  & a:hover::before,
+  & a:focus-visible::before {
+    transform: none;
+  }
+  & i {
+    position: absolute;
+    inset-inline: 0;
+    bottom: 21px;
+    height: calc(var(--tick-full) * 1px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-style: normal;
+    line-height: 1;
+    text-transform: uppercase;
+    color: var(--color-cream);
+    pointer-events: none;
+    transition: color 360ms var(--ease-cinema);
+  }
+  & i::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    transform-origin: bottom;
+    transform: scaleY(calc(var(--tick-rest) / var(--tick-full)));
+    background-color: color-mix(in srgb, var(--color-cream) 28%, transparent);
+    transition:
+      transform 520ms var(--tick-ease),
+      background-color 360ms var(--ease-cinema);
+  }
+  & i span {
+    position: relative;
+    writing-mode: vertical-rl;
+    transform: translateY(10px) rotate(180deg);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+    opacity: 0;
+    transition:
+      opacity 240ms var(--ease-cinema),
+      transform 520ms var(--tick-ease);
+  }
+  & a[aria-current] i::before {
+    transform: translateY(1px) scaleY(calc(var(--tick-now) / var(--tick-full)));
+    background-color: var(--color-yellow);
+  }
+  & a:hover i::before,
+  & a:focus-visible i::before {
+    transform: none;
+    background-color: color-mix(in srgb, var(--color-cream) 42%, transparent);
+  }
+  & a[aria-current]:hover i::before,
+  & a[aria-current]:focus-visible i::before {
+    background-color: var(--color-yellow);
+  }
+  & a[aria-current]:hover i,
+  & a[aria-current]:focus-visible i {
+    color: var(--color-ink);
+  }
+  & a:hover i span,
+  & a:focus-visible i span {
+    opacity: 1;
+    transform: rotate(180deg);
+  }
+  & a:active i::before {
+    transform: scaleY(0.94);
+  }
+  html[data-paper] & a:not([aria-current]):hover i,
+  html[data-paper] & a:not([aria-current]):focus-visible i {
+    color: var(--color-letterbox);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    & a::before,
+    & i,
+    & i::before,
+    & i span {
+      transition: none;
+    }
   }
 }
 @utility nav-links {
