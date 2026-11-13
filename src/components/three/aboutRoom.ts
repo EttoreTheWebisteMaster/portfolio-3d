@@ -5,7 +5,7 @@ import { FLOOR_Y } from "./HeroLight";
 /** The cream sweep: a floor that curves up into the back wall with no line between. */
 /** The sweep floats just above the cinema floor it overlaps, so the two never fight for the same pixels. */
 const LIFT = 0.03;
-export const SWEEP = {
+const SWEEP = {
   from: -8,
   to: 56,
   front: 70,

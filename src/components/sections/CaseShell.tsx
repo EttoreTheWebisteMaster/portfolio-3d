@@ -68,6 +68,11 @@ export default function CaseShell({
     });
 
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)");
+    // Opened from the programme, Projects is the entry before: step back to it. Opened from a link, replace this entry.
+    const toProjects = () =>
+      caseState.programme
+        ? router.back()
+        : router.replace("/projects", { scroll: false });
     const leave = (after?: () => void) => {
       // Mid-dive the overlay is not on the screen yet: nothing to close.
       if (caseState.closing || caseState.diving) return;
@@ -76,14 +81,14 @@ export default function CaseShell({
       const finish = () => {
         // The overlay is gone; the camera backs out of the screen, which is waiting under it.
         gsap.set(root.current, { visibility: "hidden" });
-        retreatFromCase(() => router.push("/projects", { scroll: false }));
+        retreatFromCase(toProjects);
       };
       if (reduced.matches) {
         gsap.set(root.current, { visibility: "hidden" });
         diveState.v = 0;
         caseState.held = false;
         hush(false);
-        router.push("/projects", { scroll: false });
+        toProjects();
         return;
       }
       // The case study's text and bars go first; the zoom into the screen keeps its own timing.
@@ -129,6 +134,7 @@ export default function CaseShell({
         const { closing, after } = caseState;
         caseState.open = false;
         caseState.shown = false;
+        caseState.programme = false;
         abandonDive();
         caseState.closing = false;
         caseState.after = null;

@@ -11,7 +11,7 @@ import { pathToFileURL } from "node:url";
 const ROOT = process.cwd();
 const GLOBALS = "src/app/globals.css";
 // TODO: re-enable once the ported design-system utilities have consumers.
-const CHECK_UNUSED = false;
+const CHECK_UNUSED = true;
 const SKIP_DIRS = new Set([
   "node_modules",
   ".next",

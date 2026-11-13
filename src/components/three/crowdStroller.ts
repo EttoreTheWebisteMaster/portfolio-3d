@@ -11,7 +11,7 @@ const LANE = { near: -6, far: -12 };
 const EVERY = { min: 18, spread: 22 };
 
 /** One extra figure who now and then crosses the whole crowd, side to side, and leaves the frame. */
-export type Stroller = {
+type Stroller = {
   robot: THREE.Object3D;
   mixer: THREE.AnimationMixer;
   active: boolean;

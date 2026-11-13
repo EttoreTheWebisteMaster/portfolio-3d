@@ -71,17 +71,30 @@ function Driver({ smooth }: Readonly<{ smooth: Progress }>) {
   return null;
 }
 
-/** Drops the pixel ratio when frames run long, so weak GPUs trade sharpness for smoothness, never the other way round. */
+const DPR_MAX = 1.5;
+
+/** Drops the pixel ratio when frames run long and gives it back once they have run clean for a good while, so the sharpness always follows what the GPU can carry. */
 function AdaptiveDpr() {
   const setDpr = useThree(state => state.setDpr);
   const slow = useRef(0);
-  const dpr = useRef(1.5);
+  const clean = useRef(0);
+  const dpr = useRef(DPR_MAX);
+  // Every drop makes the next climb wait twice as long, so a GPU that cannot carry the top never flaps between two sizes.
+  const wait = useRef(20);
   useFrame((_, dt) => {
     if (dt > 0.1) return; // a tab switch or a hitch is not a trend
     slow.current = THREE.MathUtils.lerp(slow.current, dt > 0.028 ? 1 : 0, 0.02);
+    // Fast frames only count while there is room to climb back; any slow patch starts the wait again.
+    clean.current = slow.current < 0.05 ? clean.current + dt : 0;
     if (slow.current > 0.6 && dpr.current > 1) {
       dpr.current = Math.max(1, dpr.current - 0.25);
       slow.current = 0;
+      clean.current = 0;
+      wait.current = Math.min(wait.current * 2, 160);
+      setDpr(dpr.current);
+    } else if (clean.current > wait.current && dpr.current < DPR_MAX) {
+      dpr.current = Math.min(DPR_MAX, dpr.current + 0.25);
+      clean.current = 0;
       setDpr(dpr.current);
     }
   });
@@ -210,14 +223,22 @@ export default function HeroCanvas() {
   return (
     <div className="hero-stage" aria-hidden>
       <Canvas
-        dpr={[1, 1.5]}
+        dpr={[1, DPR_MAX]}
         shadows="percentage"
         // Idle behind the loader, so the countdown has the main thread and the GPU to itself.
         frameloop={entered ? "always" : "demand"}
         camera={{ fov: 22, position: [0, 2.4, 24], near: 0.1, far: 80 }}
-        gl={{ antialias: true, alpha: true }}
+        gl={{
+          antialias: true,
+          alpha: true,
+          powerPreference: "high-performance",
+        }}
         onCreated={({ gl }) => {
           gl.toneMappingExposure = 1.1;
+          // Without this the browser can never give the context back after losing it (a GPU reset, a phone tab restored).
+          gl.domElement.addEventListener("webglcontextlost", e =>
+            e.preventDefault()
+          );
         }}
       >
         <HeroEnvironment progress={smooth} />

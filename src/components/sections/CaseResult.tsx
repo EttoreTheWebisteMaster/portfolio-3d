@@ -1,5 +1,6 @@
 import Image from "next/image";
 
+import LoopVideo from "@/components/ui/LoopVideo";
 import Wheel from "@/components/ui/Wheel";
 import { type CaseStudyContent, episodeTitle } from "@/lib/caseStudies";
 
@@ -22,15 +23,7 @@ export default function CaseResult({
         {content.gallery.map(({ kind, src, alt, wide }) => (
           <figure key={src} className="case-media" data-wide={wide}>
             {kind === "video" ? (
-              <video
-                src={src}
-                aria-label={alt}
-                autoPlay
-                muted
-                loop
-                playsInline
-                preload="metadata"
-              />
+              <LoopVideo src={src} label={alt} />
             ) : (
               <Image
                 src={src}

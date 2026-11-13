@@ -16,7 +16,7 @@ import { pointer } from "@/lib/pointer";
 
 import { Beam, type Cone, litByCone } from "./HeroBeam";
 
-export const LIGHT_POS = new THREE.Vector3(-2.5, 4, 10);
+const LIGHT_POS = new THREE.Vector3(-2.5, 4, 10);
 export const FLOOR_Y = -2;
 
 const LIGHT_COLOR = "#ffd9a0";

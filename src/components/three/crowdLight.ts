@@ -7,7 +7,7 @@ import type { Walker } from "./crowdWalk";
 
 /** The projector's lens, and the light of its beam: a cold white, close to neutral. */
 export const PROJECTOR = new THREE.Vector3(0, 10, 18);
-export const SCREEN_LIGHT = new THREE.Color("#b4dbe6");
+const SCREEN_LIGHT = new THREE.Color("#b4dbe6");
 /** How wide the beam is at the screen, in screen half-diagonals (the middle of the beam's soft cones). */
 const REACH = 1.3;
 /** How much of the screen's rim light everyone in front of it gets, and how fast the light follows. */

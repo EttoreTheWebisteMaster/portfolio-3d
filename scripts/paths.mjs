@@ -167,6 +167,37 @@ try {
     PAGES[3],
     "/ → /projects → /contact (skips a page)"
   );
+  // A case study opened from the programme and closed again leaves no extra history: Back goes where the visitor came from.
+  const { page: c, errors: caseErrors } = await open("/projects");
+  await c.getByRole("button", { name: /view the case study/i }).click();
+  await c.waitForFunction(
+    () => location.pathname.startsWith("/projects/"),
+    null,
+    {
+      timeout: 60000,
+    }
+  );
+  await c.waitForTimeout(4000);
+  await c.getByRole("button", { name: /close case study/i }).click();
+  check(
+    await c
+      .waitForFunction(() => location.pathname === "/projects", null, {
+        timeout: 60000,
+      })
+      .then(
+        () => true,
+        () => false
+      ),
+    "case study closes back to /projects"
+  );
+  await c.waitForTimeout(3000);
+  await c.goBack();
+  check(
+    new URL(c.url()).pathname !== "/projects",
+    "Back after closing a case study leaves Projects"
+  );
+  check(caseErrors.length === 0, "case study: no console errors");
+  await c.close();
   await page.close();
 } finally {
   await browser.close();

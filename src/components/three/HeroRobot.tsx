@@ -70,7 +70,7 @@ const STEEL: Record<
 };
 
 /** His polished metal: gold for the yellow parts, steel for the grey, gunmetal for the dark. The studio around him gives it something to reflect. */
-export function steel(name: string, flatShading: boolean) {
+function steel(name: string, flatShading: boolean) {
   const p = PALETTE[name];
   return new THREE.MeshPhysicalMaterial({
     name,
