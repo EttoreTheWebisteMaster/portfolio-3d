@@ -148,12 +148,8 @@ export default function PageMotion() {
         rigs.forEach((rig, i) => {
           // Pin the page to the viewport; the scroll only drives the journey.
           gsap.set(rig.page, { y: y - rig.page.offsetTop });
-          // Projects' programme fades out as the camera comes down to him; the trailer keeps playing behind as light.
-          if (i === 1) {
-            const gone = seg(pos, [1, 1.12]);
-            gsap.set(rig.page, { opacity: 1 - gone });
-            rig.page.inert = pos < 0.9 || pos >= 1.12;
-          }
+          // Projects' programme animates itself (ProjectsPanel); the trailer keeps playing behind as light.
+          if (i === 1) rig.page.inert = pos < 0.9 || pos >= 1.12;
           if (!rig.tl) return;
           if (i === 0 && !started) return;
           if (rig.intro) {

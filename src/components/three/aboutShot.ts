@@ -5,7 +5,6 @@ import { ease, journey, seg } from "@/lib/journey";
 import { pointer } from "@/lib/pointer";
 
 import { blackout } from "./contactShot";
-import { flare } from "./diveShot";
 import { FLOOR_Y } from "./HeroLight";
 import {
   DIM,
@@ -168,24 +167,29 @@ export function walkCamera(
   camera.updateProjectionMatrix();
 }
 
-/** Exposure of the lens: the dive's white-out, a swell as the daylight comes up that settles like an eye adapting, and the dim into Contact. */
+/** Exposure of the lens: a swell as the daylight comes up that settles like an eye adapting, and the dim into Contact. */
 export function exposure(base: number) {
   const w = walk();
   const bloom = Math.sin(Math.PI * seg(w, SHOT.daylight) ** 0.8) * 0.25;
   const dim = ease(seg(journey.current, DIM));
   return (
-    (base + 2.4 * flare() + bloom) *
-    (1 - 0.8 * dim) *
-    (1 - 0.3 * closeUp()) *
-    (1 - blackout())
+    (base + bloom) * (1 - 0.8 * dim) * (1 - 0.3 * closeUp()) * (1 - blackout())
   );
 }
 
 let measured = "";
+let blurred = "";
+
+/** Sets or clears a data flag only when it changes, so a steady frame writes nothing to the document. */
+function toggle(el: HTMLElement, flag: string, on: boolean) {
+  if (on === flag in el.dataset) return;
+  if (on) el.dataset[flag] = "";
+  else delete el.dataset[flag];
+}
 
 /**
  * Publishes what the DOM needs to stay on the 3D: his head and feet lines in screen pixels (the text column locks to them),
- * the dive's flash and lens blur, and the flags (paper theme, About settled).
+ * the dive's lens blur, and the flags (paper theme, About settled).
  */
 export function publishAbout(width: number, height: number) {
   const root = document.documentElement;
@@ -197,17 +201,14 @@ export function publishAbout(width: number, height: number) {
     style.setProperty("--about-top", `${f.topPx.toFixed(1)}px`);
     style.setProperty("--about-feet", `${f.feetPx.toFixed(1)}px`);
   }
-  const f = flare();
-  style.setProperty("--flare", f.toFixed(3));
-  style.setProperty("--flare-r", (6 + 140 * f).toFixed(1));
-  const blur = 22 * ease(seg(diveState.v, [0.5, 0.95]));
-  style.setProperty("--blur", blur.toFixed(1));
-  if (blur > 0) root.dataset.blur = "";
-  else delete root.dataset.blur;
+  const blur = (22 * ease(seg(diveState.v, [0.5, 0.95]))).toFixed(1);
+  if (blur !== blurred) {
+    blurred = blur;
+    style.setProperty("--blur", blur);
+    toggle(root, "blur", Number(blur) > 0);
+  }
   const pos = journey.current;
   // The theme turns to paper once the frame is mostly cream, and back as About dims into Contact.
-  if (pos >= 1.6 && pos < DIM[0]) root.dataset.paper = "";
-  else delete root.dataset.paper;
-  if (pos >= 1.97 && pos < ZOOM[0]) root.dataset.aboutReady = "";
-  else delete root.dataset.aboutReady;
+  toggle(root, "paper", pos >= 1.6 && pos < DIM[0]);
+  toggle(root, "aboutReady", pos >= 1.97 && pos < ZOOM[0]);
 }

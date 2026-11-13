@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import ProjectsIndex from "@/components/sections/ProjectsIndex";
 import { ButtonArrow, ButtonLabel } from "@/components/ui/Button";
 import { gsap, useGSAP } from "@/lib/gsap";
+import useProgrammeMotion from "@/lib/useProgrammeMotion";
 import { caseState, openCaseStudy } from "@/lib/caseStudy";
 import { journey } from "@/lib/journey";
 import { PROJECTS, slugOf, TRAILER_SECONDS, view } from "@/lib/projects";
@@ -24,6 +25,7 @@ export default function ProjectsPanel() {
   const seconds = useRef<HTMLSpanElement>(null);
   const root = useRef<HTMLDivElement>(null);
   const stage = useRef<HTMLDivElement>(null);
+  const panel = useRef<HTMLDivElement>(null);
 
   const first = useRef(true);
   // Auto changes (timer, Next) scroll the index to the new row; the visitor's own hovers never move it under the cursor.
@@ -107,30 +109,37 @@ export default function ProjectsPanel() {
     { scope: root, dependencies: [active] }
   );
 
+  useProgrammeMotion(root, panel);
+
   return (
     <div ref={root} className="projects-layout">
       <div ref={stage} className="projects-stage" aria-hidden="true" />
-      <div data-fx="item" className="projects-panel fx">
-        <p className="projects-facts">
+      <div ref={panel} className="projects-panel fx">
+        <p data-in className="projects-facts">
           <span className="projects-count">
             <b>{pad(active + 1)}</b> / {pad(PROJECTS.length)}
           </span>
           <span data-swap>{project.facts}</span>
         </p>
-        <h3
-          data-swap
-          aria-live="polite"
-          className="projects-title"
-          data-long={project.title.length > 12 ? "" : undefined}
-        >
-          {project.title}
-        </h3>
-        <p data-swap className="projects-lead">
-          {project.lead}
-        </p>
+        <div data-in>
+          <h3
+            data-swap
+            aria-live="polite"
+            className="projects-title"
+            data-long={project.title.length > 12 ? "" : undefined}
+          >
+            {project.title}
+          </h3>
+        </div>
+        <div data-in>
+          <p data-swap className="projects-lead">
+            {project.lead}
+          </p>
+        </div>
         <div className="projects-actions">
           <button
             type="button"
+            data-in
             className="btn-primary"
             onClick={() =>
               openCaseStudy(() => router.push(href, { scroll: false }))
@@ -141,6 +150,7 @@ export default function ProjectsPanel() {
           <button
             ref={timer}
             type="button"
+            data-in
             className="projects-next"
             onClick={() => show(next)}
           >

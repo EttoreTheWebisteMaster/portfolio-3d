@@ -16,6 +16,7 @@ import {
   seg,
 } from "@/lib/journey";
 
+import { caseState } from "@/lib/caseStudy";
 import { onEnter } from "@/lib/loading";
 import { TRAILER_SRC, view } from "@/lib/projects";
 import { isMuted, subscribeMuted } from "@/lib/sound";
@@ -161,7 +162,10 @@ export default function ProjectsScreen({
       // Past Projects (About, Contact) the picture is gone, so the trailer stops and rewinds with it.
       const here = journey.current < 1.5;
       if (open > 0.05 && here) {
-        if (video.paused && !video.ended)
+        // The dive has reached the screen (and until the camera is back out): the trailer holds its frame, then rolls on from it.
+        if (caseState.held) {
+          if (!video.paused) video.pause();
+        } else if (video.paused && !video.ended)
           void video.play().catch(() => {
             // Sound needs a prior gesture: fall back to a silent start rather than no picture.
             video.muted = true;

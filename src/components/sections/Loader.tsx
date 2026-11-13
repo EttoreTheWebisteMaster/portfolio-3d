@@ -104,7 +104,7 @@ export default function Loader() {
       const dt = Math.min(ms, 50);
       // Real progress, eased so chunky downloads still read as a smooth line.
       loaded += (progress - loaded) * (1 - Math.exp(-dt / 140));
-      if (progress === 1 && loaded > 0.995) loaded = 1;
+      if (progress === 1 && loaded > 0.97) loaded = 1;
       const el = root.current;
       if (!el) return;
       if (line.current)

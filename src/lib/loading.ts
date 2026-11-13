@@ -3,7 +3,7 @@ import { useSyncExternalStore } from "react";
 import { MODEL_URL } from "@/lib/assets";
 
 /** What the site waits for, and how much of the bar each part is worth. */
-const WEIGHTS = { model: 0.7, scene: 0.2, frame: 0.1 } as const;
+const WEIGHTS = { model: 0.5, scene: 0.15, warm: 0.25, frame: 0.1 } as const;
 type LoadPart = keyof typeof WEIGHTS;
 
 type Snapshot = {
@@ -13,7 +13,12 @@ type Snapshot = {
   modelUrl: string | null;
 };
 
-const parts: Record<LoadPart, number> = { model: 0, scene: 0, frame: 0 };
+const parts: Record<LoadPart, number> = {
+  model: 0,
+  scene: 0,
+  warm: 0,
+  frame: 0,
+};
 const listeners = new Set<() => void>();
 const enterCallbacks = new Set<() => void>();
 let snapshot: Snapshot = {
@@ -47,7 +52,7 @@ export const getLoading = () => snapshot;
 /** A part of the load reports how far it is, 0–1. */
 export function report(part: LoadPart, value: number) {
   parts[part] = Math.min(Math.max(value, parts[part]), 1);
-  // Rounded so the weights add up to exactly 1 (0.7 + 0.2 + 0.1 is not, in floats).
+  // Rounded so the weights add up to exactly 1 (the weights are not exact in floats).
   const progress =
     Math.round(
       (Object.keys(WEIGHTS) as LoadPart[]).reduce(
@@ -59,13 +64,18 @@ export function report(part: LoadPart, value: number) {
   if (part === "frame" && !snapshot.started) emit({ started: true });
 }
 
+const FETCH_TIMEOUT_MS = 15000;
+
 let fetching = false;
 /** Streams the robot once, counting bytes, and hands the three.js loader a blob so nothing downloads twice. */
 export async function fetchModel() {
   if (fetching) return;
   fetching = true;
   try {
-    const res = await fetch(MODEL_URL);
+    const res = await fetch(MODEL_URL, {
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+    });
+    if (!res.ok) throw new Error(`model ${res.status}`);
     const total = Number(res.headers.get("content-length")) || 0;
     const reader = res.body?.getReader();
     if (!reader) throw new Error("no body");
@@ -82,7 +92,7 @@ export async function fetchModel() {
     report("model", 1);
     emit({ modelUrl: url });
   } catch {
-    // Offline or blocked: let three.js try the plain URL itself.
+    // Offline, slow or blocked: let three.js try the plain URL itself, so the loader never hangs.
     report("model", 1);
     emit({ modelUrl: MODEL_URL });
   }

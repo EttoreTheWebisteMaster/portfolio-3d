@@ -26,7 +26,9 @@ function Follow({
   // A render at priority 1 replaces the automatic one.
   useFrame(({ gl, scene, camera }) => {
     const on = onContact();
-    shown.current?.setAttribute("data-on", String(on));
+    const el = shown.current;
+    if (el && el.getAttribute("data-on") !== String(on))
+      el.setAttribute("data-on", String(on));
     if (!on) return;
     gl.toneMappingExposure = 1.1 * (1 - blackout());
     // This canvas draws the near half of the pool.

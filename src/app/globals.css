@@ -42,7 +42,6 @@
   --color-nav: #9a9384;
   --color-nav-dim: #837c70;
   --color-paper-veil: #f2edda;
-  --color-flare: #fffdf4;
   /* Pausa's palette: one colour per break on a warm paper base (from the case study's design system scene) */
   --color-pausa-move: #b02624;
   --color-pausa-breathe: #e8a43c;
@@ -208,8 +207,16 @@
     }
   }
 
+  [data-page]:focus {
+    outline: none;
+  }
   html[data-loading] {
     overflow: hidden;
+  }
+  @media (scripting: none) {
+    html[data-loading] {
+      overflow: auto;
+    }
   }
   html {
     scrollbar-width: none;
@@ -425,9 +432,7 @@
   grid-template-columns: 1fr auto 1fr;
   align-items: center;
   color: var(--color-cream);
-  transition:
-    background-color 320ms var(--ease-cinema),
-    opacity 400ms var(--ease-cinema);
+  transition: background-color 320ms var(--ease-cinema);
   & > :last-child {
     justify-self: end;
   }
@@ -2028,11 +2033,6 @@
   padding: calc(var(--bar-height) + var(--space-8)) var(--page-margin)
     calc(var(--bar-height) + var(--space-5));
   pointer-events: none;
-  transition: opacity 450ms var(--ease-cinema);
-  /* A case study is opening or closing: the programme is gone until it is over. */
-  html[data-hush] & {
-    opacity: 0;
-  }
   /* Stacked: the screen and the full details must both fit, so the room above the screen is tighter. */
   @media (max-width: 1023px) and (max-aspect-ratio: 1/1) {
     padding-top: calc(var(--bar-height) + var(--space-4));
@@ -2779,7 +2779,8 @@
     width: 100%;
     height: 100%;
     object-fit: cover;
-    filter: brightness(0.5) saturate(0.8) blur(var(--trailer-blur, 0px));
+    filter: brightness(var(--trailer-light, 0.5)) saturate(0.8)
+      blur(var(--trailer-blur, 0px));
     /* Hides the soft edges the blur leaves. */
     scale: 1.06;
   }
@@ -3537,22 +3538,6 @@
   padding-top: var(--space-6);
 }
 
-/* Projects → About: the screen's light swells to a quick white flash (the cut hides in it), then the cream wall is there. --flare and --flare-r come from the 3D rig; the bloom starts at the screen itself. */
-@utility flare {
-  position: fixed;
-  inset: 0;
-  z-index: 8;
-  pointer-events: none;
-  opacity: var(--flare, 0);
-  background: radial-gradient(
-    circle calc(var(--flare-r, 0) * 1vmax) at var(--flare-x, 50%)
-      var(--flare-y, 50%),
-    var(--color-flare) 0%,
-    color-mix(in srgb, var(--color-flare) 80%, var(--color-yellow)) 38%,
-    color-mix(in srgb, var(--color-flare) 30%, transparent) 72%,
-    transparent 100%
-  );
-}
 /* Link jump across pages: a dark veil covers the skipped pages while the cut happens underneath. It never reaches full black. */
 @utility veil {
   position: fixed;
@@ -3563,12 +3548,17 @@
   background: var(--color-black);
 }
 
-/* The case study is a layer over Projects: nothing behind it reloads. It sits under the navbar and over the white-out flare. */
+/* The case study is a layer over Projects: nothing behind it reloads. It sits under the navbar. */
 @utility case-overlay {
   position: fixed;
   inset: 0;
   z-index: 9;
   background: var(--bg-base);
+  /* Opened from the programme, the overlay mounts under the dive and stays unseen until it lands. */
+  html[data-dive] & {
+    opacity: 0;
+    pointer-events: none;
+  }
 }
 @utility case-scroll {
   position: absolute;
@@ -3580,14 +3570,6 @@
   scroll-snap-type: y proximity;
   transform-origin: 50% 40%;
   outline: none;
-}
-/* The landing's white: the overlay's own, so it never fights the 3D rig's flare. */
-@utility case-flash {
-  position: absolute;
-  inset: 0;
-  z-index: 2;
-  pointer-events: none;
-  background: var(--color-flare);
 }
 /* The corner X, under the navbar. Closes the case study; Esc does the same. */
 @utility case-close {
@@ -3615,19 +3597,5 @@
   &:focus-visible {
     scale: 1.08;
     background: color-mix(in srgb, var(--color-black) 80%, transparent);
-  }
-}
-/* While a case study opens or closes the footer is gone, and comes back with Projects. */
-@utility bar-foot {
-  html[data-hush] & {
-    opacity: 0;
-    pointer-events: none;
-  }
-}
-/* The top bar leaves with the programme, but comes back with the case study's landing, and leaves again as it closes. */
-@utility bar-top {
-  html[data-hush-bar] & {
-    opacity: 0;
-    pointer-events: none;
   }
 }

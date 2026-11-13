@@ -5,18 +5,16 @@ import { useRef } from "react";
 import { caseState, diveState } from "@/lib/caseStudy";
 import { gsap, Observer, useGSAP } from "@/lib/gsap";
 import { getLoading } from "@/lib/loading";
-import {
-  actor,
-  cruise,
-  journey,
-  setJourney,
-  travelSeconds,
-} from "@/lib/journey";
+import { cruise, journey, setJourney, travelSeconds } from "@/lib/journey";
 import { PAGES } from "@/lib/pages";
 import { view } from "@/lib/projects";
 
 const KEYS_NEXT = new Set(["ArrowDown", "PageDown", " "]);
 const KEYS_PREV = new Set(["ArrowUp", "PageUp"]);
+/** Home keeps the site's own title; the other pages follow the `Page · Ettore Serra` pattern their routes use. */
+const HOME_TITLE = "Ettore Serra · Designer & engineer";
+/** A pause this long between wheel events means a new gesture, not the tail of the last one's momentum. */
+const GESTURE_GAP_MS = 150;
 /** Snap scroll: every page is one gesture. Wheel, swipe, keys, links and the scrollbar all land on a page. */
 export default function PageSnap() {
   const veil = useRef<HTMLDivElement>(null);
@@ -50,9 +48,15 @@ export default function PageSnap() {
     let index = landed >= 0 ? landed : nearest();
     let busy = false;
 
+    const retitle = (i: number) => {
+      document.title =
+        i === 0 ? HOME_TITLE : `${PAGES[i].label} · Ettore Serra`;
+    };
+
     // Keeps the address bar on the page the visitor is on. Link clicks add a history entry, scrolling only replaces one.
     const setUrl = (i: number, push: boolean) => {
       const path = PAGES[i].path;
+      retitle(i);
       if (window.location.pathname === path) return;
       window.history[push ? "pushState" : "replaceState"](null, "", path);
     };
@@ -66,11 +70,30 @@ export default function PageSnap() {
       setJourney(i + Math.min((y - top(i)) / (end - top(i)), 1));
     };
 
-    // Swallow trackpad momentum before listening again.
-    const release = () =>
-      gsap.delayedCall(0.4, () => {
+    // A move in flight: a new one replaces it, so two never fight over the scroll.
+    let hold: gsap.core.Tween | null = null;
+    let cutTl: gsap.core.Timeline | null = null;
+    const stop = () => {
+      hold?.kill();
+      hold = null;
+      cutTl?.kill();
+      cutTl = null;
+      gsap.killTweensOf(window);
+      if (veil.current) gsap.set(veil.current, { opacity: 0 });
+    };
+
+    // Swallow trackpad momentum before listening again, and give the keyboard back a place to be.
+    const release = () => {
+      hold?.kill();
+      hold = gsap.delayedCall(0.4, () => {
         busy = false;
+        if (document.activeElement === document.body) {
+          const page = pages[index];
+          page.tabIndex = -1;
+          page.focus({ preventScroll: true });
+        }
       });
+    };
 
     // Skipping pages: no travel through the pages in between. The veil comes up, the cut happens under it, the new page lifts out.
     const cut = (next: number) => {
@@ -81,10 +104,10 @@ export default function PageSnap() {
       };
       if (reduced.matches || !veil.current) {
         land();
-        busy = false;
+        release();
         return;
       }
-      gsap
+      cutTl = gsap
         .timeline({ onComplete: release })
         .to(veil.current, { opacity: 0.94, duration: 0.3, ease: "power2.in" })
         .call(land)
@@ -102,16 +125,7 @@ export default function PageSnap() {
         .set(target, { clearProps: "opacity,scale" });
     };
 
-    let queued: { to: number; push: boolean } | null = null;
-    const flush = () => {
-      if (actor.acting || !queued) return;
-      gsap.ticker.remove(flush);
-      const { to, push } = queued;
-      queued = null;
-      go(to, push);
-    };
-
-    const go = (to: number, push = false) => {
+    const go = (to: number, push = false, instant = false) => {
       const next = gsap.utils.clamp(0, pages.length - 1, to);
       if (
         busy ||
@@ -121,20 +135,15 @@ export default function PageSnap() {
         !getLoading().entered
       )
         return;
-      // He is mid-wave (or any other move): let him finish, then change page, so the shot never starts on a cut-off pose.
-      if (actor.acting) {
-        queued = { to, push };
-        gsap.ticker.add(flush);
-        return;
-      }
       const from = index;
       busy = true;
       index = next;
       setUrl(next, push);
-      if (Math.abs(next - from) > 1) {
+      if (instant || Math.abs(next - from) > 1) {
         cut(next);
         return;
       }
+      gsap.killTweensOf(window);
       gsap.to(window, {
         scrollTo: { y: top(next), autoKill: false },
         duration: reduced.matches ? 0 : travelSeconds(from, next),
@@ -157,7 +166,15 @@ export default function PageSnap() {
 
     const onKey = (e: KeyboardEvent) => {
       if (caseState.open) return;
-      if (e.target instanceof HTMLElement && e.target !== document.body) return;
+      // Typing and the controls that own the arrows keep them; everywhere else the keys turn the page.
+      if (
+        e.target instanceof HTMLElement &&
+        e.target !== document.body &&
+        (e.key === " " ||
+          e.target.isContentEditable ||
+          e.target.closest("input, textarea, select, [role=listbox]"))
+      )
+        return;
       const dir = KEYS_NEXT.has(e.key) ? 1 : KEYS_PREV.has(e.key) ? -1 : 0;
       if (dir === 0) return;
       e.preventDefault();
@@ -178,13 +195,21 @@ export default function PageSnap() {
           caseState.close(to === index ? undefined : () => go(to, true));
         return;
       }
-      go(to, true);
+      // Mid-move, a link takes over at once: the move in flight is dropped and the page cuts straight to the new one.
+      const moving = gsap.isTweening(window) || !!cutTl?.isActive();
+      if (busy) {
+        stop();
+        busy = false;
+      }
+      go(to, true, moving);
     };
 
     // Back and forward between journey pages play the same move as a link.
     const onPop = () => {
       const to = pathIndex(window.location.pathname);
       if (to < 0) return;
+      retitle(to);
+      stop();
       busy = false;
       go(to);
     };
@@ -207,14 +232,47 @@ export default function PageSnap() {
 
     diveState.v = 0;
 
+    // Wheel and touch over a scrolling box belong to the box: they never reach the page snapper, so the list scrolls freely.
+    // (The observer's own `ignore` resolves its elements once, so a list that mounts later was left out.)
+    const OWN = ".projects-index, .about-ask";
+    const box = (e: Event) =>
+      e.target instanceof Element ? e.target.closest<HTMLElement>(OWN) : null;
+    const keep = (e: Event) => {
+      if (box(e)) e.stopPropagation();
+    };
+    // The wheel scrolls the box itself, so it moves whatever else is listening on the page.
+    const spin = (e: WheelEvent) => {
+      const el = box(e);
+      if (!el) return;
+      e.stopPropagation();
+      if (el.scrollHeight <= el.clientHeight) return;
+      const unit =
+        e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? el.clientHeight : 1;
+      el.scrollTop += e.deltaY * unit;
+      e.preventDefault();
+    };
+    const GESTURES = ["touchstart", "touchmove", "touchend"] as const;
+    GESTURES.forEach(type =>
+      window.addEventListener(type, keep, { capture: true, passive: true })
+    );
+    window.addEventListener("wheel", spin, { capture: true, passive: false });
+
+    let lastWheel = 0;
+    let momentum = false;
     const observer = Observer.create({
       type: "wheel,touch",
       wheelSpeed: -1,
       tolerance: 12,
-      ignore: ".projects-index, .about-ask",
+      ignore: OWN,
       preventDefault: true,
       // Delta is negative towards the next page, for the wheel and for a swipe.
       onChange: self => {
+        const now = performance.now();
+        // Events that arrive while a move is running, or keep streaming after it, are the trackpad's momentum: they never turn another page.
+        if (busy) momentum = true;
+        else if (now - lastWheel > GESTURE_GAP_MS) momentum = false;
+        lastWheel = now;
+        if (momentum) return;
         const d = -self.deltaY;
         if (d > 12) go(index + 1);
         else if (d < -12) go(index - 1);
@@ -238,8 +296,12 @@ export default function PageSnap() {
     window.addEventListener("popstate", onPop);
     return () => {
       gsap.ticker.remove(stepAside);
-      gsap.ticker.remove(flush);
+      hold?.kill();
       observer.kill();
+      GESTURES.forEach(type =>
+        window.removeEventListener(type, keep, { capture: true })
+      );
+      window.removeEventListener("wheel", spin, { capture: true });
       window.removeEventListener("scroll", publishScroll);
       window.removeEventListener("scrollend", settle);
       window.removeEventListener("keydown", onKey);

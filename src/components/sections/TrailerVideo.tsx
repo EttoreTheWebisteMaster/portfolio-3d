@@ -2,9 +2,10 @@
 
 import { useEffect, useRef } from "react";
 
-import { isMuted, subscribeMuted } from "@/lib/sound";
+import { caseState, whenLanded } from "@/lib/caseStudy";
+import { view } from "@/lib/projects";
 
-/** The case study's trailer. It starts the way the page's sound switch says; if the browser blocks sound it plays silent, and the first gesture gives the sound back. */
+/** The case study's backdrop: the Projects trailer carrying on, silent. It is a transition element, never a player, so it ignores the sound switch. */
 export default function TrailerVideo({
   src,
   poster,
@@ -14,25 +15,27 @@ export default function TrailerVideo({
   useEffect(() => {
     const video = ref.current;
     if (!video) return;
-    const sync = () => {
-      video.muted = isMuted();
-      // Parked (swapped for its still, or reduced motion): the sound switch must not wake it.
+    video.muted = true;
+    // The programme's trailer stopped here when the dive began: this one carries on from the same frame.
+    const from = view.video?.currentTime ?? 0;
+    if (from > 0) {
+      const seek = () => {
+        video.currentTime = from;
+      };
+      if (video.readyState >= 1) seek();
+      else video.addEventListener("loadedmetadata", seek, { once: true });
+    }
+    // Under the dive it waits on the frame the programme's trailer stopped at, and rolls the moment the case study lands.
+    // Parked (swapped for its still, or reduced motion): it stays stopped.
+    const play = () => {
+      const at = view.video?.currentTime ?? 0;
+      if (at > 0) video.currentTime = at;
       if (video.paused && video.dataset.parked === undefined)
-        void video.play().catch(() => {
-          video.muted = true;
-          void video.play().catch(() => {});
-        });
+        void video.play().catch(() => {});
     };
-    sync();
-    const stop = subscribeMuted(sync);
-    window.addEventListener("pointerdown", sync, { once: true });
-    window.addEventListener("keydown", sync, { once: true });
-    return () => {
-      stop();
-      window.removeEventListener("pointerdown", sync);
-      window.removeEventListener("keydown", sync);
-    };
-  }, []);
+    if (caseState.diving) video.pause();
+    return whenLanded(play);
+  }, [poster]);
   return (
     <video
       ref={ref}

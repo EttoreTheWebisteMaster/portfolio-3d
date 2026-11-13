@@ -14,6 +14,7 @@
     "knip": "knip",
     "dup": "jscpd --silent || jscpd",
     "shot": "node scripts/screenshot.mjs",
+    "paths": "node scripts/paths.mjs",
     "check": "npm run -s format:check && npm run -s lint && npm run -s typecheck && npm run -s styles && npm run -s knip && npm run -s dup",
     "fix": "prettier --write . --log-level warn && eslint . --fix",
     "prepare": "lefthook install"
