@@ -1,20 +1,14 @@
 "use client";
 
-import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useEffect, useRef, useState } from "react";
 
-import { playImpact } from "@/lib/audio";
 import { gsap } from "@/lib/gsap";
-import { INTRO } from "@/lib/journey";
 import { playCountdownOut, playLoaderExit } from "@/lib/loaderExit";
-import { enter, fetchModel, getLoading } from "@/lib/loading";
-import Button from "@/components/ui/Button";
-import {
-  chooseSound,
-  enterSilently,
-  hasSoundChoice,
-  isMuted,
-  subscribeMuted,
-} from "@/lib/sound";
+import { focusPage, release, startHero } from "@/lib/loaderEnter";
+import { fetchModel, getLoading } from "@/lib/loading";
+import { enterSilently, hasSoundChoice } from "@/lib/sound";
+
+import LoaderChoice from "./LoaderChoice";
 
 const C = 160;
 const R = 150;
@@ -30,20 +24,6 @@ const HOLD_MS = 130;
 /** The bars' close-in is this far along when the hero's opening shot starts. */
 const HERO_AT = 0.45;
 
-/** The hero's opening shot: the impact, the scene's intro, and the bars' lettering that arrives with the hero copy. */
-function startHero() {
-  if (!isMuted()) playImpact();
-  enter();
-  document.documentElement.style.setProperty("--intro-text", `${INTRO.text}s`);
-  document.documentElement.dataset.in = "";
-}
-
-/** The page is the visitor's again. Called the moment they enter, not when the loader finishes fading. */
-function release() {
-  delete document.documentElement.dataset.loading;
-  document.querySelector("main")?.removeAttribute("inert");
-}
-
 /**
  * Loading page: a film countdown (3 → 0) that starts at once and runs in CSS, on the compositor, so the heavy scene setup behind it can never stall it.
  * The progress line shows the real load. If the scene is not ready when the countdown lands, it waits on 0. Then the bars close in and the dark parts down the middle onto the hero.
@@ -51,6 +31,8 @@ function release() {
 export default function Loader() {
   const root = useRef<HTMLDivElement>(null);
   const label = useRef<HTMLSpanElement>(null);
+  const bar = useRef<HTMLSpanElement>(null);
+  const status = useRef<HTMLParagraphElement>(null);
   const line = useRef<HTMLSpanElement>(null);
   const leader = useRef<HTMLDivElement>(null);
   const choice = useRef<HTMLDivElement>(null);
@@ -61,14 +43,6 @@ export default function Loader() {
   const [phase, setPhase] = useState<"on" | "out" | "gone">(
     skip ? "gone" : "on"
   );
-  // First visit only: the two buttons. The server never renders them (it cannot know), so a returning visitor never sees them flash.
-  const asking = useSyncExternalStore(
-    subscribeMuted,
-    () => !hasSoundChoice(),
-    () => false
-  );
-  const [asked, setAsked] = useState(false);
-  if (asking && !asked) setAsked(true);
   const [count] = useState(() =>
     hasSoundChoice() ? COUNT_MS : FIRST_COUNT_MS
   );
@@ -124,6 +98,7 @@ export default function Loader() {
     let percent = -1;
     let heroOn = false;
     let countT = 0;
+    let shown = -1;
     const bars = document.querySelectorAll<HTMLElement>(".bar");
     const tick = (_: number, ms: number) => {
       const { progress, started } = getLoading();
@@ -138,7 +113,10 @@ export default function Loader() {
       const pct = Math.floor(loaded * 100);
       if (pct !== percent && label.current) {
         percent = pct;
-        label.current.textContent = `Loading · ${pct}%`;
+        label.current.textContent = `Loading · ${pct}`;
+        bar.current?.setAttribute("aria-valuenow", String(pct));
+        if (pct === 100 && status.current && !hasSoundChoice())
+          status.current.textContent = "Loaded. Choose sound or silence.";
       }
       // Once a choice is made the keys fade away, and a pointer left on them must not hold the countdown.
       const paused =
@@ -156,12 +134,21 @@ export default function Loader() {
         });
       }
       const landed = countT >= count;
+      // Reduced motion has no animated digits: the numeral is stepped by the same clock.
+      const step = landed ? 3 : Math.min(2, Math.floor((countT / count) * 3));
+      if (step !== shown && leader.current) {
+        shown = step;
+        leader.current.dataset.step = String(step);
+      }
       // The silence key fills with the countdown (the hover shutter, scrubbed), and presses itself when it ends.
       choice.current?.style.setProperty(
         "--p",
         String(Math.min(countT / count, 1))
       );
-      if (landed && !paused && !hasSoundChoice()) enterSilently();
+      if (landed && !paused && !hasSoundChoice()) {
+        if (status.current) status.current.textContent = "Entering in silence.";
+        enterSilently();
+      }
       // Loaded and counted down, it holds on 0 until the visitor has chosen sound or silence.
       if (landed && started && hasSoundChoice()) {
         if (held < 0 && leader.current) {
@@ -195,6 +182,7 @@ export default function Loader() {
   // Everything is loaded and the bars are in: the ticker cuts straight to the hero.
   const leave = () => {
     release();
+    focusPage();
     document.querySelectorAll<HTMLElement>(".bar").forEach(bar => {
       bar.style.removeProperty("transform");
     });
@@ -252,12 +240,24 @@ export default function Loader() {
         </b>
       </div>
 
+      <p ref={status} className="sr-only" role="status" />
+
       <div className="loader-foot">
         <div className="loader-info">
-          <p className="load-label" aria-live="off">
-            <span ref={label}>Loading · 0%</span>
+          <p className="load-label" aria-hidden="true">
+            <span ref={label} className="loader-pct">
+              Loading · 0
+            </span>
           </p>
-          <span className="loader-line">
+          <span
+            ref={bar}
+            className="loader-line"
+            role="progressbar"
+            aria-label="Loading"
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={0}
+          >
             <span ref={line} />
           </span>
           <p className="loader-name">Ettore Serra</p>
@@ -265,24 +265,7 @@ export default function Loader() {
             Designer &amp; engineer · Turin, or remote
           </p>
         </div>
-        {asked && (
-          <div
-            ref={choice}
-            className="loader-choice"
-            data-auto=""
-            data-chosen={asking ? undefined : ""}
-            onPointerEnter={() => pause("pointer", true)}
-            onPointerLeave={() => pause("pointer", false)}
-            onFocus={() => pause("focus", true)}
-            onBlur={() => pause("focus", false)}
-          >
-            <p className="loader-note load-label">Best with sound on</p>
-            <Button onClick={() => chooseSound(true)}>Enter with sound</Button>
-            <Button variant="secondary" onClick={() => chooseSound(false)}>
-              Enter in silence
-            </Button>
-          </div>
-        )}
+        <LoaderChoice ref={choice} onPause={pause} />
       </div>
     </div>
   );

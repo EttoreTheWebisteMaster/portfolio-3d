@@ -1318,6 +1318,22 @@
     grid-area: 1 / 1;
     opacity: 0;
   }
+  /* Reduced motion plays no animation, so the loader steps the numeral itself (data-step 0–3 → 3, 2, 1, 0). */
+  @media (prefers-reduced-motion: reduce) {
+    &[data-step="0"] b > :nth-child(1),
+    &[data-step="1"] b > :nth-child(2),
+    &[data-step="2"] b > :nth-child(3),
+    &[data-step="3"] b > :nth-child(4) {
+      opacity: 1;
+    }
+  }
+}
+/* The percent sign is set in the reading face: the poster face's is too fine to read at label size. */
+@utility loader-pct {
+  &::after {
+    content: "%";
+    font-family: var(--font-reading);
+  }
 }
 /* The countdown: JS only sets --count and [data-count]. Everything below is transform and opacity, linear, so it never waits on the main thread. */
 @keyframes lens {
