@@ -7,9 +7,6 @@ export const journey: Progress = { current: 0 };
 /** Which way the journey last moved: 1 towards Contact, -1 back towards Home. Actors face the way they travel. */
 export const heading = { dir: 1 };
 
-/** True while he is in the middle of a one-off move (a wave, a dance): the page change waits for him to finish. */
-export const actor = { acting: false };
-
 export function setJourney(p: number) {
   if (Math.abs(p - journey.current) > 1e-4)
     heading.dir = p > journey.current ? 1 : -1;
@@ -145,8 +142,13 @@ export function introFlash() {
 }
 
 /** Publishes the position to CSS (`--pos` raw, `--p` Home→Projects 0–1) so the DOM layer moves with the 3D one. */
+let published = "";
 export function publish(pos: number) {
+  const raw = pos.toFixed(4);
+  // Only a change touches the document: a style write every frame restyles the whole page.
+  if (raw === published) return;
+  published = raw;
   const style = document.documentElement.style;
-  style.setProperty("--pos", pos.toFixed(4));
+  style.setProperty("--pos", raw);
   style.setProperty("--p", clamp01(pos).toFixed(4));
 }

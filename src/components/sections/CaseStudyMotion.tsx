@@ -5,14 +5,15 @@ import { useRef } from "react";
 import { addEntrance } from "@/lib/fx";
 import { scrollScenes } from "@/lib/caseScroll";
 import { gsap, type SplitText as Split, useGSAP } from "@/lib/gsap";
-import { HOLD, SOFTEN } from "@/lib/caseStudy";
+import { LAND, LAND_SCALE, whenLanded } from "@/lib/caseStudy";
 import { view } from "@/lib/projects";
 
-/** The trailer is blurry for this long before its still takes over, in seconds after the landing. */
-const SWAP_AT = 2;
-const SWAP_FOR = 2.6;
+/** The trailer is blurry for this long before it cuts to its still, in seconds after the landing. */
+const SWAP_AT = 3;
+/** The footage melts into its still over this many seconds. */
+const SWAP_FADE = 1.2;
 
-/** Plays the landing on the case study: the white softens into the room, then the hero copy; later the trailer hands over to its still. */
+/** Plays the landing on the case study: the footage, blurred from the dive, clears to a soft mood while the hero copy comes out; later the trailer hands over to its still. */
 export default function CaseStudyMotion({
   index,
 }: Readonly<{ index: number }>) {
@@ -32,46 +33,63 @@ export default function CaseStudyMotion({
 
     mm.add("(prefers-reduced-motion: no-preference)", () => {
       const splits: Split[] = [];
-      // The trailer settles out of a slow push-in while the white lifts; the copy follows as the room comes up.
-      gsap.fromTo(
+      // The dive ended inside the screen: the footage comes out of that blur and bright light, slowing to rest while the copy comes out.
+      const begin = LAND;
+      // Everything is posed now, under the dive, and plays the moment the case study lands.
+      const scale = gsap.fromTo(
         backdrop,
-        { scale: 1.14, opacity: 0.4 },
-        { scale: 1, opacity: 1, duration: 2.2, ease: "power2.out" }
+        { scale: LAND_SCALE },
+        { scale: 1, duration: 2.6, ease: "power3.out", paused: true }
       );
-      // Once the copy is in, the trailer slowly goes soft so it stays a mood, not the subject.
-      const begin = HOLD + SOFTEN * 0.45;
-      gsap.fromTo(
+      const soften = gsap.fromTo(
         backdrop,
-        { "--trailer-blur": "0px" },
-        { "--trailer-blur": "9px", duration: 4.5, delay: begin, ease: "none" }
+        { "--trailer-blur": "22px", "--trailer-light": 1 },
+        {
+          "--trailer-blur": "9px",
+          "--trailer-light": 0.5,
+          duration: 2.4,
+          ease: "power2.out",
+          paused: true,
+        }
       );
-      // Soft enough that nobody can tell frame from photo, the project's still fades in over the footage and the footage stops.
-      if (poster && video)
-        gsap.to(poster, {
-          opacity: 1,
-          delay: begin + SWAP_AT,
-          duration: SWAP_FOR,
-          ease: "none",
-          onComplete: () => {
-            video.dataset.parked = "";
-            video.pause();
-          },
-        });
-      const enter = gsap.timeline({ delay: begin });
+      const enter = gsap.timeline({ delay: begin, paused: true });
       items.forEach((el, i) => {
         const split = addEntrance(enter, el, i * 0.12);
         if (split) splits.push(split);
       });
       gsap.set(items, { visibility: "visible" });
+      // Opened or loaded: the footage plays on from the Projects frame, soft enough that nobody can tell frame from photo, the footage melts into the project's still and stops.
+      let cut: gsap.core.Tween | null = null;
+      // Every opening is the same: the footage first, the still only after its time.
+      if (poster) gsap.set(poster, { opacity: 0 });
+      if (video) delete video.dataset.parked;
+      const stopWait = whenLanded(() => {
+        scale.play();
+        soften.play();
+        enter.play();
+        if (poster && video)
+          cut = gsap.to(poster, {
+            opacity: 1,
+            duration: SWAP_FADE,
+            ease: "sine.inOut",
+            delay: begin + SWAP_AT,
+            onComplete: () => {
+              video.dataset.parked = "";
+              video.pause();
+            },
+          });
+      });
       const scenes = scroller ? scrollScenes(scroller) : () => {};
       return () => {
+        stopWait();
+        cut?.kill();
         scenes();
         splits.forEach(split => split.revert());
       };
     });
 
     mm.add("(prefers-reduced-motion: reduce)", () => {
-      gsap.set(backdrop, { "--trailer-blur": "9px" });
+      gsap.set(backdrop, { "--trailer-blur": "9px", "--trailer-light": 0.5 });
       gsap.set(items, { visibility: "visible" });
       // No autoplaying loop for visitors who asked for less motion: the still stays, "Play trailer" starts the footage.
       if (poster) gsap.set(poster, { opacity: 1 });

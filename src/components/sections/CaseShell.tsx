@@ -4,15 +4,17 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef } from "react";
 
 import {
+  abandonDive,
   caseState,
   diveState,
-  HOLD,
   hush,
+  land,
+  LAND_SCALE,
   retreatFromCase,
-  SOFTEN,
+  whenLanded,
 } from "@/lib/caseStudy";
 import { gsap } from "@/lib/gsap";
-import { ease } from "@/lib/journey";
+import { ease, seg } from "@/lib/journey";
 
 let shells = 0;
 
@@ -20,11 +22,11 @@ let shells = 0;
 const LEAVING =
   ".case-scene, .case-copy, .case-chapters, .case-next, .case-close";
 
-/** Seconds the case study takes to zoom into the white on its way out. */
+/** Seconds the case study takes to blur and zoom into the screen on its way out. */
 const LEAVE = 0.25;
 
 /**
- * The case study as a layer over Projects. It owns the white landing flash, the way out (Esc, the corner X, any link to another page)
+ * The case study as a layer over Projects. It owns the landing, the way out (Esc, the corner X, any link to another page)
  * and the hand-off with the page behind: the bottom bar hides, the journey stops, and closing plays the dive backwards.
  */
 export default function CaseShell({
@@ -33,56 +35,60 @@ export default function CaseShell({
   const router = useRouter();
   const root = useRef<HTMLDivElement>(null);
   const scroll = useRef<HTMLDivElement>(null);
-  const flash = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const html = document.documentElement;
     shells++;
     caseState.open = true;
+    caseState.shown = true;
+    // A reopened case study starts at the top.
+    if (scroll.current) scroll.current.scrollTop = 0;
     scroll.current?.focus({ preventScroll: true });
 
-    // Next keeps a closed case study alive, hidden: a reopened one starts from the white again, whole.
-    gsap.set(root.current, { clearProps: "visibility" });
+    // Next keeps a closed case study alive, hidden: a reopened one starts again, whole.
+    gsap.set(root.current, { clearProps: "visibility,opacity" });
     gsap.set(root.current?.querySelectorAll(LEAVING) ?? [], {
       clearProps: "opacity",
     });
-    // The top bar comes back with the landing; the programme behind stays away until the case study has closed.
-    delete html.dataset.hushBar;
     gsap.set(scroll.current, { clearProps: "scale" });
-    gsap.set(flash.current, { opacity: 1 });
-    const landing = gsap.matchMedia();
-    landing.add("(prefers-reduced-motion: no-preference)", () => {
-      // Each case study lands out of the white; the flash is the overlay's own so it never fights the 3D rig's.
-      gsap.to(flash.current, {
-        opacity: 0,
-        delay: HOLD,
-        duration: SOFTEN,
-        ease,
-      });
-    });
-    landing.add("(prefers-reduced-motion: reduce)", () => {
-      gsap.set(flash.current, { opacity: 0 });
+
+    // Opened from the programme, the overlay mounts while the dive is still flying and stays unseen under it: it dissolves in
+    // over the last of the dive, which has by then framed the screen exactly as the footage lands, and then it is the picture.
+    if (caseState.diving) gsap.set(root.current, { opacity: 0 });
+    const fade = () => {
+      gsap.set(root.current, { opacity: seg(diveState.v, [0.88, 1]) });
+      if (diveState.v >= 1) land();
+    };
+    if (caseState.diving) gsap.ticker.add(fade);
+    // The top bar comes back with the landing; the programme behind stays away until the case study has closed.
+    const stopWait = whenLanded(() => {
+      gsap.ticker.remove(fade);
+      gsap.set(root.current, { clearProps: "opacity" });
+      delete html.dataset.hushBar;
     });
 
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)");
     const leave = (after?: () => void) => {
-      if (caseState.closing) return;
+      // Mid-dive the overlay is not on the screen yet: nothing to close.
+      if (caseState.closing || caseState.diving) return;
       caseState.closing = true;
       caseState.after = after ?? null;
       const finish = () => {
-        // Under the white the overlay goes; the camera backs out of the screen as the white clears.
+        // The overlay is gone; the camera backs out of the screen, which is waiting under it.
         gsap.set(root.current, { visibility: "hidden" });
         retreatFromCase(() => router.push("/projects", { scroll: false }));
       };
       if (reduced.matches) {
         gsap.set(root.current, { visibility: "hidden" });
         diveState.v = 0;
+        caseState.held = false;
         hush(false);
         router.push("/projects", { scroll: false });
         return;
       }
-      // The case study's text and bars go first; the zoom into the white keeps its own timing.
-      html.dataset.hushBar = "";
+      // The case study's text and bars go first; the zoom into the screen keeps its own timing.
+      // The programme behind stays away from the first frame of the way out, however the case study was opened.
+      hush(true);
       gsap
         .timeline({ onComplete: finish })
         .to(root.current?.querySelectorAll(LEAVING) ?? [], {
@@ -90,12 +96,19 @@ export default function CaseShell({
           duration: 0.35,
           ease: "none",
         })
-        .to(flash.current, { opacity: 1, duration: LEAVE, ease })
+        // The footage goes soft and bright as the page zooms and dissolves into the blurred screen behind it.
         .to(
-          scroll.current,
-          { scale: 1.12, duration: LEAVE + SOFTEN * 0.2, ease },
-          "<"
-        );
+          root.current?.querySelectorAll("[data-trailer]") ?? [],
+          {
+            "--trailer-blur": "22px",
+            "--trailer-light": 1,
+            scale: LAND_SCALE,
+            duration: LEAVE,
+            ease,
+          },
+          "<0.1"
+        )
+        .to(root.current, { opacity: 0, duration: LEAVE, ease }, ">-0.1");
     };
     caseState.close = leave;
 
@@ -107,13 +120,16 @@ export default function CaseShell({
 
     return () => {
       window.removeEventListener("keydown", onKey);
-      landing.revert();
+      gsap.ticker.remove(fade);
+      stopWait();
       shells--;
       // Another case study mounts in the same commit when one links to the next: only a real exit resets the page behind.
       window.setTimeout(() => {
         if (shells > 0) return;
         const { closing, after } = caseState;
         caseState.open = false;
+        caseState.shown = false;
+        abandonDive();
         caseState.closing = false;
         caseState.after = null;
         caseState.close = () => {};
@@ -135,7 +151,6 @@ export default function CaseShell({
       <div ref={scroll} className="case-scroll" data-case-scroll tabIndex={-1}>
         {children}
       </div>
-      <div ref={flash} aria-hidden="true" className="case-flash" />
       <button
         type="button"
         className="case-close"

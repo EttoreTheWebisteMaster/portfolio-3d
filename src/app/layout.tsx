@@ -52,6 +52,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
+      data-loading=""
       className={`${marquee.variable} ${poster.variable} ${reading.variable} ${pencil.variable}`}
     >
       <body>

@@ -9,7 +9,6 @@ import { asking, greet } from "@/lib/interview";
 import { play } from "@/lib/sound";
 import { pointer, target as cursor } from "@/lib/pointer";
 import {
-  actor,
   BEAT,
   ease,
   heading,
@@ -209,8 +208,6 @@ export default function HeroRobot({
           .play()
           .crossFadeFrom(shot, settle, false);
     }
-
-    actor.acting = oneShot.current !== null;
 
     // Is the cursor on him, and how close is it? Hit-tested against his box in his own space.
     let over = false;

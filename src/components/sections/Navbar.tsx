@@ -14,7 +14,7 @@ const links = [
 
 export default function Navbar() {
   return (
-    <header className="bar-veil bar-top fixed inset-x-0 top-0 z-10 bar">
+    <header className="bar-veil fixed inset-x-0 top-0 z-10 bar">
       <Link href="/" className="logo" aria-label="Ettore Serra, home">
         <span>Ettore</span>
         <span>Serra</span>

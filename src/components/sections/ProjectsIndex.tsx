@@ -10,6 +10,7 @@ import {
 import { createPortal } from "react-dom";
 
 import ProjectThumb from "@/components/sections/ProjectThumb";
+import { presence } from "@/lib/caseStudy";
 import { gsap } from "@/lib/gsap";
 import { journey } from "@/lib/journey";
 import { pad } from "@/lib/pages";
@@ -69,7 +70,8 @@ export default function ProjectsIndex({
   useEffect(() => {
     let on: boolean | null = null;
     const tick = () => {
-      const live = journey.current > 0.95;
+      // The card never outlives the programme: once it starts to leave, the card goes with it.
+      const live = journey.current > 0.95 && presence.v > 0.98;
       if (live === on) return;
       on = live;
       wrap.current?.toggleAttribute("inert", !live);

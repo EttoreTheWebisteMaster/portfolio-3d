@@ -32,7 +32,6 @@ import {
   seg,
 } from "@/lib/journey";
 
-import { flare } from "./diveShot";
 import { FLOOR_Y } from "./HeroLight";
 import {
   closeUp,
@@ -68,26 +67,15 @@ export default function HeroEffects({
   useFrame(({ camera }) => {
     // The light slam blows the highlights out, then they settle back to the grade.
     const paper = daylight();
-    // The white-out: the screen's light spills over everything.
-    const f = flare();
     if (bloom.current) {
       bloom.current.intensity =
         THREE.MathUtils.lerp(0.8 + 1.8 * introFlash(), 0.15, paper) *
-          THREE.MathUtils.lerp(
-            1,
-            0,
-            ease(seg(progress.current, BEAT.picture))
-          ) +
-        5 * f;
+        THREE.MathUtils.lerp(1, 0, ease(seg(progress.current, BEAT.picture)));
       // On the Projects screen only true highlights may glow, so the picture's lettering stays crisp.
       bloom.current.luminanceMaterial.threshold = THREE.MathUtils.lerp(
-        THREE.MathUtils.lerp(
-          0.95,
-          1.3,
-          ease(seg(progress.current, BEAT.picture))
-        ),
-        0.3,
-        f
+        0.95,
+        1.3,
+        ease(seg(progress.current, BEAT.picture))
       );
     }
     // In the cinema the edges fall further into the dark: the screen is the only light.

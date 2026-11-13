@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { notFound } from "next/navigation";
 
 import CaseShell from "@/components/sections/CaseShell";
@@ -18,7 +19,15 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 /** The case study opens over Projects: the journey layout stays mounted behind it. */
-export default async function ProjectPage({ params }: Props) {
+export default function ProjectPage({ params }: Props) {
+  return (
+    <Suspense fallback={null}>
+      <Case params={params} />
+    </Suspense>
+  );
+}
+
+async function Case({ params }: Props) {
   const slug = (await params).slug;
   const project = findProject(slug);
   if (!project) notFound();
