@@ -10,6 +10,7 @@ import { enter, fetchModel, getLoading } from "@/lib/loading";
 import Button from "@/components/ui/Button";
 import {
   chooseSound,
+  enterSilently,
   hasSoundChoice,
   isMuted,
   subscribeMuted,
@@ -19,6 +20,8 @@ const C = 160;
 const R = 150;
 /** The countdown, 3 → 0, takes at least this long, and is paced by the real load: it never gets ahead of the progress line. */
 const COUNT_MS = 1500;
+/** The first visit is longer, so there is time to read the two buttons and choose. */
+const FIRST_COUNT_MS = 3000;
 /** The bars close in over this long, once everything has loaded. */
 const BARS_MS = 300;
 /** Held on 0 before the climax: a breath of suspense. */
@@ -50,6 +53,7 @@ export default function Loader() {
   const label = useRef<HTMLSpanElement>(null);
   const line = useRef<HTMLSpanElement>(null);
   const leader = useRef<HTMLDivElement>(null);
+  const choice = useRef<HTMLDivElement>(null);
   const exit = useRef<() => void>(() => {});
   const counted = useRef<Animation[] | null>(null);
   // Coming back from a case study the visitor has already entered: no loading page, the page is theirs at once.
@@ -65,6 +69,16 @@ export default function Loader() {
   );
   const [asked, setAsked] = useState(false);
   if (asking && !asked) setAsked(true);
+  const [count] = useState(() =>
+    hasSoundChoice() ? COUNT_MS : FIRST_COUNT_MS
+  );
+  // Silence is picked for the visitor when the countdown ends, unless they hover, touch or tab to a button first.
+  const auto = useRef(true);
+  const [holding, setHolding] = useState(false);
+  const hold = () => {
+    auto.current = false;
+    setHolding(true);
+  };
 
   // Next keeps this layout alive, hidden, while a case study is open, and runs these effects again on Back: once the visitor has entered they must do nothing,
   // or the page is locked again with no loader on screen to unlock it.
@@ -84,7 +98,7 @@ export default function Loader() {
     const start = () => {
       const el = root.current;
       if (!live || !el || counted.current) return;
-      el.style.setProperty("--count", `${COUNT_MS}ms`);
+      el.style.setProperty("--count", `${count}ms`);
       el.dataset.count = "";
       // The CSS animations are paused and scrubbed by the ticker, so the digits follow the real load.
       counted.current = (
@@ -101,7 +115,7 @@ export default function Loader() {
       live = false;
       window.clearTimeout(wait);
     };
-  }, [skip]);
+  }, [skip, count]);
 
   // The progress line follows the real load; once the countdown has landed and the scene is ready, the bars close in.
   useEffect(() => {
@@ -132,14 +146,22 @@ export default function Loader() {
       if (anims) {
         // Real time at most, and never past the load: slow loads stretch the countdown, fast ones keep the 1.5s floor.
         countT =
-          countT < COUNT_MS
-            ? Math.min(countT + dt, Math.max(countT, loaded * COUNT_MS))
+          countT < count
+            ? Math.min(countT + dt, Math.max(countT, loaded * count))
             : countT + dt;
         anims.forEach(a => {
           a.currentTime = countT;
         });
       }
-      const landed = countT >= COUNT_MS;
+      const landed = countT >= count;
+      // The silence key fills with the countdown (the hover shutter, scrubbed), and presses itself when it ends.
+      if (auto.current) {
+        choice.current?.style.setProperty(
+          "--p",
+          String(Math.min(countT / count, 1))
+        );
+        if (landed && !hasSoundChoice()) enterSilently();
+      }
       // Loaded and counted down, it holds on 0 until the visitor has chosen sound or silence.
       if (landed && started && hasSoundChoice()) {
         if (held < 0 && leader.current) {
@@ -168,7 +190,7 @@ export default function Loader() {
       gsap.ticker.remove(tick);
       bars.forEach(bar => bar.style.removeProperty("transform"));
     };
-  }, [skip]);
+  }, [skip, count]);
 
   // Everything is loaded and the bars are in: the ticker cuts straight to the hero.
   const leave = () => {
@@ -244,11 +266,16 @@ export default function Loader() {
           </p>
         </div>
         {asked && (
-          <div className="loader-choice" data-chosen={asking ? undefined : ""}>
+          <div
+            ref={choice}
+            className="loader-choice"
+            data-auto={holding ? undefined : ""}
+            data-chosen={asking ? undefined : ""}
+            onPointerEnter={hold}
+            onFocus={hold}
+          >
             <p className="loader-note load-label">Best with sound on</p>
-            <Button autoFocus onClick={() => chooseSound(true)}>
-              Enter with sound
-            </Button>
+            <Button onClick={() => chooseSound(true)}>Enter with sound</Button>
             <Button variant="secondary" onClick={() => chooseSound(false)}>
               Enter in silence
             </Button>

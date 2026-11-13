@@ -41,10 +41,11 @@ export function subscribeMuted(listener: () => void) {
 }
 
 let choice: boolean | null = null;
+let passed = false;
 
 /** Whether the visitor has picked sound or silence before: the loading page asks only the first time. */
 export function hasSoundChoice() {
-  if (typeof window === "undefined") return true;
+  if (typeof window === "undefined" || passed) return true;
   try {
     choice ??= window.localStorage.getItem(KEY) !== null;
   } catch {
@@ -66,6 +67,13 @@ function save(next: boolean) {
 
 export function toggleMuted() {
   save(!isMuted());
+}
+
+/** The visitor pressed nothing: this visit is silent, but nothing is saved, so the question comes back next time. */
+export function enterSilently() {
+  passed = true;
+  muted = true;
+  listeners.forEach(l => l());
 }
 
 /** The loading page's two buttons: a click is the gesture that lets the browser play audio. */
