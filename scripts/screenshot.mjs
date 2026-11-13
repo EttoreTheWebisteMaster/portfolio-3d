@@ -46,7 +46,7 @@ try {
     const size = `${width}x${height}`;
     if (scrolls.length === 0) {
       const out = `shots/${slug}-${size}.png`;
-      await page.screenshot({ path: out, fullPage: true });
+      await page.screenshot({ path: out, fullPage: false });
       console.log(out);
     }
     for (const pct of scrolls) {
