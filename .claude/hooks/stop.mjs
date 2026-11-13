@@ -34,6 +34,23 @@ if (existsSync(tsc)) {
   if (r.status)
     problems.push(...r.stdout.split("\n").filter(l => /error TS/.test(l)));
 }
+const prettier = `${ROOT}/node_modules/.bin/prettier`;
+if (existsSync(prettier)) {
+  const r = spawnSync(
+    prettier,
+    ["--check", "--log-level", "warn", ...changed],
+    {
+      cwd: ROOT,
+      encoding: "utf8",
+    }
+  );
+  if (r.status)
+    problems.push(
+      ...r.stderr
+        .split("\n")
+        .filter(l => l.startsWith("[warn]") && !/Code style/.test(l))
+    );
+}
 const { checkFiles } = await import(
   pathToFileURL(`${ROOT}/scripts/check-styles.mjs`).href
 );

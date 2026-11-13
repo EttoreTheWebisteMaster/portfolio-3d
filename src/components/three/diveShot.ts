@@ -1,6 +1,6 @@
 import * as THREE from "three";
 
-import { diveState, LAND_SCALE } from "@/lib/caseStudy";
+import { diveState, LAND_SCALE } from "@/lib/caseMotion";
 import { view } from "@/lib/projects";
 
 /** Projects → case study: the camera dives into the screen. How far the camera has flown into the Projects screen (the case-study dive), 0 → 1. */

@@ -1,6 +1,6 @@
 import type { RefObject } from "react";
 
-import { hushed, presence } from "@/lib/caseStudy";
+import { hushed, presence } from "@/lib/caseMotion";
 import { gsap, useGSAP } from "@/lib/gsap";
 import { journey, seg } from "@/lib/journey";
 

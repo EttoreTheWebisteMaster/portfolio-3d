@@ -10,7 +10,7 @@ import {
 import { createPortal } from "react-dom";
 
 import ProjectThumb from "@/components/sections/ProjectThumb";
-import { presence } from "@/lib/caseStudy";
+import { presence } from "@/lib/caseMotion";
 import { gsap } from "@/lib/gsap";
 import { journey } from "@/lib/journey";
 import { pad } from "@/lib/pages";
