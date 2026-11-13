@@ -1,13 +1,19 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 
 import { playImpact } from "@/lib/audio";
 import { gsap } from "@/lib/gsap";
 import { INTRO } from "@/lib/journey";
 import { playCountdownOut, playLoaderExit } from "@/lib/loaderExit";
 import { enter, fetchModel, getLoading } from "@/lib/loading";
-import { isMuted } from "@/lib/sound";
+import Button from "@/components/ui/Button";
+import {
+  chooseSound,
+  hasSoundChoice,
+  isMuted,
+  subscribeMuted,
+} from "@/lib/sound";
 
 const C = 160;
 const R = 150;
@@ -51,6 +57,14 @@ export default function Loader() {
   const [phase, setPhase] = useState<"on" | "out" | "gone">(
     skip ? "gone" : "on"
   );
+  // First visit only: the two buttons. The server never renders them (it cannot know), so a returning visitor never sees them flash.
+  const asking = useSyncExternalStore(
+    subscribeMuted,
+    () => !hasSoundChoice(),
+    () => false
+  );
+  const [asked, setAsked] = useState(false);
+  if (asking && !asked) setAsked(true);
 
   // Next keeps this layout alive, hidden, while a case study is open, and runs these effects again on Back: once the visitor has entered they must do nothing,
   // or the page is locked again with no loader on screen to unlock it.
@@ -126,7 +140,8 @@ export default function Loader() {
         });
       }
       const landed = countT >= COUNT_MS;
-      if (landed && started) {
+      // Loaded and counted down, it holds on 0 until the visitor has chosen sound or silence.
+      if (landed && started && hasSoundChoice()) {
         if (held < 0 && leader.current) {
           held = 0;
           playCountdownOut(el, leader.current);
@@ -215,15 +230,30 @@ export default function Loader() {
         </b>
       </div>
 
-      <div className="loader-info">
-        <p className="load-label" aria-live="off">
-          <span ref={label}>Loading · 0%</span>
-        </p>
-        <span className="loader-line">
-          <span ref={line} />
-        </span>
-        <p className="loader-name">Ettore Serra</p>
-        <p className="load-label">Designer &amp; engineer · Turin, or remote</p>
+      <div className="loader-foot">
+        <div className="loader-info">
+          <p className="load-label" aria-live="off">
+            <span ref={label}>Loading · 0%</span>
+          </p>
+          <span className="loader-line">
+            <span ref={line} />
+          </span>
+          <p className="loader-name">Ettore Serra</p>
+          <p className="load-label">
+            Designer &amp; engineer · Turin, or remote
+          </p>
+        </div>
+        {asked && (
+          <div className="loader-choice" data-chosen={asking ? undefined : ""}>
+            <p className="loader-note load-label">Best with sound on</p>
+            <Button autoFocus onClick={() => chooseSound(true)}>
+              Enter with sound
+            </Button>
+            <Button variant="secondary" onClick={() => chooseSound(false)}>
+              Enter in silence
+            </Button>
+          </div>
+        )}
       </div>
     </div>
   );
