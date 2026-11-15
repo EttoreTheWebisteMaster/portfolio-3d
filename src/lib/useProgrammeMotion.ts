@@ -2,7 +2,11 @@ import type { RefObject } from "react";
 
 import { hushed, presence } from "@/lib/caseMotion";
 import { gsap, useGSAP } from "@/lib/gsap";
-import { journey, seg } from "@/lib/journey";
+import { CUT_EVENT, journey, seg } from "@/lib/journey";
+import { onEnter } from "@/lib/loading";
+
+/** After a cut the programme waits for the page to lift out of the veil. */
+const CUT_HOLD_MS = 300;
 
 /** The Projects programme's entrance and exit. `scope` is its layout; `panel` the column that holds every piece. */
 export default function useProgrammeMotion(
@@ -52,20 +56,45 @@ export default function useProgrammeMotion(
             0.6
           );
 
-          const gate = { v: hushed() ? 0 : 1 };
+          // Opened on this page by its URL: the programme waits for the loader, then arrives in real time.
+          let entered = false;
+          let arriving = false;
+          const stopEnter = onEnter(() => {
+            entered = true;
+            arriving = journey.current > 0.5;
+          });
+          // A cut to Projects: the programme starts over and arrives once the page has lifted out of the veil.
+          let holdUntil = 0;
+          const onCut = (e: Event) => {
+            if ((e as CustomEvent<number>).detail !== 1) return;
+            holdUntil = performance.now() + CUT_HOLD_MS;
+            gsap.killTweensOf(gate);
+            gate.v = 0;
+            goal = 0;
+          };
+          window.addEventListener(CUT_EVENT, onCut);
+          const closed = () =>
+            hushed() || !entered || performance.now() < holdUntil;
+          const gate = { v: closed() ? 0 : 1 };
           let goal = gate.v;
           let shown: boolean | null = null;
           let live: boolean | null = null;
           const tick = () => {
-            const want = hushed() ? 0 : 1;
+            const want = closed() ? 0 : 1;
             if (want !== goal) {
               goal = want;
               gsap.to(gate, {
                 v: want,
                 // Out is instant, in is unhurried: the same animation, played at two speeds.
-                duration: want === 0 ? 0.08 : move ? 0.7 : 0.2,
+                duration:
+                  want === 0 ? 0.08 : move ? (arriving ? 2.8 : 0.7) : 0.2,
+                // Opened on this page by its URL: it arrives after the room has settled.
+                delay: want === 1 && arriving && move ? 1.1 : 0,
                 ease: "none",
                 overwrite: true,
+                onComplete: () => {
+                  arriving = false;
+                },
               });
             }
             const pos = journey.current;
@@ -89,6 +118,8 @@ export default function useProgrammeMotion(
           gsap.ticker.add(tick);
           return () => {
             gsap.ticker.remove(tick);
+            window.removeEventListener(CUT_EVENT, onCut);
+            stopEnter();
             gsap.killTweensOf(gate);
             presence.v = 0;
             tl.kill();

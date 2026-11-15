@@ -1,4 +1,5 @@
 import ProjectsPanel from "@/components/sections/ProjectsPanel";
+import ProjectsStage from "@/components/sections/ProjectsStage";
 
 /** Projects: the 3D cinema behind does the picture; this layer is the programme beside the screen. */
 export default function Projects() {
@@ -6,6 +7,7 @@ export default function Projects() {
     <section id="projects" data-page className="page">
       <h2 className="sr-only">Projects</h2>
       <ProjectsPanel />
+      <ProjectsStage />
     </section>
   );
 }

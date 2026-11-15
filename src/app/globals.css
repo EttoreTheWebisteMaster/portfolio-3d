@@ -76,6 +76,7 @@
   --text-poster-xl--line-height: 0.86;
   --text-poster-l: 64px;
   --text-poster-l--line-height: 0.92;
+  --text-poster-l-phone: 44px;
   --text-poster-m: 36px;
   --text-poster-m--line-height: 1;
   --text-poster-s: 26px;
@@ -135,14 +136,10 @@
   /* Shadows / glows */
   --shadow-glow-yellow: 0 0 28px
     color-mix(in srgb, var(--color-yellow) 35%, transparent);
-  --shadow-glow-yellow-hot: 0 0 44px
-    color-mix(in srgb, var(--color-yellow) 55%, transparent);
   --shadow-glow-orange: 0 0 24px
     color-mix(in srgb, var(--color-orange) 50%, transparent);
   --shadow-glow-red: 0 0 36px
     color-mix(in srgb, var(--color-red-lit) 45%, transparent);
-  --shadow-cast-paper: 0 28px 48px -28px
-    color-mix(in srgb, var(--color-ink) 45%, transparent);
   --shadow-screen-spill: 0 0 120px 10px
     color-mix(in srgb, var(--color-light-screen) 12%, transparent);
 
@@ -588,6 +585,9 @@
   --tick-full: 70;
   --tick-rest: 2;
   --tick-now: 4;
+  /* 100% − rest/full and 100% − now/full, written out. */
+  --tick-rest-cut: 97.142857%;
+  --tick-now-cut: 94.285714%;
   --tick-ease: cubic-bezier(0.16, 1, 0.3, 1);
   & a {
     position: relative;
@@ -630,7 +630,6 @@
     text-transform: uppercase;
     color: var(--color-cream);
     pointer-events: none;
-    transition: color 360ms var(--ease-cinema);
   }
   & i::before {
     content: "";
@@ -643,18 +642,25 @@
       transform 520ms var(--tick-ease),
       background-color 360ms var(--ease-cinema);
   }
+  /* The name never moves or fades: it sits at its final size, and the same box and easing that grow the bar uncover it from the bottom, so its visible edge is always the bar's top edge. */
   & i span {
-    position: relative;
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     writing-mode: vertical-rl;
-    transform: translateY(10px) rotate(180deg);
+    transform: rotate(180deg);
     font-size: 11px;
     font-weight: 700;
     letter-spacing: 0.04em;
     white-space: nowrap;
-    opacity: 0;
-    transition:
-      opacity 240ms var(--ease-cinema),
-      transform 520ms var(--tick-ease);
+    /* Plain percentages (no calc), so every engine interpolates them: the part of the box still hidden is 100% minus the bar's share of it. */
+    clip-path: inset(0 0 var(--tick-rest-cut) 0);
+    transition: clip-path 520ms var(--tick-ease);
+  }
+  & a[aria-current] i span {
+    clip-path: inset(0 0 var(--tick-now-cut) 0);
   }
   & a[aria-current] i::before {
     transform: translateY(1px) scaleY(calc(var(--tick-now) / var(--tick-full)));
@@ -675,8 +681,10 @@
   }
   & a:hover i span,
   & a:focus-visible i span {
-    opacity: 1;
-    transform: rotate(180deg);
+    clip-path: inset(0);
+  }
+  & a:active i span {
+    clip-path: inset(0 0 6% 0);
   }
   & a:active i::before {
     transform: scaleY(0.94);
@@ -687,7 +695,6 @@
   }
   @media (prefers-reduced-motion: reduce) {
     & a::before,
-    & i,
     & i::before,
     & i span {
       transition: none;
@@ -867,7 +874,9 @@
 
 /* While the timecode is being dragged the whole screen shows the closed hand. */
 html[data-scrub],
-html[data-scrub] * {
+html[data-scrub] *,
+html[data-volume],
+html[data-volume] * {
   cursor: grabbing !important;
 }
 html[data-scrub] .timecode .track::after {
@@ -952,24 +961,30 @@ html[data-scrub] .timecode .track::after {
   }
 }
 @utility sound-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  /* A drag on the wave is the volume, never a page swipe. */
+  touch-action: none;
+}
+/* The handle: grab it (open hand, closed while pressed) and drag up or down. One clean sine travelling at one speed; its height follows the volume (--vol, 0–1, set per frame): the small wave when muted, the full one at the default level (0.75), a touch taller at 100% (1.08), the rise easing off above the default. */
+@utility sound-wave {
   position: relative;
-  display: inline-grid;
+  display: grid;
   place-items: center;
   width: 44px;
   height: 44px;
-  margin: 0;
-  padding: 0;
-  border: 0;
+  cursor: grab;
+  touch-action: none;
   border-radius: var(--radius-0);
-  background: transparent;
-  cursor: pointer;
   & svg {
     width: 34px;
-    height: 14px;
+    height: 28px;
     overflow: hidden;
     filter: drop-shadow(
       0 0 3px color-mix(in srgb, var(--color-yellow) 60%, transparent)
     );
+    transition: filter 200ms var(--ease-cinema);
   }
   & .wave {
     fill: none;
@@ -978,33 +993,32 @@ html[data-scrub] .timecode .track::after {
     stroke-linecap: round;
     stroke-linejoin: round;
     vector-effect: non-scaling-stroke;
-    transform-origin: 17px 7px;
-    transition: transform 420ms var(--ease-cinema);
+    transform-origin: 17px 14px;
+    transform: scaleY(
+      calc(
+        0.45 + var(--vol, 0.75) / 0.75 * 0.55 -
+          max(var(--vol, 0.75) - 0.75, 0) * 0.41
+      )
+    );
   }
-  /* On: one clean sine, always travelling at the same speed. Off: the same wave, smaller (the look it had on hover). */
-  &[data-on="false"] .wave {
-    transform: scaleY(0.45);
-  }
-  &:is(:hover, :focus-visible) svg {
+  &:is(:hover, :focus-visible, :active) svg {
     filter: drop-shadow(
       0 0 6px color-mix(in srgb, var(--color-yellow) 90%, transparent)
     );
   }
-  @media (prefers-reduced-motion: no-preference) {
-    & .travel {
-      animation: wave-travel 2000ms linear infinite;
-    }
+  &:active {
+    cursor: grabbing;
   }
-  /* What the key does, in words: "Mute" / "Unmute" under it on hover and focus. */
+  /* What the handle does, in words, under it on hover and focus; it steps aside once the drag starts (the key shows the percentage then). */
   & .sound-tip {
     @apply type-label-s uppercase;
     position: absolute;
     top: 100%;
-    right: 0;
+    left: 50%;
+    translate: -50% -4px;
     white-space: nowrap;
     color: var(--color-cream);
     opacity: 0;
-    translate: 0 -4px;
     pointer-events: none;
     transition:
       opacity 200ms var(--ease-cinema),
@@ -1012,13 +1026,66 @@ html[data-scrub] .timecode .track::after {
   }
   &:focus-visible .sound-tip {
     opacity: 1;
-    translate: 0 0;
+    translate: -50% 0;
   }
   @media (hover: hover) {
     &:hover .sound-tip {
       opacity: 1;
-      translate: 0 0;
+      translate: -50% 0;
     }
+  }
+  :is([data-dragging]) > & .sound-tip {
+    opacity: 0;
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    & .travel {
+      animation: wave-travel 2000ms linear infinite;
+    }
+    /* Held in the hand, the wave stands still and only its height moves. */
+    :is([data-dragging]) > & .travel {
+      animation-play-state: paused;
+    }
+  }
+}
+/* The word: Mute / Unmute, or the percentage while dragging. All three sit in one cell, so swapping them is a cross-fade and nothing moves. */
+@utility sound-key {
+  @apply type-label-s uppercase;
+  display: inline-grid;
+  align-items: center;
+  justify-items: start;
+  text-align: start;
+  height: 44px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-nav);
+  cursor: pointer;
+  font-variant-numeric: tabular-nums;
+  transition: color 160ms var(--ease-cinema);
+  & > span {
+    grid-area: 1 / 1;
+    opacity: 0;
+    transition: opacity 200ms var(--ease-cinema);
+  }
+  & > span[data-show] {
+    opacity: 1;
+  }
+  /* The display face draws a tiny percent sign: the reading face keeps it legible at this size. */
+  & i {
+    font-family: var(--font-reading);
+    font-style: normal;
+    font-weight: 600;
+    letter-spacing: 0;
+    margin-inline-start: 1px;
+  }
+  &:is(:hover, :focus-visible) {
+    color: var(--color-cream);
+  }
+  /* While dragging the word is a readout, not a key. */
+  :is([data-dragging]) > & {
+    color: var(--color-cream);
+    pointer-events: none;
   }
 }
 
@@ -1208,18 +1275,10 @@ html[data-scrub] .timecode .track::after {
   }
 }
 
-/* Button — "the projector". The cursor is a lamp over the surface (--mx/--my), a slanted shutter wipes the fill in, the label rolls, the arrow hands off. Variants: primary | secondary | ink | timer · sizes: btn-sm · parts: btn-label, btn-arrow */
-@keyframes btn-glint {
-  0% {
-    transform: translateX(-130%);
-  }
-  31%,
-  100% {
-    transform: translateX(130%);
-  }
-}
+/* Button — flat and quiet. The cursor is a soft lamp over the surface (--mx/--my), a slanted shutter wipes the fill in, the label rolls, the arrow hands off. Variants: primary | secondary | ink | timer · sizes: btn-sm · parts: btn-label, btn-arrow */
 @utility btn {
   @apply type-label-l uppercase;
+  font-weight: 700;
   position: relative;
   isolation: isolate;
   overflow: hidden;
@@ -1335,41 +1394,9 @@ html[data-scrub] .timecode .track::after {
   --btn-text: var(--action-text);
   --btn-text-hover: var(--color-ink);
   --btn-wipe: color-mix(in srgb, var(--color-yellow) 72%, var(--color-cream));
-  box-shadow: var(--shadow-glow-yellow);
-  /* A slow lens glint crosses the key now and then, like a lamp catching it. */
-  &::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    z-index: -1;
-    background: linear-gradient(
-      105deg,
-      transparent 42%,
-      color-mix(in srgb, var(--color-cream) 55%, transparent) 50%,
-      transparent 58%
-    );
-    transform: translateX(-130%);
-  }
-  @media (prefers-reduced-motion: no-preference) {
-    &::after {
-      animation: btn-glint 7s ease-in-out 2.5s infinite;
-    }
-    &:is(:hover, :focus-visible, :active)::after {
-      animation-play-state: paused;
-    }
-  }
-  &:is(:hover, :focus-visible) {
-    box-shadow: var(--shadow-glow-yellow-hot);
-  }
-  &:active {
-    box-shadow:
-      var(--shadow-glow-yellow-hot),
-      0 0 80px color-mix(in srgb, var(--color-yellow) 55%, transparent);
-  }
   [data-theme="paper"] & {
     --btn-wipe: color-mix(in srgb, var(--color-ink) 82%, var(--color-yellow));
     --btn-text-hover: var(--action-text);
-    box-shadow: var(--shadow-cast-paper);
   }
 }
 @utility btn-secondary {
@@ -1398,7 +1425,6 @@ html[data-scrub] .timecode .track::after {
     height: 3px;
     width: calc(var(--p, 0) * 100%);
     background: var(--color-yellow);
-    box-shadow: var(--shadow-glow-yellow);
   }
 }
 @utility btn-sm {
@@ -1963,10 +1989,6 @@ html[data-scrub] .timecode .track::after {
     );
     transition: none;
   }
-  /* The first light crosses the key as soon as it is on screen. */
-  & > .btn-primary::after {
-    animation-delay: 0.4s;
-  }
   @media (max-width: 639px) {
     width: 100%;
   }
@@ -2266,24 +2288,48 @@ html[data-scrub] .timecode .track::after {
       color-mix(in srgb, var(--color-black) 55%, transparent) 55%,
       transparent 100%
     );
+    /* Landscape phone: the copy runs across the robot's head, so the pool reaches further right and sits denser. */
+    @media (max-height: 520px) {
+      inset-inline-end: calc(-2 * var(--space-8));
+      background: radial-gradient(
+        ellipse 50% 50% at 42% 50%,
+        color-mix(in srgb, var(--color-black) 90%, transparent) 0%,
+        color-mix(in srgb, var(--color-black) 72%, transparent) 60%,
+        transparent 100%
+      );
+    }
   }
 }
+/* The poster line: one step under the marquee name, tight, set on the type ladder (poster-l, 44px on phones). */
 @utility hero-tagline {
-  @apply type-poster-m uppercase;
-  font-family: var(--font-poster);
-  font-weight: 800;
+  @apply type-poster-l uppercase;
+  font-size: clamp(var(--text-poster-l-phone), 3.9vw, var(--text-poster-l));
+  letter-spacing: var(--tracking-poster-s);
+  text-wrap: balance;
   color: var(--color-cream);
+  text-shadow: 0 0 var(--space-5)
+    color-mix(in srgb, var(--color-black) 75%, transparent);
   @media (max-height: 520px) {
-    font-size: 28px;
+    font-size: var(--text-poster-m);
   }
 }
 @utility hero-body {
   @apply type-body;
-  max-width: 40ch;
+  max-width: 44ch;
+  text-wrap: pretty;
   color: var(--color-cream-deep);
+  text-shadow: 0 0 var(--space-3)
+    color-mix(in srgb, var(--color-black) 80%, transparent);
   & strong {
     color: var(--color-cream);
-    font-weight: 700;
+    font-weight: 600;
+  }
+  /* Wide screens: the robot is as wide as its height allows, so the body ends before its collar (the lettering stays on the dark). */
+  @media (min-aspect-ratio: 1/1) and (min-height: 521px) {
+    max-width: max(
+      30ch,
+      min(44ch, calc(50vw - 29svh - var(--page-margin) - var(--space-4)))
+    );
   }
   @media (max-height: 520px) {
     font-size: 16px;
@@ -2316,6 +2362,8 @@ html[data-scrub] .timecode .track::after {
   text-align: end;
   line-height: 1.75;
   color: var(--color-ash);
+  text-shadow: 0 0 var(--space-3)
+    color-mix(in srgb, var(--color-black) 80%, transparent);
   & span {
     @apply type-label-s;
     color: var(--color-fog);
@@ -2328,12 +2376,20 @@ html[data-scrub] .timecode .track::after {
     color: var(--color-orange);
     font-style: normal;
     font-weight: 700;
+    white-space: nowrap;
   }
   & .hero-billing-line {
     display: block;
     font-size: inherit;
     letter-spacing: inherit;
     color: inherit;
+  }
+  /* Large screens: it is read from further away, one step up. */
+  @media (min-width: 1600px) {
+    font-size: var(--text-body);
+    & span {
+      font-size: var(--text-label);
+    }
   }
 }
 /* Projects — one 12-column grid under the top bar: the screen (cols 1–7) and the panel with every project detail (cols 8–12) share a top and bottom edge */
@@ -2348,7 +2404,7 @@ html[data-scrub] .timecode .track::after {
     calc(var(--bar-height) + var(--space-5));
   pointer-events: none;
   /* Stacked: the screen and the full details must both fit, so the room above the screen is tighter. */
-  @media (max-width: 1023px) and (max-aspect-ratio: 1/1) {
+  @media (max-aspect-ratio: 1/1) {
     padding-top: calc(var(--bar-height) + var(--space-4));
     padding-bottom: calc(var(--bar-height) + var(--space-4));
   }
@@ -2362,7 +2418,13 @@ html[data-scrub] .timecode .track::after {
   grid-column: 1 / 8;
   grid-row: 1;
   aspect-ratio: 16 / 9;
-  @media (max-width: 1023px) and (max-aspect-ratio: 1/1) {
+  /* Short landscape: the screen is never taller than the room between the bars. */
+  @media (max-height: 520px) and (min-aspect-ratio: 1/1) {
+    max-width: calc(
+      (100dvh - 2 * (var(--bar-height) + var(--space-2))) * 16 / 9
+    );
+  }
+  @media (max-aspect-ratio: 1/1) {
     grid-column: 1 / -1;
   }
 }
@@ -2389,27 +2451,75 @@ html[data-scrub] .timecode .track::after {
       display: none;
     }
   }
-  @media (max-width: 1023px) and (max-aspect-ratio: 1/1) {
+  @media (max-aspect-ratio: 1/1) {
     grid-column: 1 / -1;
     grid-row: 2;
-    align-self: end;
+    /* Close under the screen, so the two read as one unit; the crowd keeps the floor. */
+    align-self: start;
+    margin-top: var(--space-6);
+    @media ((max-aspect-ratio: 1/1) and (max-height: 740px)),
+      ((min-aspect-ratio: 1/1) and (max-height: 520px)) {
+      margin-top: var(--space-3);
+    }
     container-type: inline-size;
-    /* Under the details the room is lit by the crowd: a dark pool keeps the lettering at 4.5:1. */
+    /* Under the details the room is lit by the crowd: a dark pool keeps the lettering at 4.5:1. Its sides fade too, so it has no edge. */
     &::before {
       content: "";
       position: absolute;
       inset: calc(-1 * var(--space-8)) calc(-1 * var(--space-5))
-        calc(-1 * var(--space-5));
+        calc(-1 * var(--space-8));
       z-index: -1;
       pointer-events: none;
+      /* Fades out on every side, so it never leaves a line between the wall and the floor. */
       background: linear-gradient(
-        to top,
-        color-mix(in srgb, var(--color-black) 80%, transparent) 55%,
+        to bottom,
+        transparent 0%,
+        color-mix(in srgb, var(--color-black) 80%, transparent) 22%,
+        color-mix(in srgb, var(--color-black) 80%, transparent) 70%,
         transparent 100%
       );
+      mask-image: linear-gradient(
+        to right,
+        transparent,
+        black 12%,
+        black 88%,
+        transparent
+      );
     }
+    /* The index becomes a swipeable strip: every project is one tap away. */
     & .projects-list {
+      flex: none;
+      height: var(--space-7);
+      margin-top: var(--space-4);
+      @media (max-height: 740px) {
+        height: 44px;
+        margin-top: var(--space-2);
+      }
+    }
+    & .projects-track,
+    & .prog-row .yr {
       display: none;
+    }
+    & .projects-index {
+      display: flex;
+      gap: var(--space-5);
+      padding-inline-end: 0;
+      overflow: auto hidden;
+      mask-image: linear-gradient(to right, black 88%, transparent);
+      & > li {
+        flex: none;
+      }
+      & .prog-row {
+        grid-template-columns: auto auto;
+        gap: var(--space-2);
+        height: var(--space-7);
+        & .ti {
+          font-size: 22px;
+        }
+        & .ti::after {
+          display: none;
+        }
+      }
     }
   }
 }
@@ -2428,6 +2538,20 @@ html[data-scrub] .timecode .track::after {
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;
+  }
+  @media ((max-aspect-ratio: 1/1) and (max-height: 740px)),
+    ((min-aspect-ratio: 1/1) and (max-height: 520px)) {
+    height: var(--space-4);
+    margin-bottom: var(--space-2);
+  }
+  /* Short landscape: the column is narrow and the lead is gone, so the facts wrap rather than lose the year. */
+  @media (max-height: 520px) and (min-aspect-ratio: 1/1) {
+    height: auto;
+    min-height: var(--space-5);
+    & > :last-child {
+      white-space: normal;
+      text-align: end;
+    }
   }
 }
 @utility projects-count {
@@ -2453,18 +2577,31 @@ html[data-scrub] .timecode .track::after {
   &[data-long] {
     font-size: min(56px, 12cqw);
   }
+  /* Little height: the title gives some back so nothing meets the bars. */
+  @media ((max-aspect-ratio: 1/1) and (max-height: 740px)),
+    ((min-aspect-ratio: 1/1) and (max-height: 520px)) {
+    height: 48px;
+    font-size: min(48px, 20cqw);
+    &[data-long] {
+      font-size: min(40px, 12cqw);
+    }
+  }
 }
 @utility projects-lead {
   @apply type-body;
   margin-top: var(--space-3);
   height: 52px;
+  @media ((max-aspect-ratio: 1/1) and (max-height: 740px)),
+    ((min-aspect-ratio: 1/1) and (max-height: 520px)) {
+    margin-top: var(--space-2);
+  }
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
   color: var(--color-cream-deep);
   /* Small phones: the screen and the keys come first. */
-  @media (max-width: 1023px) and (max-aspect-ratio: 1/1) and (max-height: 620px) {
+  @media (max-aspect-ratio: 1/1) and (max-height: 650px) {
     display: none;
   }
 }
@@ -2483,6 +2620,20 @@ html[data-scrub] .timecode .track::after {
   & > .btn-primary {
     justify-content: center;
   }
+  @media ((max-aspect-ratio: 1/1) and (max-height: 740px)),
+    ((min-aspect-ratio: 1/1) and (max-height: 520px)) {
+    margin-top: var(--space-3);
+    & > * {
+      height: 44px;
+    }
+  }
+  @media (max-height: 520px) and (min-aspect-ratio: 1/1) {
+    margin-top: var(--space-2);
+    gap: var(--space-1);
+    & > * {
+      height: 40px;
+    }
+  }
   @container (width < 420px) {
     & > * {
       padding-inline: var(--space-3);
@@ -2491,6 +2642,12 @@ html[data-scrub] .timecode .track::after {
   }
   @container (width < 360px) {
     grid-template-columns: minmax(0, 1fr);
+  }
+  /* Stacked on a wide screen the keys keep a button's proportions, never a banner's. */
+  @media (max-aspect-ratio: 1/1) {
+    @container (width > 520px) {
+      grid-template-columns: repeat(2, minmax(0, 18rem));
+    }
   }
 }
 @utility projects-next {
@@ -2622,61 +2779,6 @@ html[data-scrub] .timecode .track::after {
     background: color-mix(in srgb, var(--color-cream) 55%, transparent);
   }
 }
-/* Hover thumbnail: floats beside the cursor at -3deg, overlapping the screen's edge */
-@utility projects-thumb {
-  position: fixed;
-  top: 0;
-  left: 0;
-  z-index: 5;
-  width: 224px;
-  height: 140px;
-  margin: 0;
-  overflow: hidden;
-  pointer-events: none;
-  opacity: 0;
-  rotate: -3deg;
-  background: radial-gradient(
-    ellipse 80% 90% at 75% 60%,
-    var(--color-felt-hi) 0%,
-    var(--color-felt) 60%,
-    var(--color-felt-lo) 100%
-  );
-  box-shadow:
-    0 28px 60px color-mix(in srgb, var(--color-letterbox) 65%, transparent),
-    0 0 0 1px color-mix(in srgb, var(--color-cream) 12%, transparent);
-  transition: opacity 160ms;
-  &[data-on] {
-    opacity: 1;
-  }
-  & .img {
-    object-fit: cover;
-  }
-  & .t {
-    @apply type-poster-xl;
-    position: absolute;
-    top: var(--space-3);
-    left: var(--space-4);
-    max-width: 130px;
-    font-size: 40px;
-    line-height: 0.84;
-    text-transform: uppercase;
-    color: var(--color-gold);
-  }
-  & .d {
-    @apply type-label-s uppercase;
-    position: absolute;
-    inset-inline: 0;
-    bottom: 0;
-    padding: var(--space-5) var(--space-4) var(--space-2);
-    background: linear-gradient(
-      to bottom,
-      transparent,
-      color-mix(in srgb, var(--color-letterbox) 60%, transparent)
-    );
-    color: color-mix(in srgb, var(--color-cream) 92%, transparent);
-  }
-}
-
 /* ─── About ─────────────────────────────────────────────── */
 /* The ask key: ink text on nothing, filling with ink on hover. */
 @utility btn-key {
@@ -3010,9 +3112,9 @@ html[data-scrub] .timecode .track::after {
   flex-wrap: wrap;
   justify-content: center;
   gap: var(--space-4);
-  /* The copied key keeps its hot glow while the line below confirms. */
+  /* The copied key keeps a yellow ring while the line below confirms. */
   & [data-copied="true"] {
-    box-shadow: var(--shadow-glow-yellow-hot);
+    box-shadow: inset 0 0 0 2px var(--color-yellow);
   }
 }
 @utility contact-status {
@@ -3898,5 +4000,19 @@ html[data-scrub] .timecode .track::after {
   &:focus-visible {
     scale: 1.08;
     background: color-mix(in srgb, var(--color-black) 80%, transparent);
+  }
+}
+/* The Projects crowd's own canvas, over the programme (desktop). It only shows while the camera is on Projects. Clicks pass through. */
+@utility projects-front {
+  position: fixed;
+  inset: 0;
+  z-index: 5;
+  pointer-events: none;
+  /* The canvas wrapper sets its own `pointer-events: auto` inline; it must never take a click. */
+  & * {
+    pointer-events: none !important;
+  }
+  &[data-on="false"] {
+    visibility: hidden;
   }
 }

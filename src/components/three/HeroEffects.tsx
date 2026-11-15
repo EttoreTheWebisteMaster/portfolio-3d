@@ -43,6 +43,7 @@ import {
   ZOOM,
 } from "./walkPose";
 import { onContact } from "./contactShot";
+import { front } from "./frontShare";
 
 const forward = new THREE.Vector3();
 const scratch = new THREE.Vector3();
@@ -110,6 +111,10 @@ export default function HeroEffects({
           cu
         );
       }
+    }
+    if (vignette.current) {
+      front.vignette.offset = vignette.current.offset;
+      front.vignette.darkness = vignette.current.darkness;
     }
     const fx = dof.current;
     if (!fx) return;

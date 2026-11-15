@@ -1,8 +1,8 @@
 import Button from "@/components/ui/Button";
 
 const stack = [
-  "Next.js · React · TypeScript · Agentic coding",
-  "Three.js · GSAP · Tailwind",
+  "React · Next.js · TypeScript · Three.js",
+  "GSAP · Tailwind · Agentic coding",
 ];
 
 /** Home page: the copy layer over the fixed 3D set (name, ROB-092, light, dust live in `Stage`). */
@@ -13,16 +13,16 @@ export default function Hero() {
         <h2 data-fx="title" className="fx hero-tagline">
           Designer &amp; engineer.
           <br />
-          One person.
+          Pixel to production.
         </h2>
         <p data-fx="text" className="fx hero-body">
-          <strong>Six years</strong> forging <strong>interactive worlds</strong>
-          , from the first sketch to the <strong>final frame</strong>. Based in
-          Turin, <strong>open to the world</strong>.
+          <strong>Six years</strong> designing web interfaces and writing the
+          code that ships them, real-time 3D and motion included. Based in
+          Turin, open to the world.
         </p>
         <div data-fx="item" className="fx hero-actions">
           <Button href="/projects" arrow>
-            See the projects
+            View the projects
           </Button>
         </div>
       </div>

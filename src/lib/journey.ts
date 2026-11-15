@@ -7,6 +7,9 @@ export const journey: Progress = { current: 0 };
 /** Which way the journey last moved: 1 towards Contact, -1 back towards Home. Actors face the way they travel. */
 export const heading = { dir: 1 };
 
+/** Fired on `window` when a skipped page has just been cut to (`detail` is its index): its text plays its entrance again, like on the first visit. */
+export const CUT_EVENT = "journey:cut";
+
 /** The timecode scrubber: while `on`, the visitor drags the whole site by hand and the page snapper steps aside. PageSnap fills `start` and `end`. */
 export const scrub = { on: false, start: () => {}, end: () => {} };
 

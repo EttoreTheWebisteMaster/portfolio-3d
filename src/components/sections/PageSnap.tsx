@@ -6,6 +6,7 @@ import { caseState, diveState } from "@/lib/caseMotion";
 import { gsap, Observer, useGSAP } from "@/lib/gsap";
 import { getLoading } from "@/lib/loading";
 import {
+  CUT_EVENT,
   cruise,
   journey,
   scrub,
@@ -79,6 +80,7 @@ export default function PageSnap() {
     // A move in flight: a new one replaces it, so two never fight over the scroll.
     let hold: gsap.core.Tween | null = null;
     let cutTl: gsap.core.Timeline | null = null;
+    let cutPage: HTMLElement | null = null;
     const stop = () => {
       hold?.kill();
       hold = null;
@@ -86,6 +88,11 @@ export default function PageSnap() {
       cutTl = null;
       gsap.killTweensOf(window);
       if (veil.current) gsap.set(veil.current, { opacity: 0 });
+      // A cut dropped half way never reaches its own clean-up: the page it was lifting must not stay faded or scaled.
+      if (cutPage) gsap.set(cutPage, { clearProps: "opacity,scale" });
+      cutPage = null;
+      // The move's release is gone too, and with it the nav's "heading to" light.
+      delete document.documentElement.dataset.to;
     };
 
     // Swallow trackpad momentum before listening again, and give the keyboard back a place to be.
@@ -105,9 +112,11 @@ export default function PageSnap() {
     // Skipping pages: no travel through the pages in between. The veil comes up, the cut happens under it, the new page lifts out.
     const cut = (next: number) => {
       const target = pages[next];
+      cutPage = target;
       const land = () => {
         window.scrollTo(0, top(next));
         publishScroll();
+        window.dispatchEvent(new CustomEvent(CUT_EVENT, { detail: next }));
       };
       if (reduced.matches || !veil.current) {
         land();
@@ -250,7 +259,7 @@ export default function PageSnap() {
 
     // Wheel and touch over a scrolling box belong to the box: they never reach the page snapper, so the list scrolls freely.
     // (The observer's own `ignore` resolves its elements once, so a list that mounts later was left out.)
-    const OWN = ".projects-index, .about-ask, .menu-overlay";
+    const OWN = ".projects-index, .about-ask, .menu-overlay, .sound-toggle";
     const box = (e: Event) =>
       e.target instanceof Element ? e.target.closest<HTMLElement>(OWN) : null;
     const keep = (e: Event) => {

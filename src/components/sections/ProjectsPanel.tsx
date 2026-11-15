@@ -27,12 +27,15 @@ export default function ProjectsPanel() {
   const stage = useRef<HTMLDivElement>(null);
   const panel = useRef<HTMLDivElement>(null);
 
+  // Only a project the visitor picked is announced; the timer's own changes are not.
+  const [announce, setAnnounce] = useState(false);
   const first = useRef(true);
   // Auto changes (timer, Next) scroll the index to the new row; the visitor's own hovers never move it under the cursor.
   const auto = useRef(true);
 
   const show = (i: number, byVisitor = false) => {
     auto.current = !byVisitor;
+    setAnnounce(byVisitor);
     // Cut to the new trailer now, so the clock below never reads the old one's end.
     view.index = i;
     if (view.video) view.video.currentTime = 0;
@@ -124,7 +127,7 @@ export default function ProjectsPanel() {
         <div data-in>
           <h3
             data-swap
-            aria-live="polite"
+            aria-live={announce ? "polite" : "off"}
             className="projects-title"
             data-long={project.title.length > 12 ? "" : undefined}
           >
@@ -152,6 +155,7 @@ export default function ProjectsPanel() {
             type="button"
             data-in
             className="projects-next"
+            aria-label={`Next project: ${PROJECTS[next].title}`}
             onClick={() => show(next)}
           >
             <span>

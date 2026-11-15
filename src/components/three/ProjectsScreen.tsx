@@ -19,7 +19,7 @@ import {
 import { caseState } from "@/lib/caseMotion";
 import { onEnter } from "@/lib/loading";
 import { TRAILER_SRC, view } from "@/lib/projects";
-import { isMuted, subscribeMuted } from "@/lib/sound";
+import { subscribeMuted, volumeGain } from "@/lib/sound";
 
 import { dustTexture } from "./HeroLight";
 import { warm } from "./Warmup";
@@ -47,7 +47,9 @@ function trailer() {
 /** The trailer's sound follows the page's mute switch. Returns the unsubscribe. */
 function followMute(video: HTMLVideoElement) {
   const sync = () => {
-    video.muted = isMuted();
+    const v = Math.min(volumeGain(), 1);
+    video.muted = v === 0;
+    video.volume = v;
   };
   sync();
   const off = subscribeMuted(sync);
@@ -200,7 +202,7 @@ export default function ProjectsScreen({
       mesh.current.scale.set(w * draw, sh, w);
       corners.size.value.set(w * draw, sh);
       corners.radius.value = Math.min(CORNER * h, sh / 2, (w * draw) / 2);
-      mesh.current.visible = draw > 0 || warm.on;
+      mesh.current.visible = (draw > 0 && cinemaFade() > 0.001) || warm.on;
     }
     // Hot enough to bloom as a line, then settles to the picture's own light.
     if (mat.current)

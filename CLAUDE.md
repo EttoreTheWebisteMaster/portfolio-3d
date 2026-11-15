@@ -37,6 +37,7 @@ While editing, prefer the next-devtools MCP `get_compilation_issues` over `npm r
 ## Workflow
 
 Non-trivial → plan mode first. One task at a time. `/handoff` then `/clear` between unrelated tasks.
+Any task that adds, rewrites or restyles text → delegate to the `typographer` subagent (audit, fix, copy modes).
 Commits: Conventional Commits (`feat:`, `fix:`, `chore:`…). Ship with `/ship`.
 
 ## Working with Ettore (learned from past sessions)

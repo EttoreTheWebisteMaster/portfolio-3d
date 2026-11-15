@@ -60,10 +60,15 @@ export const spillFront = () =>
     ease(seg(walk(), SHOT.daylight)) * (1 - ease(seg(journey.current, DIM)))
   );
 
+/** The timecode (90 s over the three hops) of a moment, as a journey position. */
+const atTimecode = (seconds: number) => (seconds / 90) * 3;
+/** The screen goes gradually to black from TC 00:00:42:10 to 00:00:46:00. */
+const TV_OUT = [atTimecode(42 + 10 / 24), atTimecode(46)] as const;
+
 /** 1 on Projects; the screen and beam sink to a dim, blurred glow behind him (never fully dark) and are gone only as the daylight covers them. */
 export const cinemaFade = () =>
   THREE.MathUtils.lerp(1, 0.25, ease(seg(walk(), [0.05, 0.4]))) *
-  (1 - ease(seg(walk(), [0.3, 0.85]))) ** 1.5;
+  (1 - ease(seg(journey.current, TV_OUT)));
 
 /** The audience while he walks out: it sinks to a dim presence behind him (he never walks in the pitch dark) and is gone before the first glimpse of daylight. */
 export const crowdFade = () => 1 - ease(seg(walk(), [0.05, 0.42]));

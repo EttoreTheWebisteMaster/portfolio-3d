@@ -33,6 +33,7 @@ import { advance, plan, type Walker } from "./crowdWalk";
 import { FLOOR_Y, mulberry32 } from "./HeroLight";
 import { PALETTE } from "./HeroRobot";
 import { CROWD_DIM } from "./robotShot";
+import { FRONT_LAYER, front } from "./frontShare";
 import { crowdFade } from "./walkPose";
 
 /** Only seats the final camera can see get a robot: it looks level from (0, 6, 7), so the near rows sit below the frame. */
@@ -107,6 +108,7 @@ function Crowd({
   const gltf = useLoader(GLTFLoader, url);
   const camera = useThree(state => state.camera);
   const size = useThree(state => state.size);
+  const scene = useThree(state => state.scene);
   const { walkers, skins, stroller, disposables, castMat, poolMat } =
     useMemo(() => {
       const rand = mulberry32(92);
@@ -299,7 +301,34 @@ function Crowd({
       };
     }, [gltf]);
 
+  const root = useRef<THREE.Scene>(null);
   const seats = useMemo(() => walkers.map(w => w.to), [walkers]);
+
+  // On desktop a second canvas draws the robots over the programme: their bodies (not the pools and shadows on the floor) move to its layer while it does.
+  useEffect(() => {
+    const bodies: THREE.Mesh[] = [];
+    const roots = [...walkers.map(w => w.robot), stroller?.robot];
+    roots.forEach(root =>
+      root?.traverse(o => {
+        if (
+          o instanceof THREE.Mesh &&
+          (skins as THREE.Material[]).includes(o.material as THREE.Material)
+        )
+          bodies.push(o);
+      })
+    );
+    front.scene = scene;
+    front.camera = camera;
+    front.root = root.current;
+    front.carry = on => bodies.forEach(m => m.layers.set(on ? FRONT_LAYER : 0));
+    return () => {
+      front.carry(false);
+      front.carry = () => {};
+      front.scene = null;
+      front.camera = null;
+      front.root = null;
+    };
+  }, [walkers, stroller, skins, scene, camera]);
 
   // Strict Mode runs this cleanup on the same memoised walkers, so it must not stop their actions.
   useEffect(
@@ -425,7 +454,7 @@ function Crowd({
   });
 
   return (
-    <>
+    <scene ref={root}>
       {walkers.map(w => (
         <group key={w.robot.uuid}>
           <primitive object={w.robot} />
@@ -434,6 +463,6 @@ function Crowd({
         </group>
       ))}
       {stroller && <primitive object={stroller.robot} />}
-    </>
+    </scene>
   );
 }
