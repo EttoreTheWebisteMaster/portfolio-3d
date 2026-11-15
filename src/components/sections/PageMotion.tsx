@@ -3,7 +3,7 @@
 import { caseState } from "@/lib/caseMotion";
 import { gsap, type SplitText, useGSAP } from "@/lib/gsap";
 import { addEntrance, RISE } from "@/lib/fx";
-import { INTRO, journey, seg } from "@/lib/journey";
+import { CUT_EVENT, INTRO, journey, seg } from "@/lib/journey";
 import { COPY_GONE } from "@/components/three/walkPose";
 import { onEnter } from "@/lib/loading";
 import { pointer } from "@/lib/pointer";
@@ -14,6 +14,11 @@ const SPAN = 0.25;
 const ARRIVE = [0.28, 0.4] as const;
 /** Home's copy decodes over the back half of the opening shot. */
 const INTRO_SECONDS = 2;
+/** A page opened by its URL arrives slower, and later, so the eye finds the scene first. */
+const LAND_SECONDS = 3.4;
+const LAND_DELAY = 1.1;
+/** After a cut the copy waits for the new page to lift out of the veil. */
+const CUT_DELAY = 0.3;
 
 type Kind = "title" | "text" | "item";
 
@@ -92,7 +97,7 @@ export default function PageMotion() {
         return { page, tl, intro: null };
       });
 
-      // Home plays its entrance once, in real time, when the visitor gets past the loader:
+      // The landing page plays its entrance once, in real time, when the visitor gets past the loader (Home's is the full opening):
       // the copy waits for the light slam, then the name lands first and the rest decodes under it.
       const first = rigs[0];
       const name = document.querySelector<HTMLElement>("[data-name]");
@@ -113,14 +118,46 @@ export default function PageMotion() {
               ease: "expo.out",
             }
           );
-        if (first?.tl)
-          first.intro = first.tl.tweenTo(1, {
-            duration: INTRO_SECONDS,
-            delay: INTRO.text,
+        // The page the URL opened on plays its copy in real time; on any page but Home there is no light slam to wait for.
+        const at = Math.round(journey.current);
+        const rig = rigs[at];
+        if (rig?.tl)
+          rig.intro = rig.tl.tweenTo(1, {
+            duration: at === 0 ? INTRO_SECONDS : LAND_SECONDS,
+            delay: at === 0 ? INTRO.text : LAND_DELAY,
             ease: "none",
           });
       });
       if (first?.tl) first.intro = null;
+
+      // A skipped page is a cut under the veil: once it has landed, its copy plays its entrance in real time, like on the first visit.
+      const onCut = (e: Event) => {
+        const at = (e as CustomEvent<number>).detail;
+        const rig = rigs[at];
+        rig?.intro?.kill();
+        if (at === 0 && name)
+          gsap.fromTo(
+            name,
+            { opacity: 0, scale: 1.14, y: 24 },
+            {
+              opacity: 1,
+              scale: 1,
+              y: 0,
+              duration: 1.8,
+              delay: CUT_DELAY,
+              ease: "expo.out",
+              overwrite: true,
+            }
+          );
+        if (!rig?.tl) return;
+        rig.tl.time(0);
+        rig.intro = rig.tl.tweenTo(1, {
+          duration: INTRO_SECONDS,
+          delay: CUT_DELAY,
+          ease: "none",
+        });
+      };
+      window.addEventListener(CUT_EVENT, onCut);
 
       // Depth layers: each moves against the camera and the pointer by its own amount, so the type sits in the scene.
       const layers = gsap.utils
@@ -151,9 +188,13 @@ export default function PageMotion() {
           // Projects' programme animates itself (ProjectsPanel); the trailer keeps playing behind as light.
           if (i === 1) rig.page.inert = pos < 0.9 || pos >= 1.12;
           if (!rig.tl) return;
-          if (i === 0 && !started) return;
+          // The page the visitor lands on keeps its copy away until they are past the loader.
+          if (!started && i === Math.round(pos)) {
+            rig.tl.time(0);
+            return;
+          }
           if (rig.intro) {
-            if (pos < 0.001) return;
+            if (Math.abs(pos - i) < 0.001) return;
             rig.intro.kill();
             rig.intro = null;
           }
@@ -172,6 +213,7 @@ export default function PageMotion() {
 
       return () => {
         gsap.ticker.remove(tick);
+        window.removeEventListener(CUT_EVENT, onCut);
         stopEnter();
         gsap.killTweensOf("[data-name],[data-depth]");
         gsap.set("[data-name],[data-depth]", { clearProps: "all" });

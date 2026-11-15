@@ -1,4 +1,5 @@
 import { INTRO } from "@/lib/journey";
+import { volumeGain } from "@/lib/sound";
 
 /** The sub-bass hit under the light slam, synthesized so no file is shipped. Call from the Enter click so the browser lets it play. */
 export function playImpact() {
@@ -7,7 +8,10 @@ export function playImpact() {
     const at = ctx.currentTime + INTRO.slam;
     const out = ctx.createGain();
     out.gain.setValueAtTime(0.0001, at);
-    out.gain.exponentialRampToValueAtTime(0.5, at + 0.015);
+    out.gain.exponentialRampToValueAtTime(
+      Math.max(0.5 * volumeGain(), 0.0002),
+      at + 0.015
+    );
     out.gain.exponentialRampToValueAtTime(0.0001, at + 2.2);
     out.connect(ctx.destination);
 

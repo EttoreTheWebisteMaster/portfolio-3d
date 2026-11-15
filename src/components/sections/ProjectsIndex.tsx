@@ -1,15 +1,7 @@
 "use client";
 
-import {
-  type RefObject,
-  useEffect,
-  useRef,
-  useState,
-  useSyncExternalStore,
-} from "react";
-import { createPortal } from "react-dom";
+import { type RefObject, useEffect, useRef, useState } from "react";
 
-import ProjectThumb from "@/components/sections/ProjectThumb";
 import { presence } from "@/lib/caseMotion";
 import { gsap } from "@/lib/gsap";
 import { journey } from "@/lib/journey";
@@ -23,8 +15,6 @@ type Props = {
   onPick: (i: number) => void;
 };
 
-const noop = () => () => {};
-
 const rowAt = (x: number, y: number) => {
   const row = document
     .elementFromPoint(x, y)
@@ -32,7 +22,7 @@ const rowAt = (x: number, y: number) => {
   return row ? Number(row.dataset.row) : null;
 };
 
-/** The programme: a scrolling index. Hovering a row floats its thumbnail beside the cursor; only a click changes the trailer. */
+/** The programme: a scrolling index. Only a click changes the trailer; hovering a row makes the room react. */
 export default function ProjectsIndex({
   active,
   auto,
@@ -41,16 +31,8 @@ export default function ProjectsIndex({
   const wrap = useRef<HTMLDivElement>(null);
   const list = useRef<HTMLUListElement>(null);
   const track = useRef<HTMLDivElement>(null);
-  const thumb = useRef<HTMLElement>(null);
   const pointer = useRef({ x: 0, y: 0 });
   const [hover, setHover] = useState<number | null>(null);
-  // The panel is transformed by the page transition, which would turn the thumbnail's `fixed` into panel-relative: it lives on <body>.
-  const mounted = useSyncExternalStore(
-    noop,
-    () => true,
-    () => false
-  );
-
   // Scroll track: thumb size and position follow the list.
   const sync = () => {
     const el = list.current;
@@ -94,78 +76,49 @@ export default function ProjectsIndex({
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)");
     el.scrollTo({
       top: Math.max(0, row.offsetTop - 52),
+      left: Math.max(0, row.offsetLeft),
       behavior: reduced.matches ? "auto" : "smooth",
     });
   }, [active, auto]);
 
-  // Thumbnail: follows the cursor for as long as it is over the list; it lands in place, never flies in.
-  const follow = (x: number, y: number) => {
-    const to = { x: Math.max(8, x - 224 - 28), y: y - 70 };
-    if (thumb.current) {
-      if (hover === null) gsap.set(thumb.current, to);
-      else
-        gsap.to(thumb.current, {
-          ...to,
-          duration: 0.35,
-          ease: "power3.out",
-          overwrite: true,
-        });
-    }
-    setHover(rowAt(x, y));
-  };
-
-  const shown = PROJECTS[hover ?? active];
   return (
-    <>
-      <div
-        ref={wrap}
-        className="projects-list"
-        onPointerMove={e => {
-          if (e.pointerType === "touch") return;
-          pointer.current = { x: e.clientX, y: e.clientY };
-          follow(e.clientX, e.clientY);
+    <div
+      ref={wrap}
+      className="projects-list"
+      onPointerMove={e => {
+        if (e.pointerType === "touch") return;
+        pointer.current = { x: e.clientX, y: e.clientY };
+        setHover(rowAt(e.clientX, e.clientY));
+      }}
+      onPointerLeave={() => setHover(null)}
+    >
+      <ul
+        ref={list}
+        className="projects-index"
+        aria-label="All projects"
+        onScroll={() => {
+          sync();
+          if (hover !== null)
+            setHover(rowAt(pointer.current.x, pointer.current.y));
         }}
-        onPointerLeave={() => setHover(null)}
       >
-        <ul
-          ref={list}
-          className="projects-index"
-          aria-label="All projects"
-          onScroll={() => {
-            sync();
-            if (hover !== null)
-              setHover(rowAt(pointer.current.x, pointer.current.y));
-          }}
-        >
-          {PROJECTS.map((p, i) => (
-            <li key={p.title}>
-              <button
-                type="button"
-                data-row={i}
-                className="prog-row"
-                aria-current={i === active ? "true" : undefined}
-                onClick={() => onPick(i)}
-              >
-                <span className="no">{pad(i + 1)}</span>
-                <span className="ti">{p.title}</span>
-                <span className="yr">{p.discipline}</span>
-              </button>
-            </li>
-          ))}
-        </ul>
-        <div ref={track} className="projects-track" aria-hidden="true" />
-      </div>
-      {mounted &&
-        createPortal(
-          <ProjectThumb
-            ref={thumb}
-            title={shown.title}
-            discipline={shown.discipline}
-            image={shown.image}
-            on={hover !== null}
-          />,
-          document.body
-        )}
-    </>
+        {PROJECTS.map((p, i) => (
+          <li key={p.title}>
+            <button
+              type="button"
+              data-row={i}
+              className="prog-row"
+              aria-current={i === active ? "true" : undefined}
+              onClick={() => onPick(i)}
+            >
+              <span className="no">{pad(i + 1)}</span>
+              <span className="ti">{p.title}</span>
+              <span className="yr">{p.discipline}</span>
+            </button>
+          </li>
+        ))}
+      </ul>
+      <div ref={track} className="projects-track" aria-hidden="true" />
+    </div>
   );
 }

@@ -117,7 +117,8 @@ export default function ProjectsRoom({
     const day = daylight();
     if (fill.current) fill.current.intensity = 0.2 * cinema * (1 - 0.7 * day);
     // Once the camera has settled in the cream room the cinema is far behind it: it stops being drawn (nothing of it is in frame by then). Its lights stay (a changing light count would recompile everything).
-    if (set.current) set.current.visible = crowdFade() > 0 || warm.on;
+    if (set.current)
+      set.current.visible = crowdFade() > 0 || cinemaFade() > 0.001 || warm.on;
     // The warm accent: a low house light grazing the crowd's crowns against the cold screen.
     if (top.current) top.current.intensity = 0.3 * show * (1 - day);
   });

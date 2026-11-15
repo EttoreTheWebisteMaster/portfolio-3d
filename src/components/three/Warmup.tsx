@@ -5,6 +5,8 @@ import { useEffect } from "react";
 
 import { report } from "@/lib/loading";
 
+import { front } from "./frontShare";
+
 /** A stuck compile or a hidden tab must never hold the loader: each step gives up after this long. */
 const STEP_TIMEOUT_MS = 4000;
 
@@ -18,10 +20,10 @@ const within = <T,>(work: Promise<T>) =>
 export const warm = { on: false };
 
 /**
- * Compiles every shader off the main thread, then draws two frames, before the loader may finish.
- * It does it twice: as Home is (the cinema's lights are off) and with the cinema in, because switching
- * between the two changes every lit material's program. Both are then cached, and the move to Projects
- * starts with a plain draw, not a stall.
+ * Builds every shader before the loader may finish, in the two states the lights are in: as Home is (the
+ * cinema's lights are off), compiled off the main thread; then with the cinema in (`warm.on`), which two drawn
+ * frames build and upload. Switching between the two changes every lit material's program, so both are cached,
+ * and the move to Projects starts with a plain draw, not a stall.
  */
 export default function Warmup() {
   const { gl, scene, camera, invalidate } = useThree();
@@ -42,14 +44,12 @@ export default function Warmup() {
     void (async () => {
       try {
         await within(gl.compileAsync(scene, camera));
-        report("warm", 0.4);
+        report("warm", 0.5);
         if (!live) return;
         warm.on = true;
         await frames(2);
-        report("warm", 0.6);
-        await within(gl.compileAsync(scene, camera));
+        front.compile();
         report("warm", 0.9);
-        await frames(2);
       } catch {
         // A failed warm-up only costs the stall it was there to prevent.
       } finally {

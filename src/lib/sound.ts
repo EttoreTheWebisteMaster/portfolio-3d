@@ -1,10 +1,18 @@
 /** Tiny synthesized sound effects (WebAudio): no files, no dependency. Silent until the visitor's first gesture. */
 const KEY = "sound-muted";
+const LEVEL_KEY = "sound-volume";
+/** The level unmuted sound starts at, and the loudness 1 of the effects is tuned for. */
+export const DEFAULT_VOLUME = 0.75;
+/** The quietest audible level: dragging below it is the same as muting. */
+export const MIN_VOLUME = 0.25;
 type Kind = "pop" | "thud" | "clang" | "ooh" | "step";
 
 let ctx: AudioContext | null = null;
 let armed = false;
 let muted: boolean | null = null;
+/** The last audible level (0–1): unmuting goes back to it. */
+let level: number | null = null;
+let master: GainNode | null = null;
 const listeners = new Set<() => void>();
 
 function stored() {
@@ -33,6 +41,39 @@ export function isMuted() {
   return muted;
 }
 
+function storedLevel() {
+  try {
+    const v = Number(window.localStorage.getItem(LEVEL_KEY));
+    return v >= MIN_VOLUME && v <= 1 ? v : DEFAULT_VOLUME;
+  } catch {
+    return DEFAULT_VOLUME;
+  }
+}
+
+/** What the speakers get, 0–1: 0 is muted. */
+export function getVolume() {
+  level ??= storedLevel();
+  return isMuted() ? 0 : level;
+}
+
+/** Gain for sound made outside the shared output (1 at the default level). */
+export const volumeGain = () => getVolume() / DEFAULT_VOLUME;
+
+function applyVolume() {
+  if (master && ctx)
+    master.gain.setTargetAtTime(volumeGain(), ctx.currentTime, 0.03);
+}
+
+/** Every effect goes through one gain, so the volume key moves them all at once. */
+function output(c: AudioContext) {
+  if (!master) {
+    master = c.createGain();
+    master.gain.value = volumeGain();
+    master.connect(c.destination);
+  }
+  return master;
+}
+
 export function subscribeMuted(listener: () => void) {
   listeners.add(listener);
   return () => {
@@ -59,14 +100,35 @@ function save(next: boolean) {
   choice = true;
   try {
     window.localStorage.setItem(KEY, muted ? "1" : "0");
+    window.localStorage.setItem(LEVEL_KEY, String(level ?? DEFAULT_VOLUME));
   } catch {
     // Storage can be blocked: the choice then lasts for this visit only.
   }
+  applyVolume();
   listeners.forEach(l => l());
 }
 
+/** A click: silence, or back to the level it had before. */
 export function toggleMuted() {
+  level ??= storedLevel();
   save(!isMuted());
+}
+
+/** The level being dragged to (0–1). Below the minimum it is silence, but the last audible level is kept for the next unmute. Pass `persist: false` while the drag goes on, and call `saveVolume` when it ends. */
+export function setVolume(v: number, persist = true) {
+  const next = Math.min(Math.max(v, 0), 1);
+  level ??= storedLevel();
+  if (next >= MIN_VOLUME) level = next;
+  muted = next < MIN_VOLUME;
+  choice = true;
+  applyVolume();
+  if (persist) saveVolume();
+  else listeners.forEach(l => l());
+}
+
+/** Writes the current mute switch and level to storage, and tells everyone. */
+export function saveVolume() {
+  save(isMuted());
 }
 
 /** The visitor pressed nothing: this visit is silent, but nothing is saved, so the question comes back next time. */
@@ -99,7 +161,7 @@ function tone(
   gain.gain.setValueAtTime(0.0001, t);
   gain.gain.exponentialRampToValueAtTime(peak, t + 0.012);
   gain.gain.exponentialRampToValueAtTime(0.0001, t + seconds);
-  osc.connect(gain).connect(ctx.destination);
+  osc.connect(gain).connect(output(ctx));
   osc.start(t);
   osc.stop(t + seconds + 0.05);
 }
@@ -137,7 +199,7 @@ export function roomTone(mix: number) {
     const low = c.createOscillator();
     low.type = "sine";
     low.frequency.value = 55;
-    low.connect(hum).connect(c.destination);
+    low.connect(hum).connect(output(c));
     low.start();
     const noise = c.createBufferSource();
     const buffer = c.createBuffer(1, c.sampleRate * 2, c.sampleRate);
@@ -148,7 +210,7 @@ export function roomTone(mix: number) {
     const soft = c.createBiquadFilter();
     soft.type = "lowpass";
     soft.frequency.value = 700;
-    noise.connect(soft).connect(air).connect(c.destination);
+    noise.connect(soft).connect(air).connect(output(c));
     noise.start();
   }
   const on = isMuted() ? 0 : 1;

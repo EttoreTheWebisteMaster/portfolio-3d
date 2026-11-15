@@ -55,6 +55,14 @@ function buildStudio() {
   return studio;
 }
 
+/** The studio baked into a reflection map for one renderer. */
+export function studioMap(gl: THREE.WebGLRenderer) {
+  const pmrem = new THREE.PMREMGenerator(gl);
+  const rt = pmrem.fromScene(buildStudio(), 0.04);
+  pmrem.dispose();
+  return rt;
+}
+
 function glowTexture() {
   const canvas = document.createElement("canvas");
   canvas.width = canvas.height = 128;
@@ -83,12 +91,7 @@ export default function HeroEnvironment({
   const shade = useRef<THREE.ShadowMaterial>(null);
   const gl = useThree(s => s.gl);
   const glow = useMemo(() => glowTexture(), []);
-  const env = useMemo(() => {
-    const pmrem = new THREE.PMREMGenerator(gl);
-    const rt = pmrem.fromScene(buildStudio(), 0.04);
-    pmrem.dispose();
-    return rt;
-  }, [gl]);
+  const env = useMemo(() => studioMap(gl), [gl]);
 
   useEffect(() => () => env.dispose(), [env]);
 

@@ -21,14 +21,17 @@ export default function LoaderChoice({ ref, onPause }: Props) {
   const [asked, setAsked] = useState(false);
   if (asking && !asked) setAsked(true);
   if (!asked) return null;
+  // Only the keys hold the countdown: the note above them does not.
+  const hover = {
+    onPointerEnter: () => onPause("pointer", true),
+    onPointerLeave: () => onPause("pointer", false),
+  };
   return (
     <div
       ref={ref}
       className="loader-choice"
       data-auto=""
       data-chosen={asking ? undefined : ""}
-      onPointerEnter={() => onPause("pointer", true)}
-      onPointerLeave={() => onPause("pointer", false)}
       onFocus={() => onPause("focus", true)}
       onBlur={() => onPause("focus", false)}
       onKeyDown={e => {
@@ -43,8 +46,10 @@ export default function LoaderChoice({ ref, onPause }: Props) {
       }}
     >
       <p className="loader-note load-label">Best with sound on</p>
-      <Button onClick={() => chooseSound(true)}>Enter with sound</Button>
-      <Button variant="secondary" onClick={() => chooseSound(false)}>
+      <Button onClick={() => chooseSound(true)} {...hover}>
+        Enter with sound
+      </Button>
+      <Button variant="secondary" onClick={() => chooseSound(false)} {...hover}>
         Enter in silence
       </Button>
     </div>

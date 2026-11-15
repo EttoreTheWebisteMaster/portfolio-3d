@@ -12,10 +12,16 @@ import LoaderChoice from "./LoaderChoice";
 
 const C = 160;
 const R = 150;
-/** The countdown, 3 → 0, takes at least this long, and is paced by the real load: it never gets ahead of the progress line. */
+/** The countdown, 3 → 0, takes at least this long, at one constant speed. */
 const COUNT_MS = 1500;
 /** The first visit is longer, so there is time to read the two buttons and choose. */
 const FIRST_COUNT_MS = 3000;
+/** The countdown waits for this many smooth frames in a row (each under STEADY_MS) before it starts, and gives up waiting after SETTLE_MAX_MS. */
+const STEADY_FRAMES = 6;
+const STEADY_MS = 24;
+const SETTLE_MAX_MS = 1200;
+/** If the fonts never report in, it starts anyway after this long. */
+const FONT_MAX_MS = 2000;
 /** The bars close in over this long, once everything has loaded. */
 const BARS_MS = 300;
 /** Held on 0 before the climax: a breath of suspense. */
@@ -23,6 +29,44 @@ const HOLD_MS = 130;
 
 /** The bars' close-in is this far along when the hero's opening shot starts. */
 const HERO_AT = 0.45;
+
+/** The countdown is planned a little longer than the quicker of the last two loads, so it ends just after them. */
+const LOAD_MARGIN = 1.15;
+/** However slow a past load was, the countdown is never planned longer than this. */
+const MAX_PLAN_MS = 8000;
+const LOAD_KEY = "load-ms";
+
+/** The length of the countdown: constant speed from start to end, never under `floor`. `spent` is how long the load has already run when it starts. */
+function planMs(floor: number, spent: number) {
+  try {
+    const past = (window.localStorage.getItem(LOAD_KEY) ?? "")
+      .split(",")
+      .map(Number)
+      .filter(ms => ms > 0);
+    if (past.length === 0) return floor;
+    return Math.min(
+      Math.max(floor, Math.min(...past) * LOAD_MARGIN - spent),
+      MAX_PLAN_MS
+    );
+  } catch {
+    return floor;
+  }
+}
+
+function saveLoadMs(ms: number) {
+  try {
+    const past = (window.localStorage.getItem(LOAD_KEY) ?? "")
+      .split(",")
+      .map(Number)
+      .filter(n => n > 0);
+    window.localStorage.setItem(
+      LOAD_KEY,
+      [Math.round(ms), ...past].slice(0, 2).join(",")
+    );
+  } catch {
+    // Storage can be blocked: the next visit plans with the default length.
+  }
+}
 
 /**
  * Loading page: a film countdown (3 → 0) that starts at once and runs in CSS, on the compositor, so the heavy scene setup behind it can never stall it.
@@ -38,6 +82,8 @@ export default function Loader() {
   const choice = useRef<HTMLDivElement>(null);
   const exit = useRef<() => void>(() => {});
   const counted = useRef<Animation[] | null>(null);
+  // How fast the countdown runs (1 = its own length), and when it started.
+  const pace = useRef({ rate: 1, at: 0 });
   // Coming back from a case study the visitor has already entered: no loading page, the page is theirs at once.
   const [skip] = useState(() => getLoading().entered);
   const [phase, setPhase] = useState<"on" | "out" | "gone">(
@@ -63,33 +109,57 @@ export default function Loader() {
     return release;
   }, [skip]);
 
-  // The countdown starts as soon as the numeral's font is in (or after 0.4s at most). Its CSS animations are paused; the ticker scrubs them.
+  // The countdown starts once the numeral's font is in and the page is drawing steadily (a few smooth frames in a row), so it never begins on a stalled frame. Its CSS animations are paused; the ticker scrubs them.
   useEffect(() => {
     if (skip || getLoading().entered) return;
     let live = true;
+    const mounted = performance.now();
     const start = () => {
       const el = root.current;
       if (!live || !el || counted.current) return;
       el.style.setProperty("--count", `${count}ms`);
       el.dataset.count = "";
-      // The CSS animations are paused and scrubbed by the ticker, so the digits follow the real load.
+      // The digits and the sweep are CSS animations that run by themselves on the compositor, at one constant rate (a long frame cannot stutter them). The ticker only pauses them and reads the time.
+      const now = performance.now();
+      const rate = count / planMs(count, now - mounted);
+      pace.current = { rate, at: now };
       counted.current = (
         leader.current?.getAnimations({ subtree: true }) ?? []
       ).map(a => {
         a.pause();
         a.currentTime = 0;
+        a.playbackRate = rate;
+        a.play();
         return a;
       });
     };
-    const wait = window.setTimeout(start, 400);
-    void document.fonts.ready.then(start);
+    // Steady = STEADY_FRAMES frames in a row, each quicker than STEADY_MS; it never waits longer than SETTLE_MAX_MS.
+    let raf = 0;
+    const settle = () => {
+      const began = performance.now();
+      let before = began;
+      let steady = 0;
+      const frame = (now: number) => {
+        steady = now - before < STEADY_MS ? steady + 1 : 0;
+        before = now;
+        if (steady >= STEADY_FRAMES || now - began > SETTLE_MAX_MS) start();
+        else raf = requestAnimationFrame(frame);
+      };
+      raf = requestAnimationFrame(frame);
+    };
+    const wait = window.setTimeout(start, FONT_MAX_MS);
+    void document.fonts.ready.then(() => {
+      window.clearTimeout(wait);
+      settle();
+    });
     return () => {
       live = false;
       window.clearTimeout(wait);
+      cancelAnimationFrame(raf);
     };
   }, [skip, count]);
 
-  // The progress line follows the real load; once the countdown has landed and the scene is ready, the bars close in.
+  // The countdown (digits, sweep, the key's fill) runs on its own linear clock; the progress line shows the real load. Once the countdown has landed and the scene is ready, the bars close in.
   useEffect(() => {
     if (skip || getLoading().entered) return;
     let loaded = 0;
@@ -97,17 +167,51 @@ export default function Loader() {
     let held = -1;
     let percent = -1;
     let heroOn = false;
-    let countT = 0;
     let shown = -1;
+    // The countdown: constant speed, 3 → 0, never under its own length (1.5s, 3s on a first visit), planned from the past loads. It does not follow the load; it ends only once everything is in.
+    let countT = -1;
+    let last = 0;
+    let stopped = false;
+    let frozen: Animation[] = [];
+    let saved = false;
+    const t0 = performance.now();
     const bars = document.querySelectorAll<HTMLElement>(".bar");
     const tick = (_: number, ms: number) => {
       const { progress, started } = getLoading();
       const dt = Math.min(ms, 50);
-      // Real progress, eased so chunky downloads still read as a smooth line.
-      loaded += (progress - loaded) * (1 - Math.exp(-dt / 140));
-      if (progress === 1 && loaded > 0.97) loaded = 1;
       const el = root.current;
       if (!el) return;
+      const now = performance.now();
+      // Once a choice is made the keys fade away, and a pointer left on them must not hold the countdown.
+      const paused =
+        !hasSoundChoice() && (over.current.pointer || over.current.focus);
+      const anims = counted.current;
+      if (anims) {
+        if (countT < 0) {
+          // First frame with the countdown running: read it back from the moment it started.
+          countT = Math.min((now - pace.current.at) * pace.current.rate, count);
+          last = now;
+        }
+        if (paused !== stopped) {
+          stopped = paused;
+          // Only the ones still running: playing a finished animation would start it over.
+          if (paused) {
+            frozen = anims.filter(a => a.playState === "running");
+            frozen.forEach(a => a.pause());
+          } else frozen.forEach(a => a.play());
+        }
+        // Real time (not the ticker's, which smooths long frames).
+        if (!paused)
+          countT = Math.min(countT + (now - last) * pace.current.rate, count);
+        last = now;
+      }
+      if (progress >= 1 && !saved) {
+        saved = true;
+        saveLoadMs(now - t0);
+      }
+      // The progress line is the real load, eased so chunky downloads still read as a smooth line. It is not tied to the countdown.
+      loaded += (progress - loaded) * (1 - Math.exp(-dt / 140));
+      if (progress === 1 && loaded > 0.97) loaded = 1;
       if (line.current)
         line.current.style.transform = `scaleX(${loaded.toFixed(4)})`;
       const pct = Math.floor(loaded * 100);
@@ -118,24 +222,13 @@ export default function Loader() {
         if (pct === 100 && status.current && !hasSoundChoice())
           status.current.textContent = "Loaded. Choose sound or silence.";
       }
-      // Once a choice is made the keys fade away, and a pointer left on them must not hold the countdown.
-      const paused =
-        !hasSoundChoice() && (over.current.pointer || over.current.focus);
-      const anims = counted.current;
-      if (anims) {
-        // Real time at most, and never past the load: slow loads stretch the countdown, fast ones keep the 1.5s floor.
-        const step = paused ? 0 : dt;
-        countT =
-          countT < count
-            ? Math.min(countT + step, Math.max(countT, loaded * count))
-            : countT + step;
-        anims.forEach(a => {
-          a.currentTime = countT;
-        });
-      }
-      const landed = countT >= count;
+      const counted0 = countT >= count;
+      // It lands on 0 only when everything is in.
+      const landed = counted0 && progress >= 1;
       // Reduced motion has no animated digits: the numeral is stepped by the same clock.
-      const step = landed ? 3 : Math.min(2, Math.floor((countT / count) * 3));
+      const step = counted0
+        ? 3
+        : Math.min(2, Math.floor((Math.max(countT, 0) / count) * 3));
       if (step !== shown && leader.current) {
         shown = step;
         leader.current.dataset.step = String(step);
@@ -143,7 +236,7 @@ export default function Loader() {
       // The silence key fills with the countdown (the hover shutter, scrubbed), and presses itself when it ends.
       choice.current?.style.setProperty(
         "--p",
-        String(Math.min(countT / count, 1))
+        String(Math.min(Math.max(countT, 0) / count, 1))
       );
       if (landed && !paused && !hasSoundChoice()) {
         if (status.current) status.current.textContent = "Entering in silence.";
