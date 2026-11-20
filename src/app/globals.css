@@ -2384,11 +2384,12 @@ html[data-scrub] .timecode .track::after {
     letter-spacing: inherit;
     color: inherit;
   }
-  /* Large screens: it is read from further away, one step up. */
+  /* Large screens: it is read from further away, one step up, and the small words lift from fog to ash so they hold 4.5:1 over the lit part of the set. */
   @media (min-width: 1600px) {
     font-size: var(--text-body);
     & span {
       font-size: var(--text-label);
+      color: var(--color-ash);
     }
   }
 }
