@@ -3421,17 +3421,6 @@ html[data-scrub] .timecode .track::after {
     color: var(--text-secondary);
   }
 }
-/* Colour and typeface share one row on wide screens, so both read on one page. */
-@utility system-pair {
-  grid-column: 1 / -1;
-  display: grid;
-  gap: var(--space-7) var(--gutter);
-  min-width: 0;
-  @media (min-width: 1024px) {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    align-items: stretch;
-  }
-}
 /* The palette as one mosaic: a 4 × 5 grid with every cell taken, so no gap is left anywhere (squares, wide and tall tiles). */
 @utility case-swatches {
   display: grid;
