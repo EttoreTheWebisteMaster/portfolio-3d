@@ -145,8 +145,8 @@ const headAt = new THREE.Vector3();
 export const feet = new THREE.Vector3();
 export const top = new THREE.Vector3();
 
-/** Is the cursor (x, y in -1..1, y up) on the capsule from `feet` to `top` (projected here), `fat` wide in screen terms? */
-export function overCapsule(
+/** How close the cursor (x, y in -1..1, y up) is to the capsule from `feet` to `top` (projected here), `fat` wide in screen terms: 0 on its axis, 1 at its edge, above 1 outside. */
+function capsuleFit(
   x: number,
   y: number,
   camera: THREE.Camera,
@@ -155,7 +155,7 @@ export function overCapsule(
 ) {
   feet.project(camera);
   top.project(camera);
-  if (feet.z > 1 || top.z > 1) return false;
+  if (feet.z > 1 || top.z > 1) return Infinity;
   const ax = feet.x * aspect;
   const dx = top.x * aspect - ax;
   const dy = top.y - feet.y;
@@ -164,11 +164,22 @@ export function overCapsule(
   const py = y - feet.y;
   const t = THREE.MathUtils.clamp((px * dx + py * dy) / len2, 0, 1);
   const r = fat * Math.sqrt(len2) + 0.02;
-  return Math.hypot(px - dx * t, py - dy * t) < r;
+  return Math.hypot(px - dx * t, py - dy * t) / r;
 }
 
-/** Is the cursor on this robot? A capsule from its feet to its head, so it holds however the robot is tilted. */
-export function overRobot(
+/** Is the cursor on the capsule? */
+export function overCapsule(
+  x: number,
+  y: number,
+  camera: THREE.Camera,
+  aspect: number,
+  fat: number
+) {
+  return capsuleFit(x, y, camera, aspect, fat) < 1;
+}
+
+/** How well the cursor lands on this robot: a capsule from its feet to its head, so it holds however the robot is tilted. Under 1 is a hit. */
+export function robotFit(
   x: number,
   y: number,
   camera: THREE.Camera,
@@ -180,7 +191,7 @@ export function overRobot(
     .set(0, 3.1 * w.base, 0)
     .applyQuaternion(w.robot.quaternion)
     .add(w.robot.position);
-  return overCapsule(x, y, camera, aspect, 0.24);
+  return capsuleFit(x, y, camera, aspect, 0.24);
 }
 
 const facing = new THREE.Vector3();

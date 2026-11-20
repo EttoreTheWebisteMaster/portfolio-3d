@@ -43,17 +43,18 @@ export default function useProgrammeMotion(
                 i * 0.07
               );
             });
+          // The drum arrives together with the title and the line under it (the selected project's text): the selection, the row above and the row below all at one moment.
           tl.fromTo(
             ".prog-row",
             { opacity: 0, ...(move ? { x: 24 } : {}) },
-            { opacity: 1, x: 0, duration: 0.4, stagger: 0.04 },
-            0.35
+            { opacity: 1, x: 0, duration: 0.4 },
+            0.1
           );
           tl.fromTo(
-            ".projects-track",
-            { opacity: 0, ...(move ? { scaleY: 0 } : {}) },
-            { opacity: 1, scaleY: 1, duration: 0.5, transformOrigin: "top" },
-            0.6
+            ".projects-pick",
+            { opacity: 0 },
+            { opacity: 1, duration: 0.4 },
+            0.1
           );
 
           // Opened on this page by its URL: the programme waits for the loader, then arrives in real time.
@@ -126,7 +127,7 @@ export default function useProgrammeMotion(
             el.inert = false;
             gsap.set(el, { clearProps: "visibility" });
             gsap.set(
-              el.querySelectorAll("[data-in], .prog-row, .projects-track"),
+              el.querySelectorAll("[data-in], .prog-row, .projects-pick"),
               {
                 clearProps: "opacity,transform",
               }
