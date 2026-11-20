@@ -17,7 +17,7 @@ import {
   hands,
   letGo,
   offScreen,
-  overRobot,
+  robotFit,
   pickUp,
   ROOM,
   sendOff,
@@ -388,19 +388,29 @@ function Crowd({
       view.held = false;
     }
 
-    // Who is under the cursor: the nearest seated robot it touches.
+    // Who is under the cursor: the robot whose actual body the ray hits first. Only robots near the cursor are tested; when it just misses every body, the closest one by outline still counts.
     let hovered: Walker | null = null;
     if (live && !state.held) {
-      let best = Infinity;
+      let nearest = Infinity;
+      let closest = Infinity;
+      let near: Walker | null = null;
+      ray.setFromCamera(ndc.set(target.x, -target.y), camera);
+      ray.layers.enableAll();
       for (const w of walkers) {
         if (w.mode === "held" || w.last < 1 || !w.robot.visible) continue;
-        if (!overRobot(target.x, -target.y, camera, aspect, w)) continue;
-        const d = camera.position.distanceToSquared(w.robot.position);
-        if (d < best) {
-          best = d;
+        const fit = robotFit(target.x, -target.y, camera, aspect, w);
+        if (fit >= 1) continue;
+        const d = ray.intersectObject(w.robot, true)[0]?.distance;
+        if (d !== undefined && d < nearest) {
+          nearest = d;
           hovered = w;
         }
+        if (fit < closest) {
+          closest = fit;
+          near = w;
+        }
       }
+      hovered ??= near;
     }
     state.hover = hovered;
     const mode = state.held ? "held" : hovered ? "hover" : null;

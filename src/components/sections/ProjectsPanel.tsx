@@ -30,11 +30,8 @@ export default function ProjectsPanel() {
   // Only a project the visitor picked is announced; the timer's own changes are not.
   const [announce, setAnnounce] = useState(false);
   const first = useRef(true);
-  // Auto changes (timer, Next) scroll the index to the new row; the visitor's own hovers never move it under the cursor.
-  const auto = useRef(true);
 
   const show = (i: number, byVisitor = false) => {
-    auto.current = !byVisitor;
     setAnnounce(byVisitor);
     // Cut to the new trailer now, so the clock below never reads the old one's end.
     view.index = i;
@@ -165,11 +162,7 @@ export default function ProjectsPanel() {
             <ButtonArrow />
           </button>
         </div>
-        <ProjectsIndex
-          active={active}
-          auto={auto}
-          onPick={i => show(i, true)}
-        />
+        <ProjectsIndex active={active} onPick={i => show(i, true)} />
       </div>
     </div>
   );
