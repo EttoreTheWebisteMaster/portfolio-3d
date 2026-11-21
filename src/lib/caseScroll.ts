@@ -119,24 +119,16 @@ export function scrollScenes(scroller: HTMLElement) {
       );
       unveil(gsap.utils.toArray(el.children), el, "top 100%");
     } else if (kind === "swatches")
-      // The colours are dealt onto the table: each fans in from the floor, then squares up.
+      // The colours settle into the rectangle: each fades up inside its own cell, nothing leaves the frame.
       gsap.fromTo(
         el.children,
-        {
-          opacity: 0,
-          y: 140,
-          scaleY: 0.7,
-          rotation: (i: number) => (i - 4.5) * 4,
-          transformOrigin: "50% 100%",
-        },
+        { opacity: 0, scale: 0.9, transformOrigin: "50% 50%" },
         {
           opacity: 1,
-          y: 0,
-          scaleY: 1,
-          rotation: 0,
-          duration: 1.3,
-          ease: "power4.out",
-          stagger: 0.07,
+          scale: 1,
+          duration: 1.1,
+          ease: "power3.out",
+          stagger: 0.06,
           scrollTrigger: at(el, "top 88%"),
         }
       );

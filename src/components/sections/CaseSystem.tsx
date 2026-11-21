@@ -15,52 +15,59 @@ export default function CaseSystem({
         {episodeTitle(content, "system")}
       </h2>
 
-      <div className="system-block">
-        <p data-reveal="up" className="system-label">
-          <span>01</span> Colour
-        </p>
-        <ul data-reveal="swatches" className="case-swatches">
-          {content.swatches.map(({ name, tone, hex }) => (
-            <li key={tone} className="swatch" data-tone={tone}>
-              <span className="swatch-name">{name}</span>
-              <span className="swatch-hex">{hex}</span>
-            </li>
-          ))}
-        </ul>
-      </div>
-
-      <div className="system-block">
-        <p data-reveal="up" className="system-label">
-          <span>02</span> Typeface
-        </p>
-        <div className="case-type">
-          <p
-            data-reveal="specimen"
-            className="case-specimen"
-            aria-label={`Aa ${typeface}`}
-          >
-            <span aria-hidden="true">A</span>
-            <span aria-hidden="true">a</span>
+      <div className="system-pair">
+        <div className="system-block">
+          <p data-reveal="up" className="system-label">
+            <span>01</span> Colour
           </p>
-          <div data-reveal="block" className="case-type-note">
-            <strong>{typeface}</strong>
-            <span>{content.typeNote}</span>
-          </div>
-          <ul data-reveal="rows" className="case-weights">
-            {weights.map(({ name, value }) => (
-              <li key={value} className="weight" data-weight={value}>
-                <span className="weight-name">
-                  {name} <b>{value}</b>
-                </span>
-                <span className="weight-sample">{content.weightSample}</span>
+          <ul
+            data-reveal="swatches"
+            className="case-swatches"
+            data-count={content.swatches.length}
+          >
+            {content.swatches.map(({ name, tone, hex }) => (
+              <li key={tone} className="swatch" data-tone={tone}>
+                <span className="swatch-name">{name}</span>
+                <span className="swatch-hex">{hex}</span>
               </li>
             ))}
           </ul>
         </div>
-        <p data-drift="36" className="system-glyphs" aria-hidden="true">
-          {glyphs}
-        </p>
+
+        <div className="system-block">
+          <p data-reveal="up" className="system-label">
+            <span>02</span> Typeface
+          </p>
+          <div className="case-type">
+            <p
+              data-reveal="specimen"
+              className="case-specimen"
+              aria-label={`Aa ${typeface}`}
+            >
+              <span aria-hidden="true">A</span>
+              <span aria-hidden="true">a</span>
+            </p>
+            <div data-reveal="block" className="case-type-note">
+              <strong>{typeface}</strong>
+              <span>{content.typeNote}</span>
+            </div>
+            <ul data-reveal="rows" className="case-weights">
+              {weights.map(({ name, value }) => (
+                <li key={value} className="weight" data-weight={value}>
+                  <span className="weight-name">
+                    {name} <b>{value}</b>
+                  </span>
+                  <span className="weight-sample">{content.weightSample}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
       </div>
+
+      <p data-drift="36" className="system-glyphs" aria-hidden="true">
+        {glyphs}
+      </p>
 
       <div className="system-block">
         <p data-reveal="up" className="system-label">

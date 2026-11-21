@@ -1,6 +1,6 @@
 import * as THREE from "three";
 
-import { diveState } from "@/lib/caseMotion";
+import { diveBlur, diveState } from "@/lib/caseMotion";
 import { ease, journey, seg } from "@/lib/journey";
 import { pointer } from "@/lib/pointer";
 
@@ -201,7 +201,11 @@ export function publishAbout(width: number, height: number) {
     style.setProperty("--about-top", `${f.topPx.toFixed(1)}px`);
     style.setProperty("--about-feet", `${f.feetPx.toFixed(1)}px`);
   }
-  const blur = (22 * ease(seg(diveState.v, [0.5, 0.95]))).toFixed(1);
+  const blur = (
+    diveState.out
+      ? 22 * ease(seg(diveState.v, [0.5, 0.95]))
+      : diveBlur(diveState.v)
+  ).toFixed(1);
   if (blur !== blurred) {
     blurred = blur;
     style.setProperty("--blur", blur);

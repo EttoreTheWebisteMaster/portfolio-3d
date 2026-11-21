@@ -1,5 +1,5 @@
 import { gsap } from "@/lib/gsap";
-import { cruise } from "@/lib/journey";
+import { cruise, seg } from "@/lib/journey";
 import { onEnter } from "@/lib/loading";
 
 /** The case study's landing: the footage is still blurred from the dive, and the copy starts this many seconds in. */
@@ -28,7 +28,22 @@ export const caseState = {
 };
 
 /** How far the camera has flown into the Projects screen, 0 (the cinema) → 1 (the screen fills the frame). Read by the 3D rig. */
-export const diveState = { v: 0 };
+export const diveState = {
+  v: 0,
+  /** Flying back out (case study → Projects): the way out keeps its own lens blur, untouched. */
+  out: false,
+};
+
+/** The footage's resting blur in the case study, in px. */
+export const CASE_BLUR = 9;
+/** The blur ramps up over this many seconds either side of the landing: 0 → CASE_BLUR from half a second before to half a second after. */
+const BLUR_SPAN = 0.5;
+/** Where the blur stands at the landing: half way. The case study's footage picks up from here. */
+export const BLUR_AT_LANDING = CASE_BLUR / 2;
+
+/** Projects → case study: the screen stays sharp until `BLUR_SPAN` before the landing, then softens towards the landing. */
+export const diveBlur = (v: number) =>
+  BLUR_AT_LANDING * seg(v, [1 - BLUR_SPAN / DIVE_SECONDS, 1]);
 
 /** The trailer keeps rolling through the dive and stops here (how far the camera has flown), just before the overlay dissolves in. */
 const HOLD_AT = 0.85;
@@ -108,6 +123,7 @@ export function openCaseStudy(go: () => void) {
     return;
   }
   caseState.diving = true;
+  diveState.out = false;
   document.documentElement.dataset.dive = "";
   go();
   guard();
@@ -144,6 +160,7 @@ export function retreatFromCase(done?: () => void) {
   // Whatever way the case study was left (X, Esc, Back), the interface stays away until the camera is out.
   hush(true);
   abandonDive();
+  diveState.out = true;
   gsap.to(diveState, {
     v: 0,
     duration: DIVE_SECONDS,
@@ -152,6 +169,7 @@ export function retreatFromCase(done?: () => void) {
     onComplete: () => {
       // Only now do the text and bars come back, and the trailer rolls on from where it stopped.
       caseState.held = false;
+      diveState.out = false;
       hush(false);
       done?.();
     },
