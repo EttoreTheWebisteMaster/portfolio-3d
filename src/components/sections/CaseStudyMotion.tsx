@@ -5,11 +5,19 @@ import { useRef } from "react";
 import { addEntrance } from "@/lib/fx";
 import { scrollScenes } from "@/lib/caseScroll";
 import { gsap, type SplitText as Split, useGSAP } from "@/lib/gsap";
-import { LAND, LAND_SCALE, whenLanded } from "@/lib/caseMotion";
+import {
+  BLUR_AT_LANDING,
+  CASE_BLUR,
+  LAND,
+  LAND_SCALE,
+  whenLanded,
+} from "@/lib/caseMotion";
 import { view } from "@/lib/projects";
 
 /** The trailer is blurry for this long before it cuts to its still, in seconds after the landing. */
 const SWAP_AT = 3;
+/** The scroll scenes are built this many seconds after the landing, once the hero's entrance is under way. */
+const SCENES_AT = 1.2;
 /** The footage melts into its still over this many seconds. */
 const SWAP_FADE = 1.2;
 
@@ -41,11 +49,21 @@ export default function CaseStudyMotion({
         { scale: LAND_SCALE },
         { scale: 1, duration: 2.6, ease: "power3.out", paused: true }
       );
+      // The footage stays sharp through the dive, picks the blur up half way at the landing and finishes it half a second later.
+      const blur = gsap.fromTo(
+        backdrop,
+        { "--trailer-blur": `${BLUR_AT_LANDING}px` },
+        {
+          "--trailer-blur": `${CASE_BLUR}px`,
+          duration: 0.5,
+          ease: "none",
+          paused: true,
+        }
+      );
       const soften = gsap.fromTo(
         backdrop,
-        { "--trailer-blur": "22px", "--trailer-light": 1 },
+        { "--trailer-light": 1 },
         {
-          "--trailer-blur": "9px",
           "--trailer-light": 0.5,
           duration: 2.4,
           ease: "power2.out",
@@ -63,8 +81,15 @@ export default function CaseStudyMotion({
       // Every opening is the same: the footage first, the still only after its time.
       if (poster) gsap.set(poster, { opacity: 0 });
       if (video) delete video.dataset.parked;
+      // The scroll scenes below the hero are set up once the landing has settled, never in the middle of the dive.
+      let scenes = () => {};
+      let later = 0;
       const stopWait = whenLanded(() => {
+        later = window.setTimeout(() => {
+          if (scroller) scenes = scrollScenes(scroller);
+        }, SCENES_AT * 1000);
         scale.play();
+        blur.play();
         soften.play();
         enter.play();
         if (poster && video)
@@ -79,8 +104,8 @@ export default function CaseStudyMotion({
             },
           });
       });
-      const scenes = scroller ? scrollScenes(scroller) : () => {};
       return () => {
+        window.clearTimeout(later);
         stopWait();
         cut?.kill();
         scenes();
@@ -89,7 +114,10 @@ export default function CaseStudyMotion({
     });
 
     mm.add("(prefers-reduced-motion: reduce)", () => {
-      gsap.set(backdrop, { "--trailer-blur": "9px", "--trailer-light": 0.5 });
+      gsap.set(backdrop, {
+        "--trailer-blur": `${CASE_BLUR}px`,
+        "--trailer-light": 0.5,
+      });
       gsap.set(items, { visibility: "visible" });
       // No autoplaying loop for visitors who asked for less motion: the still stays, "Play trailer" starts the footage.
       if (poster) gsap.set(poster, { opacity: 1 });

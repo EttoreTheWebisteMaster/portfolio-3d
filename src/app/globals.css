@@ -1411,22 +1411,6 @@ html[data-scrub] .timecode .track::after {
   --btn-text: var(--color-cream);
   --btn-wipe: color-mix(in srgb, var(--color-ink) 88%, var(--color-cream));
 }
-/* Auto-advance: set --p 0→1 over 10s */
-@utility btn-timer {
-  @apply btn;
-  --btn-rest: var(--color-night);
-  --btn-text: var(--color-cream);
-  --btn-wipe: color-mix(in srgb, var(--color-night) 85%, var(--color-cream));
-  &::after {
-    content: "";
-    position: absolute;
-    left: 0;
-    bottom: 0;
-    height: 3px;
-    width: calc(var(--p, 0) * 100%);
-    background: var(--color-yellow);
-  }
-}
 @utility btn-sm {
   height: 44px;
   padding: 0 20px;
@@ -3421,16 +3405,104 @@ html[data-scrub] .timecode .track::after {
     color: var(--text-secondary);
   }
 }
-/* The palette as one mosaic: a 4 × 5 grid with every cell taken, so no gap is left anywhere (squares, wide and tall tiles). */
+/* Colour and typeface share one row on wide screens, so both read on one page. */
+@utility system-pair {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: var(--space-7) var(--gutter);
+  min-width: 0;
+  @media (min-width: 1024px) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: stretch;
+  }
+  /* Each block takes its own half, not the full row. */
+  & > .system-block {
+    grid-column: auto;
+  }
+}
+/* The palette as one mosaic that always fills its rectangle. A layout is picked by the number of colours and each colour takes the area named for its position (a, b, c…), so any palette tiles with no gap: squares, wide and tall pieces. Other counts fall back to two even columns. */
 @utility case-swatches {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  grid-template-rows: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-auto-rows: minmax(0, 1fr);
   gap: var(--space-1);
   aspect-ratio: 4 / 5;
+  /* Nothing, not even a tile mid-animation, leaves the rectangle. */
+  overflow: hidden;
+  border-radius: var(--space-1);
   @media (min-width: 1024px) {
     aspect-ratio: auto;
     height: min(58dvh, 640px);
+  }
+  & > :last-child:nth-child(odd) {
+    grid-column: 1 / -1;
+  }
+  &[data-count="4"] {
+    grid-template-areas: "a b b" "a c d";
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-rows: repeat(2, minmax(0, 1fr));
+  }
+  &[data-count="5"] {
+    grid-template-areas: "a b c c" "a d d e";
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-rows: repeat(2, minmax(0, 1fr));
+  }
+  &[data-count="6"] {
+    grid-template-areas: "a a b b" "a a c d" "e e e f";
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-rows: repeat(3, minmax(0, 1fr));
+  }
+  &[data-count="7"] {
+    grid-template-areas: "a a b b" "a a c d" "e f g g";
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-rows: repeat(3, minmax(0, 1fr));
+  }
+  &[data-count="8"] {
+    grid-template-areas: "a a b c" "a a d d" "e f g h";
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-rows: repeat(3, minmax(0, 1fr));
+  }
+  &[data-count="10"] {
+    grid-template-areas: "a a b c" "a a d c" "e f d g" "e h h g" "i i j j";
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-rows: repeat(5, minmax(0, 1fr));
+  }
+  &[data-count="4"],
+  &[data-count="5"],
+  &[data-count="6"],
+  &[data-count="7"],
+  &[data-count="8"],
+  &[data-count="10"] {
+    & > :nth-child(1) {
+      grid-area: a;
+    }
+    & > :nth-child(2) {
+      grid-area: b;
+    }
+    & > :nth-child(3) {
+      grid-area: c;
+    }
+    & > :nth-child(4) {
+      grid-area: d;
+    }
+    & > :nth-child(5) {
+      grid-area: e;
+    }
+    & > :nth-child(6) {
+      grid-area: f;
+    }
+    & > :nth-child(7) {
+      grid-area: g;
+    }
+    & > :nth-child(8) {
+      grid-area: h;
+    }
+    & > :nth-child(9) {
+      grid-area: i;
+    }
+    & > :nth-child(10) {
+      grid-area: j;
+    }
   }
 }
 @utility swatch {
@@ -3439,54 +3511,44 @@ html[data-scrub] .timecode .track::after {
   justify-content: flex-end;
   gap: var(--space-1);
   min-width: 0;
+  overflow: hidden;
   padding: var(--space-3);
   border-radius: var(--space-1);
-  transform-origin: 50% 100%;
   color: var(--color-ink);
   @media (max-width: 1023px) {
     padding: var(--space-2);
   }
   &[data-tone="move"] {
-    grid-area: 1 / 1 / 3 / 3;
     background: var(--color-pausa-move);
     color: var(--color-pausa-panel);
   }
   &[data-tone="breathe"] {
-    grid-area: 1 / 3 / 2 / 4;
     background: var(--color-pausa-breathe);
   }
   &[data-tone="snack"] {
-    grid-area: 1 / 4 / 3 / 5;
     background: var(--color-pausa-snack);
   }
   &[data-tone="outside"] {
-    grid-area: 2 / 3 / 4 / 4;
     background: var(--color-pausa-outside);
   }
   &[data-tone="water"] {
-    grid-area: 3 / 1 / 5 / 2;
     background: var(--color-pausa-water);
   }
   &[data-tone="eyes"] {
-    grid-area: 3 / 2 / 4 / 3;
     background: var(--color-pausa-eyes);
     color: var(--color-cream-deep);
     outline: 1px solid var(--hairline);
   }
   &[data-tone="talk"] {
-    grid-area: 3 / 4 / 5 / 5;
     background: var(--color-pausa-talk);
   }
   &[data-tone="tidy"] {
-    grid-area: 4 / 2 / 5 / 4;
     background: var(--color-pausa-tidy);
   }
   &[data-tone="paper"] {
-    grid-area: 5 / 1 / 6 / 3;
     background: var(--color-pausa-paper);
   }
   &[data-tone="panel"] {
-    grid-area: 5 / 3 / 6 / 5;
     background: var(--color-pausa-panel);
   }
 }
@@ -3512,6 +3574,9 @@ html[data-scrub] .timecode .track::after {
   column-gap: var(--gutter);
   row-gap: var(--space-5);
   align-items: center;
+  /* Fills the block to the mosaic's height beside it. */
+  flex: 1;
+  align-content: center;
 }
 /* A heavy and a light, side by side: the whole range of the face in two letters. */
 @utility case-specimen {

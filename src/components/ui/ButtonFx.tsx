@@ -4,8 +4,7 @@ import { useEffect } from "react";
 
 import { play } from "@/lib/sound";
 
-const SELECTOR =
-  ".btn-primary, .btn-secondary, .btn-ink, .btn-timer, .projects-next";
+const SELECTOR = ".btn-primary, .btn-secondary, .btn-ink, .projects-next";
 
 /** One delegated listener for every button: feeds the cursor into CSS (--mx/--my light) and ticks on click. */
 export default function ButtonFx() {

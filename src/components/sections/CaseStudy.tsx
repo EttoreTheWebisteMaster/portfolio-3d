@@ -67,7 +67,7 @@ export default function CaseStudy({
             {project.summary ?? project.lead}
           </p>
         </div>
-        <CaseEpisodes content={content} />
+        <CaseEpisodes content={content} image={project.image} />
       </header>
 
       <CaseStory content={content} />
