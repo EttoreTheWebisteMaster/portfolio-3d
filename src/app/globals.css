@@ -150,6 +150,10 @@
 
 /* ─── Base ───────────────────────────────────────────────── */
 @layer base {
+  /* Parallax layers move every frame: keep each on its own compositor layer. */
+  [data-page]:not(.hero) [data-depth] {
+    will-change: translate;
+  }
   /* Semantic colours: screen by default, paper (About) via [data-theme="paper"] */
   :root,
   [data-theme="screen"] {

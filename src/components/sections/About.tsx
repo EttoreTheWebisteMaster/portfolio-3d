@@ -8,7 +8,12 @@ export default function About() {
 
       <div className="about-layout">
         <div className="about-copy">
-          <p data-fx="display" className="fx about-headline" aria-hidden>
+          <p
+            data-fx="display"
+            data-depth="0.5"
+            className="fx about-headline"
+            aria-hidden
+          >
             Ask me <mark>Anything</mark> <br />
             about Ettore.
           </p>
@@ -18,7 +23,12 @@ export default function About() {
         </div>
       </div>
 
-      <p data-fx="stack" data-early className="fx about-caption max-md:hidden">
+      <p
+        data-fx="stack"
+        data-early
+        data-depth="0.25"
+        className="fx about-caption max-md:hidden"
+      >
         <strong>ROB-092</strong>
         <span>Public relations unit</span>
       </p>

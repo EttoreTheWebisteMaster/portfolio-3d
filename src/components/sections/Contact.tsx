@@ -21,23 +21,28 @@ export default function Contact() {
       <h2 className="sr-only">Contact Ettore Serra</h2>
 
       <div className="contact-layout">
-        <p data-fx="text" className="fx contact-headline" aria-hidden>
+        <p
+          data-fx="text"
+          data-depth="0.5"
+          className="fx contact-headline"
+          aria-hidden
+        >
           Let&apos;s work
           <br />
           <mark>together</mark>
         </p>
-        <p data-fx="text" className="fx contact-pitch">
+        <p data-fx="text" data-depth="0.3" className="fx contact-pitch">
           Open to frontend and full-stack roles. Turin or remote, employee or
           freelance.
         </p>
-        <div data-fx="item" className="fx">
+        <div data-fx="item" data-depth="0.18" className="fx">
           <ContactActions />
         </div>
       </div>
 
       <ContactStage />
 
-      <dl data-fx="item" className="fx contact-credits">
+      <dl data-fx="item" data-depth="0.1" className="fx contact-credits">
         {credits.map(([term, value]) => (
           <div key={term}>
             <dt>{term}</dt>

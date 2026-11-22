@@ -115,13 +115,13 @@ export default function ProjectsPanel() {
     <div ref={root} className="projects-layout">
       <div ref={stage} className="projects-stage" aria-hidden="true" />
       <div ref={panel} className="projects-panel fx">
-        <p data-in className="projects-facts">
+        <p data-in data-depth="0.15" className="projects-facts">
           <span className="projects-count">
             <b>{pad(active + 1)}</b> / {pad(PROJECTS.length)}
           </span>
           <span data-swap>{project.facts}</span>
         </p>
-        <div data-in>
+        <div data-in data-depth="0.5">
           <h3
             data-swap
             aria-live={announce ? "polite" : "off"}
@@ -131,12 +131,12 @@ export default function ProjectsPanel() {
             {project.title}
           </h3>
         </div>
-        <div data-in>
+        <div data-in data-depth="0.3">
           <p data-swap className="projects-lead">
             {project.lead}
           </p>
         </div>
-        <div className="projects-actions">
+        <div className="projects-actions" data-depth="0.2">
           <button
             type="button"
             data-in

@@ -122,7 +122,7 @@ export default function AboutAsk() {
 
   return (
     <>
-      <div data-fx="item" className="fx chat-wrap">
+      <div data-fx="item" data-depth="0.35" className="fx chat-wrap">
         <div
           ref={chat}
           onScroll={sync}
@@ -148,7 +148,12 @@ export default function AboutAsk() {
         <ChatJump show={away} onJump={scrollToNewest} />
       </div>
 
-      <form onSubmit={submit} data-fx="item" className="fx ask-line">
+      <form
+        onSubmit={submit}
+        data-fx="item"
+        data-depth="0.2"
+        className="fx ask-line"
+      >
         <Input
           value={value}
           onChange={e => setValue(e.target.value)}
@@ -165,6 +170,7 @@ export default function AboutAsk() {
 
       <ul
         data-fx="stack"
+        data-depth="0.12"
         className="fx ask-picks"
         aria-label="Suggested questions"
       >

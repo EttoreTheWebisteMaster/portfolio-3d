@@ -27,9 +27,9 @@ const SLOW = 0.45;
 /** Height of a standing robot's centre above the floor. */
 const STAND = 0.215;
 /** Share of the closing speed an impact gives back (coefficient of restitution): metal on a hard floor hops, then hops less. */
-const RESTITUTION = 0.25;
+const RESTITUTION = 0.12;
 /** Below this closing speed an impact gives nothing back, so the hops die out instead of jittering forever. */
-const REST_SPEED = 0.7;
+const REST_SPEED = 1;
 /** Coulomb friction: an impact strips at most this times its normal impulse from the sideways speed; sliding then decelerates at FLOOR_DRAG. */
 const FRICTION = 0.1;
 const FLOOR_DRAG = 1.6;
@@ -61,6 +61,8 @@ const WALL_ASPECT = 1.6;
 const SLACK = 0.3;
 /** How dark the soft shadow under a robot is, and how wide it is for a standing and a lying body. */
 const BLOB = 0.6;
+/** How far above the floor the lowest joint of a lying body sits: the thickness of a limb. */
+const LAY_CLEAR = 0.03;
 const FOOT = { stand: 0.36, lie: 0.55 } as const;
 const LEG = /^(Hips|UpperLeg|LowerLeg|Leg|Foot)/;
 /** Only the arms, head and chest of a clip: the legs belong to the walking clip alone. */
@@ -195,6 +197,10 @@ export class Bot {
   private mats: THREE.MeshStandardMaterial[] = [];
   /** The ankle bones, and where the lowest of them sits under the root when standing: the reference every walking frame is pinned to the floor with. */
   private feet: THREE.Object3D[] = [];
+  /** Every bone: the lowest one is what touches the floor when the body lies. */
+  private joints: THREE.Object3D[] = [];
+  /** Where the body's middle is on the floor while it falls or lies: the shadow goes under it, not under the feet. */
+  private mid = new THREE.Vector2();
   private sole = 0;
   private soleWalk = 0;
   private lift = 0;
@@ -302,6 +308,9 @@ export class Bot {
       const bone = scene.getObjectByName(name);
       return bone ? [bone] : [];
     });
+    scene.traverse(o => {
+      if ((o as THREE.Bone).isBone) this.joints.push(o);
+    });
     this.calibrate();
   }
 
@@ -355,6 +364,23 @@ export class Bot {
       low = Math.min(low, foot.y);
     }
     return low - this.root.position.y;
+  }
+
+  /** Lays a lying or bouncing body on the floor: its lowest joint rests LAY_CLEAR above it, so the shadow underneath is always touching it. In the air it does nothing. */
+  private lay(dt: number) {
+    if (this.joints.length === 0) return;
+    this.root.updateMatrixWorld(true);
+    let low = Infinity;
+    this.mid.set(0, 0);
+    for (const bone of this.joints) {
+      bone.getWorldPosition(foot);
+      low = Math.min(low, foot.y);
+      this.mid.x += foot.x / this.joints.length;
+      this.mid.y += foot.z / this.joints.length;
+    }
+    const near = THREE.MathUtils.clamp(1 - (this.pos.y - STAND) / 0.15, 0, 1);
+    const target = (LAY_CLEAR - (low - this.root.position.y)) * near;
+    this.lift += (target - this.lift) * (1 - Math.exp(-30 * dt));
   }
 
   /** Keeps the standing body's lowest foot on the floor: the walk and the idle bob the hips, and without this the sole drifts above the shadow. */
@@ -415,7 +441,7 @@ export class Bot {
     this.group = null;
     this.reset();
     this.setOpacity(1);
-    this.pos.set(ORIGIN.x + x, LOOK_Y + depthAt(z) * TAN + 2, z);
+    this.pos.set(ORIGIN.x + x, LOOK_Y + depthAt(z) * TAN + 0.6, z);
     const drift = rand(...DRIFT) * (hero ? SLOW : 1);
     const way = rand(0, Math.PI * 2);
     this.vel.set(Math.sin(way) * drift, 0, Math.cos(way) * drift * 0.5);
@@ -561,7 +587,11 @@ export class Bot {
   /** Walk to a spot on the floor (relative to the set). */
   goTo(x: number, z: number) {
     this.goal ??= new THREE.Vector2();
-    this.goal.set(ORIGIN.x + x, z);
+    // A walker stays on its own side of the copy: crossing FRONT_Z would swap its canvas and pop it through the text.
+    const side = this.front
+      ? Math.max(z, FRONT_Z + SLACK + 0.1)
+      : Math.min(z, FRONT_Z - SLACK - 0.1);
+    this.goal.set(ORIGIN.x + x, side);
     // A new walk starts the arms and the legs from the same step, from the standing pose, so the two never fall out of phase.
     if (this.striding < 0.05 && this.stride) this.stride.time = 0;
     this.to(this.walk);
@@ -660,6 +690,7 @@ export class Bot {
     this.speed = speed;
     this.pos.x += Math.sin(this.heading) * speed * dt;
     this.pos.z += Math.cos(this.heading) * speed * dt;
+    this.walls();
     const pace = 0.3 + (speed / PACE) * 1.1;
     if (this.walk) this.walk.timeScale = pace;
     if (this.stride) this.stride.timeScale = pace;
@@ -796,7 +827,8 @@ export class Bot {
     this.root.position.copy(this.pos);
     // Standing on its feet: pinned to the floor. Anywhere else (falling, lying) the clip and the physics own the height.
     if (this.mode === "walk" || this.mode === "chat") this.ground(dt);
-    else this.lift = 0;
+    else if (this.mode === "held") this.lift = 0;
+    else this.lay(dt);
     this.root.position.y += this.lift;
     if (this.jolt > 0.01) {
       this.root.quaternion.multiply(
@@ -823,7 +855,12 @@ export class Bot {
     const stand =
       this.mode === "walk" || this.mode === "chat" || this.mode === "rise";
     const size = (stand ? FOOT.stand : FOOT.lie) * (1 + up * 0.8);
-    this.blob.position.set(this.pos.x, 0.006, this.pos.z);
+    const under = stand || this.mode === "held" || this.mode === "idle";
+    this.blob.position.set(
+      under ? this.pos.x : this.mid.x,
+      0.006,
+      under ? this.pos.z : this.mid.y
+    );
     this.blob.scale.set(size, size, 1);
     this.blobMat.opacity = BLOB * up01 * this.alpha * this.dimmed;
   }
