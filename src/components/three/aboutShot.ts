@@ -7,8 +7,8 @@ import { pointer } from "@/lib/pointer";
 import { blackout } from "./contactShot";
 import { FLOOR_Y } from "./HeroLight";
 import {
-  DIM,
   eye,
+  COPY_GONE,
   MARK_X,
   SHOT,
   walk,
@@ -21,17 +21,17 @@ import {
 
 const tan = (fov: number) => Math.tan(THREE.MathUtils.degToRad(fov / 2));
 
-/** Where the 12-column grid puts the centre of columns 1–7, as a fraction of the viewport width. */
+/** Where the 12-column grid puts the centre of columns 1–6 (the other six are the text), as a fraction of the viewport width. */
 function stageCentre(width: number) {
   const margin = width >= 1280 ? 64 : width >= 768 ? 40 : 20;
   const gutter = 24;
   const col = (width - 2 * margin - 11 * gutter) / 12;
-  return (margin + (7 * col + 6 * gutter) / 2) / width;
+  return (margin + (6 * col + 5 * gutter) / 2) / width;
 }
 
 const ROBOT_TOP = 4.5;
 /** How far in front of his eye the lens ends, in world units. */
-const EYE_DISTANCE = 2;
+const EYE_DISTANCE = 3.6;
 
 /** The settled About frame for a viewport: a long lens, level, him on the left columns with his feet on a fixed line (mobile: him on top). */
 function aboutFrame(width: number, height: number) {
@@ -144,9 +144,8 @@ export function walkCamera(
   const live = seg(w, [0.95, 1]) * (1 - seg(journey.current, ZOOM));
   camera.position.x += pointer.x * 0.12 * live;
   camera.position.y -= pointer.y * 0.06 * live;
-  // The push-in: straight down the lens at his eye, the lens tightening as it goes.
-  // It starts slow and keeps accelerating: the closer the eye, the faster it pulls you in.
-  const zoom = seg(journey.current, ZOOM) ** 1.8;
+  // The push-in: straight down the axis of his face, one steady speed, the lens tightening as it goes. It lands with the point between his eyes dead centre and him square to the lens.
+  const zoom = seg(journey.current, ZOOM);
   if (zoom > 0) {
     goal.copy(eye.pos).addScaledVector(eye.facing, EYE_DISTANCE);
     camera.position.lerp(goal, zoom);
@@ -171,10 +170,8 @@ export function walkCamera(
 export function exposure(base: number) {
   const w = walk();
   const bloom = Math.sin(Math.PI * seg(w, SHOT.daylight) ** 0.8) * 0.25;
-  const dim = ease(seg(journey.current, DIM));
-  return (
-    (base + bloom) * (1 - 0.8 * dim) * (1 - 0.3 * closeUp()) * (1 - blackout())
-  );
+  const dim = ease(seg(journey.current, ZOOM));
+  return (base + bloom) * (1 - dim) * (1 - 0.3 * closeUp()) * (1 - blackout());
 }
 
 let measured = "";
@@ -213,6 +210,7 @@ export function publishAbout(width: number, height: number) {
   }
   const pos = journey.current;
   // The theme turns to paper once the frame is mostly cream, and back as About dims into Contact.
-  toggle(root, "paper", pos >= 1.6 && pos < DIM[0]);
-  toggle(root, "aboutReady", pos >= 1.97 && pos < ZOOM[0]);
+  toggle(root, "paper", pos >= 1.6 && pos < COPY_GONE);
+  // Settled on his mark (the snap lands on exactly ZOOM[0]) until the copy has gone for Contact.
+  toggle(root, "aboutReady", pos >= 1.97 && pos < COPY_GONE);
 }

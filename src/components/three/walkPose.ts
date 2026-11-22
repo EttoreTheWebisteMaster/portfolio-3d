@@ -30,12 +30,11 @@ export const SHOT = {
 } as const;
 /**
  * Journey positions of About → Contact. He stays on his mark and looks down the lens: the copy goes, the camera pushes
- * in on his eye, the room's light dies down to that one glint, and the picture falls to black just before the cut.
+ * in on his eye without ever stopping, the room's light dies down to that one glint, and the picture falls to black just before the cut.
  */
-export const ZOOM = [2, 2.44] as const;
+export const ZOOM = [2, 2.45] as const;
 /** The copy is out of the way before the lens is close enough to touch it. */
 export const COPY_GONE = 2.14;
-export const DIM = [2.1, 2.44] as const;
 
 /** Distance travelled by his walk cycle's stride, in world units (measured from the Walking clip: 3.6 u/s × 0.958 s). */
 export const STRIDE = 3.48;
@@ -49,7 +48,7 @@ export const onAbout = () =>
 
 /** 0 → 1: the room's daylight takes over from the cinema's dark (grade, light, exposure). Gone again as About dims for Contact. */
 export const daylight = () =>
-  ease(seg(walk(), SHOT.daylight)) * (1 - ease(seg(journey.current, DIM)));
+  ease(seg(walk(), SHOT.daylight)) * (1 - ease(seg(journey.current, ZOOM)));
 
 /** World x where the daylight's front is: it comes in from the right of the frame and sweeps left over the dark, softly, one gradient wider than the shot. */
 export const SPILL = { from: MARK_X + 32, to: -14, soft: 20 };
@@ -57,7 +56,7 @@ export const spillFront = () =>
   THREE.MathUtils.lerp(
     SPILL.from,
     SPILL.to,
-    ease(seg(walk(), SHOT.daylight)) * (1 - ease(seg(journey.current, DIM)))
+    ease(seg(walk(), SHOT.daylight)) * (1 - ease(seg(journey.current, ZOOM)))
   );
 
 /** The timecode (90 s over the three hops) of a moment, as a journey position. */

@@ -21,6 +21,7 @@
   --color-cream-deep: #e2dac0;
   --color-ink: #15120f;
   --color-yellow: #ffd84d;
+  --color-yellow-base: #ffd84d;
   --color-yellow-deep: #7a5c00;
   --color-orange: #f2a93b;
   --color-red: #d7261e;
@@ -453,7 +454,7 @@
     filter: none;
   }
 }
-/* Always transparent: no bars. A soft veil past the row keeps the lettering readable over the scene; on About's cream wall it goes cream and the lettering turns ink, with a dark yellow for the accents. */
+/* Always transparent: no bars. A soft veil past the row keeps the lettering readable over the scene; on About's cream wall it goes cream and the lettering turns ink, with ink accents. */
 @utility bar-veil {
   --veil: 1;
   /* The ink and the cream swap over a beat, never in one frame. */
@@ -461,7 +462,7 @@
     transition: color 0.7s ease;
   }
   html[data-paper] & {
-    /* No pale band over the studio wall: the lettering sits straight on it. */
+    /* No dark veil on cream; the paper veil below takes over. */
     --veil: 0;
     --color-letterbox: var(--color-paper-veil);
     --color-cream: var(--color-ink);
@@ -471,7 +472,12 @@
     --color-nav-dim: var(--color-dust-deep);
     --color-fog: var(--color-dust-deep);
     --color-ash: var(--color-dust-deep);
-    --color-yellow: var(--color-yellow-deep);
+    /* The accent is ink on cream; the bottom-right counter and ticks keep the yellow. */
+    --color-yellow: var(--color-ink);
+    & .bar-progress,
+    & .bar-ticks {
+      --color-yellow: var(--color-yellow-base);
+    }
   }
   /* A veil that reaches past the row, so the lettering stays readable over the lit room. */
   &::before {
@@ -489,6 +495,35 @@
         var(--color-letterbox) calc(85% * var(--veil)),
         transparent
       ),
+      transparent
+    );
+  }
+  /* On cream: a pale veil that fades in with the bar's lettering (never before the visitor is in) and out as the paper goes, so the ink holds 4.5:1 where the wall is in shade. */
+  &::after {
+    content: "";
+    position: absolute;
+    inset-inline: 0;
+    top: 0;
+    z-index: -1;
+    height: calc(var(--bar-height) + 72px);
+    pointer-events: none;
+    opacity: 0;
+    background: linear-gradient(
+      to bottom,
+      color-mix(in srgb, var(--color-paper-veil) 80%, transparent),
+      transparent
+    );
+    transition: opacity 0.7s ease;
+    html[data-paper][data-in] & {
+      opacity: 1;
+    }
+  }
+  &:is(footer)::after {
+    top: auto;
+    bottom: 0;
+    background: linear-gradient(
+      to top,
+      color-mix(in srgb, var(--color-paper-veil) 85%, transparent),
       transparent
     );
   }
@@ -1114,7 +1149,7 @@ html[data-scrub] .timecode .track::after {
     color: var(--color-ink);
     --color-nav: var(--color-dust-deep);
     --color-nav-dim: var(--color-dust-deep);
-    --color-yellow: var(--color-yellow-deep);
+    --color-yellow: var(--color-ink);
   }
   &[data-open="true"] {
     visibility: visible;
@@ -2834,15 +2869,30 @@ html[data-scrub] .timecode .track::after {
   }
 }
 /* ─── About ─────────────────────────────────────────────── */
-/* The ask key: ink text on nothing, filling with ink on hover. */
+/* The ask key: a small ink square with one cream arrow; on hover the yellow shutter wipes in and the arrow turns to ink. The label stays for screen readers only. */
 @utility btn-key {
   @apply btn;
-  --btn-rest: transparent;
-  --btn-text: var(--text-primary);
-  --btn-text-hover: var(--bg-base);
-  --btn-wipe: var(--text-primary);
-  height: 48px;
-  padding: 0 var(--space-4);
+  --btn-rest: var(--color-ink);
+  --btn-text: var(--color-cream);
+  --btn-text-hover: var(--color-ink);
+  --btn-wipe: var(--color-yellow);
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border-radius: 50%;
+  justify-content: center;
+  /* The key is an arrow alone; the label is for screen readers. */
+  & .btn-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+  & svg {
+    width: 14px;
+    height: 14px;
+  }
 }
 @utility about {
   padding: 0 var(--page-margin);
@@ -2869,7 +2919,7 @@ html[data-scrub] .timecode .track::after {
   }
 }
 @utility about-copy {
-  grid-column: 8 / 13;
+  grid-column: 7 / 13;
   @media (max-aspect-ratio: 1/1) {
     grid-column: 1 / -1;
   }
@@ -2877,42 +2927,54 @@ html[data-scrub] .timecode .track::after {
   flex-direction: column;
   gap: var(--space-5);
   min-height: 0;
+  position: relative;
+  isolation: isolate;
+  /* The 3D room lights the wall behind the column (AboutScene's wall light), so the lettering is ink on lit cream; the quiet text takes the deepest dust. */
+  --text-secondary: var(--color-dust-deep);
+  /* The field and the suggestion pills share one height. */
+  --ask-size: 52px;
   color: var(--text-primary);
   pointer-events: auto;
+  @media (max-height: 860px) and (max-aspect-ratio: 1/1) {
+    gap: var(--space-3);
+  }
   @media (max-height: 700px) {
     gap: var(--space-3);
+  }
+  /* Landscape phone: a wider column and tighter gaps, so the greeting and the field fit between the bars. */
+  @media (max-height: 520px) and (min-aspect-ratio: 1/1) {
+    grid-column: 7 / 13;
+    gap: var(--space-2);
   }
 }
 @utility about-headline {
   font-family: var(--font-poster);
   font-weight: 800;
-  font-size: min(84px, 10.5dvh);
-  line-height: 0.84;
+  /* Two lines, sized by the column's width and by his height, so they fill the column and still leave the chat and the field under them. */
+  font-size: min(150px, 7.2vw, 11dvh);
+  line-height: 0.86;
+  letter-spacing: -0.01em;
   text-transform: uppercase;
   color: var(--text-primary);
   /* Portrait: sized by the width and the height, so the lines, the field and the picks always fit under him. */
   @media (max-aspect-ratio: 1/1) {
-    font-size: min(14vw, 7.4dvh);
+    font-size: min(11vw, 5.2dvh);
   }
+  /* Landscape phone: one line, so the greeting, the field and the note fit between the bars. */
   @media (max-height: 520px) and (min-aspect-ratio: 1/1) {
     font-size: 8dvh;
+    & br {
+      display: none;
+    }
   }
-  /* The highlight is a pen stroke: it wipes across once the headline has landed. */
+  /* The highlight is a pen stroke; the headline's entrance wipes it across (fx.ts). */
   & mark {
     padding: 0 var(--space-2);
     color: var(--color-ink);
     background: linear-gradient(var(--color-yellow), var(--color-yellow))
-      no-repeat 0 50% / 0% 100%;
+      no-repeat 0 60% / 100% 82%;
     box-decoration-break: clone;
     -webkit-box-decoration-break: clone;
-    transition: background-size 720ms var(--ease-cinema) 260ms;
-    html[data-about-ready] & {
-      background-size: 100% 100%;
-    }
-    @media (prefers-reduced-motion: reduce) {
-      background-size: 100% 100%;
-      transition: none;
-    }
   }
 }
 @utility about-ask {
@@ -2922,57 +2984,137 @@ html[data-scrub] .timecode .track::after {
   flex-direction: column;
   gap: var(--space-4);
 }
-/* The conversation: the latest lines sit at the bottom, just above the field; older ones fade up and out. */
+/* The conversation, in a box that never changes size or place. Each turn (a question with its answer) fills the box from the top; a new one scrolls up over the others, and the earlier ones are above. */
+/* The round button that takes the chat back down to the newest message. */
+@utility chat-jump {
+  position: absolute;
+  inset-block-end: var(--space-2);
+  inset-inline-end: 0;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--color-ink);
+  color: var(--color-cream);
+  cursor: pointer;
+  opacity: 0;
+  transform: translateY(8px);
+  pointer-events: none;
+  transition:
+    opacity 240ms var(--ease-cinema),
+    transform 240ms var(--ease-cinema),
+    background-color 160ms var(--ease-cinema),
+    color 160ms var(--ease-cinema);
+  & svg {
+    width: 14px;
+    height: 14px;
+  }
+  &[data-show] {
+    opacity: 1;
+    transform: none;
+    pointer-events: auto;
+  }
+  &:is(:hover, :focus-visible) {
+    background: var(--color-yellow);
+    color: var(--color-ink);
+  }
+  &:focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
+  }
+}
+@utility chat-wrap {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
 @utility chat {
   flex: 1;
   min-height: 0;
+  position: relative;
+  container-type: size;
   display: flex;
   flex-direction: column;
-  justify-content: flex-end;
-  gap: var(--space-3);
-  overflow: hidden;
+  gap: var(--space-6);
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+  /* The text fades out at an edge while there is more of it past that edge (AboutAsk sets the two sizes as it scrolls). */
   mask-image: linear-gradient(
     to bottom,
     transparent 0,
-    var(--color-letterbox) 28%
+    var(--color-letterbox) var(--fade-top, 0px),
+    var(--color-letterbox) calc(100% - var(--fade-bottom, 0px)),
+    transparent 100%
   );
 }
-@utility chat-line {
-  @apply type-lead;
+@utility chat-turn {
+  flex: none;
+  /* The newest message fills the box, so it sits at the top and the earlier ones are out of sight above. */
+  &:last-child {
+    min-block-size: 100cqh;
+  }
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  gap: var(--space-2);
+}
+/* The question: a small label over the answer ("You" quiet, the question itself ink). */
+@utility chat-meta {
+  @apply type-label uppercase;
   color: var(--text-primary);
-  transition: color 320ms var(--ease-cinema);
-  &[data-from="you"] {
-    @apply type-label uppercase;
+  & span {
+    @apply type-label-s;
+    margin-inline-end: var(--space-2);
     color: var(--text-secondary);
   }
-  &[data-old] {
-    color: color-mix(in srgb, var(--text-primary) 62%, transparent);
+}
+/* The answer is the loudest thing in the column after the headline; the same size for every message, so the chat never changes. */
+@utility chat-answer {
+  @apply type-lead;
+  color: var(--text-primary);
+  /* Phone: a size down, so the longest answer fits between the headline and the field. */
+  @media (max-height: 860px) and (max-aspect-ratio: 1/1) {
+    font-size: 15px;
+    line-height: 1.35;
+  }
+  @media (max-height: 520px) {
+    font-size: var(--text-label);
+    line-height: 1.4;
   }
 }
-@utility chat-from {
-  @apply type-label-s uppercase;
-  margin-inline-end: var(--space-2);
-  color: var(--text-secondary);
-}
 /* The question field: one quiet line, an ink rule that thickens on focus, and the ask key on its right. */
+/* The question field: a soft cream pill with the round ask key in its right end. */
 @utility ask-line {
   display: flex;
   align-items: center;
-  border-bottom: 1px solid var(--hairline-strong);
-  transition: box-shadow 200ms var(--ease-cinema);
+  gap: var(--space-3);
+  height: var(--ask-size);
+  padding: var(--space-1) var(--space-1) var(--space-1) var(--space-5);
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--color-cream) 55%, transparent);
+  transition: background-color 240ms var(--ease-cinema);
   &:focus-within {
-    box-shadow: 0 1px 0 0 var(--text-primary);
-    border-bottom-color: var(--text-primary);
+    background: color-mix(in srgb, var(--color-cream) 85%, transparent);
   }
 }
 @utility ask-input {
-  @apply type-lead;
-  @media (max-height: 520px) {
-    font-size: var(--text-body);
-  }
+  font-size: var(--text-body);
+  line-height: var(--text-body--line-height);
   flex: 1;
   min-width: 0;
-  height: 48px;
+  height: 44px;
+  @media (max-height: 520px) {
+    height: 36px;
+  }
   padding: 0;
   border: 0;
   background: transparent;
@@ -2986,12 +3128,13 @@ html[data-scrub] .timecode .track::after {
   }
 }
 /* Suggested questions: underlined text, three at a time. */
+/* The suggestions: compact soft chips, 36px high with 16px sides (the size chat suggestions and Material's suggestion chips use); a long question ends in an ellipsis. */
 @utility ask-picks {
   display: flex;
   flex-wrap: wrap;
-  gap: 0 var(--space-5);
+  gap: var(--space-2);
   /* Short screens keep fewer suggestions so the answer has room. */
-  @media (max-height: 700px) and (max-aspect-ratio: 1/1) {
+  @media (max-height: 860px) and (max-aspect-ratio: 1/1) {
     & li:nth-child(n + 2) {
       display: none;
     }
@@ -3004,36 +3147,42 @@ html[data-scrub] .timecode .track::after {
   }
 }
 @utility ask-pick {
-  @apply type-label uppercase;
-  padding: var(--space-2) 0;
+  @apply type-label-s uppercase;
+  max-width: 100%;
+  height: 36px;
+  padding: 0 var(--space-4);
   border: 0;
-  background: transparent;
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--color-cream) 42%, transparent);
   color: var(--text-primary);
   cursor: pointer;
-  text-decoration: underline;
-  text-decoration-thickness: 1px;
-  text-underline-offset: 6px;
-  text-decoration-color: color-mix(
-    in srgb,
-    var(--text-primary) 35%,
-    transparent
-  );
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   transition:
-    text-decoration-color 160ms var(--ease-cinema),
-    color 160ms var(--ease-cinema);
+    background-color 160ms var(--ease-cinema),
+    color 160ms var(--ease-cinema),
+    opacity 220ms var(--ease-cinema),
+    scale 220ms var(--ease-cinema);
   &:is(:hover, :focus-visible) {
-    text-decoration-color: var(--text-primary);
+    background: color-mix(in srgb, var(--color-cream) 80%, transparent);
+  }
+  /* A retiring suggestion fades and shrinks away; its slot then gets a new one. */
+  &[data-leaving] {
+    opacity: 0;
+    scale: 0.92;
+    pointer-events: none;
   }
   &:active {
     color: var(--text-secondary);
   }
   &:focus-visible {
     outline: 2px solid var(--focus-ring);
-    outline-offset: 4px;
+    outline-offset: 3px;
   }
   /* A fresh suggestion slides in where the old one was. */
   @media (prefers-reduced-motion: no-preference) {
-    animation: ask-pick-in 420ms var(--ease-cinema) both;
+    animation: ask-pick-in 420ms var(--ease-cinema) backwards;
   }
 }
 @keyframes ask-pick-in {
@@ -3058,30 +3207,6 @@ html[data-scrub] .timecode .track::after {
     visibility: hidden;
   }
 }
-@utility ask-note {
-  @apply type-label-s;
-  color: var(--text-secondary);
-}
-@utility about-facts {
-  display: grid;
-  grid-template-columns: repeat(4, auto);
-  justify-content: space-between;
-  gap: var(--space-4);
-  padding-top: var(--space-4);
-  border-top: 1px solid var(--hairline);
-  @media (max-height: 520px) {
-    display: none;
-  }
-  & dt {
-    @apply type-label-s uppercase;
-    color: var(--text-secondary);
-  }
-  & dd {
-    @apply type-label-l uppercase;
-    color: var(--text-primary);
-    white-space: nowrap;
-  }
-}
 @utility about-caption {
   @apply type-label-s uppercase;
   position: absolute;
@@ -3089,7 +3214,13 @@ html[data-scrub] .timecode .track::after {
   bottom: calc(var(--bar-height) + var(--space-5));
   display: flex;
   flex-direction: column;
-  color: var(--text-secondary);
+  color: var(--color-dust-deep);
+  /* Landscape phone: only the name, so the line clears his hand. */
+  @media (max-height: 520px) {
+    & span {
+      display: none;
+    }
+  }
   /* Portrait: the facts take the foot of the page. */
   @media (max-aspect-ratio: 1/1) {
     display: none;

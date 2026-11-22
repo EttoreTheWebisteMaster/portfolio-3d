@@ -72,7 +72,7 @@ export function blobTexture() {
 export function spillMaterial(soft: number) {
   const front = { value: 1e3 };
   const material = new THREE.MeshStandardMaterial({
-    color: "#ece4d0",
+    color: "#f7f3ea",
     roughness: 1,
     side: THREE.DoubleSide,
     envMapIntensity: 0,

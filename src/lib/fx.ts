@@ -35,6 +35,59 @@ export function addEntrance(
     );
     return null;
   }
+  // A stack: every child of the element enters on its own, one after the other (a field and its key, a row of picks, a name and its line).
+  if (kind === "stack") {
+    enter.fromTo(
+      Array.from(el.children),
+      { opacity: 0, ...(left ? { x: -56 } : { y: 24 }) },
+      {
+        opacity: 1,
+        x: 0,
+        y: 0,
+        duration: 0.7,
+        ease: "power3.out",
+        stagger: 0.09,
+      },
+      at
+    );
+    return null;
+  }
+  // Display type: every letter slides in on its own along the line, behind a mask, one after another.
+  if (kind === "display") {
+    const display = SplitText.create(el, {
+      type: "lines,chars",
+      mask: "lines",
+      aria: "none",
+    });
+    enter.fromTo(
+      display.chars,
+      {
+        ...(left ? { xPercent: -130 } : { yPercent: 120 }),
+        skewX: left ? -10 : 0,
+        opacity: 0,
+      },
+      {
+        xPercent: 0,
+        yPercent: 0,
+        skewX: 0,
+        opacity: 1,
+        duration: 0.8,
+        ease: "power4.out",
+        stagger: 0.03,
+      },
+      at
+    );
+    // The highlight is a pen stroke: it wipes across once the letters have landed.
+    const mark = el.querySelector("mark");
+    if (mark)
+      enter.fromTo(
+        mark,
+        { backgroundSize: "0% 82%" },
+        { backgroundSize: "100% 82%", duration: 0.7, ease: "power3.inOut" },
+        at + 0.75
+      );
+    return display;
+  }
   const split = SplitText.create(el, {
     type: "lines",
     mask: "lines",

@@ -47,6 +47,8 @@ const MIN_GAP = 2.4;
 /** Interaction only wakes once the room is the page, and a robot is "near" a grab within this many units. */
 const LIVE_FROM = 0.97;
 const NEAR = 4.5;
+/** The crowd's fade below which it is out of the picture and can no longer be touched. */
+const CROWD_GONE = 0.35;
 /** Anything in here is part of the page's own UI: the cursor is theirs, not the crowd's. */
 const UI = "a, button, input, .projects-list";
 /** The plane a held robot is dragged across: upright, facing the camera, through the point that was grabbed. So the robot goes where the cursor goes, up, down, left and right. */
@@ -379,10 +381,12 @@ function Crowd({
     const state = hot.current;
     const p = progress.current;
     const aspect = size.width / size.height;
-    const live = p >= LIVE_FROM && target.live && !state.over;
+    // The crowd is only touchable while it is in the room: once he has walked out and it has gone dark, there is nothing to grab.
+    const here = p >= LIVE_FROM && crowdFade() > CROWD_GONE;
+    const live = here && target.live && !state.over;
 
     // Leaving the room mid-grab lets go.
-    if (state.held && p < LIVE_FROM) {
+    if (state.held && !here) {
       letGo(state.held, walkers, 0, reduced);
       state.held = null;
       view.held = false;

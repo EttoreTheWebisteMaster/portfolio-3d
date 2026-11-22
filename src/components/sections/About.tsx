@@ -1,12 +1,5 @@
 import AboutAsk from "@/components/sections/AboutAsk";
 
-const facts = [
-  ["Experience", "6 years"],
-  ["Last team", "INFN"],
-  ["Based", "Turin / remote"],
-  ["Status", "Available"],
-] as const;
-
 /** About: the cream room and ROB-092 are in the 3D set behind; this layer is the interview column and the caption. */
 export default function About() {
   return (
@@ -15,28 +8,17 @@ export default function About() {
 
       <div className="about-layout">
         <div className="about-copy">
-          <p data-fx="text" className="fx about-headline" aria-hidden>
-            Ask me
-            <br />
-            <mark>Anything</mark>
-            <br />
+          <p data-fx="display" className="fx about-headline" aria-hidden>
+            Ask me <mark>Anything</mark> <br />
             about Ettore.
           </p>
-          <div data-fx="item" className="fx about-ask">
+          <div className="about-ask">
             <AboutAsk />
           </div>
-          <dl data-fx="item" className="fx about-facts max-md:hidden">
-            {facts.map(([term, value]) => (
-              <div key={term}>
-                <dt>{term}</dt>
-                <dd>{value}</dd>
-              </div>
-            ))}
-          </dl>
         </div>
       </div>
 
-      <p data-fx="item" className="fx about-caption max-md:hidden">
+      <p data-fx="stack" data-early className="fx about-caption max-md:hidden">
         <strong>ROB-092</strong>
         <span>Public relations unit</span>
       </p>
