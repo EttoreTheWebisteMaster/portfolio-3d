@@ -94,13 +94,6 @@ export const answerFor = (text: string) => match(text)?.answer ?? FALLBACK;
 /** How many suggestions show at once. */
 export const PICKS = 3;
 
-/** The next suggestions: the first ones not asked yet, topping up from the start once the pool runs low. */
-export function nextPicks(asked: ReadonlySet<string>) {
-  const fresh = QUESTIONS.filter(q => !asked.has(q.id));
-  const pool = fresh.length >= PICKS ? fresh : QUESTIONS;
-  return pool.slice(0, PICKS);
-}
-
 /** Shared with the 3D robot: when the last question was sent and whether he is answering (nod, head turns to you). Mutated, never React state. */
 export const asking = { sentAt: -100, speaking: false };
 

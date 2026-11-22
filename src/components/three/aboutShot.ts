@@ -7,7 +7,6 @@ import { pointer } from "@/lib/pointer";
 import { blackout } from "./contactShot";
 import { FLOOR_Y } from "./HeroLight";
 import {
-  DIM,
   eye,
   COPY_GONE,
   MARK_X,
@@ -171,7 +170,7 @@ export function walkCamera(
 export function exposure(base: number) {
   const w = walk();
   const bloom = Math.sin(Math.PI * seg(w, SHOT.daylight) ** 0.8) * 0.25;
-  const dim = ease(seg(journey.current, DIM));
+  const dim = ease(seg(journey.current, ZOOM));
   return (base + bloom) * (1 - dim) * (1 - 0.3 * closeUp()) * (1 - blackout());
 }
 
