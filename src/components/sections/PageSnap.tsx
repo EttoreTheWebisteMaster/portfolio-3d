@@ -259,7 +259,8 @@ export default function PageSnap() {
 
     // Wheel and touch over a scrolling box belong to the box: they never reach the page snapper, so the list scrolls freely.
     // (The observer's own `ignore` resolves its elements once, so a list that mounts later was left out.)
-    const OWN = ".projects-index, .about-ask, .menu-overlay, .sound-toggle";
+    const OWN =
+      ".projects-index, .chat, .about-ask, .menu-overlay, .sound-toggle";
     const box = (e: Event) =>
       e.target instanceof Element ? e.target.closest<HTMLElement>(OWN) : null;
     const keep = (e: Event) => {

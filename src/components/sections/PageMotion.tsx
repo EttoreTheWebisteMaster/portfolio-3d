@@ -11,16 +11,18 @@ import { pointer } from "@/lib/pointer";
 /** How much of the journey (in pages) a page takes to arrive and to leave. */
 const SPAN = 0.25;
 /** About and Contact: how much of the journey before the page their copy starts to arrive. */
-const ARRIVE = [0.28, 0.4] as const;
+const ARRIVE = [0.367, 0.4] as const;
+/** How far into About's arrival (in entrance seconds) the copy waits after the caption: the caption (`data-early`) lands at TC 00:00:49:00 with only him on the set, and the rest follows. */
+const CAPTION_LEAD = 0.5;
 /** Home's copy decodes over the back half of the opening shot. */
 const INTRO_SECONDS = 2;
 /** A page opened by its URL arrives slower, and later, so the eye finds the scene first. */
-const LAND_SECONDS = 3.4;
-const LAND_DELAY = 1.1;
+const LAND_SECONDS = 2.2;
+const LAND_DELAY = 0.6;
 /** After a cut the copy waits for the new page to lift out of the veil. */
 const CUT_DELAY = 0.3;
 
-type Kind = "title" | "text" | "item";
+type Kind = "title" | "text" | "item" | "stack" | "display";
 
 /**
  * Text motion for every page, driven by the journey position, so it plays forwards, backwards and at the
@@ -28,6 +30,8 @@ type Kind = "title" | "text" | "item";
  *  - title: lines rise out of a mask while the letters decode.
  *  - text: lines rise out of a mask, staggered.
  *  - item: block lifts and fades (buttons, billing).
+ *  - stack: each child enters on its own, in turn.
+ *  - display: every letter slides in on its own behind a mask (the About headline).
  * Each page is pinned to the viewport while the document scrolls, so only this motion moves it.
  */
 export default function PageMotion() {
@@ -51,7 +55,9 @@ export default function PageMotion() {
 
         items.forEach((el, i) => {
           const kind = el.dataset.fx as Kind;
-          const at = i * 0.12;
+          const base = i * 0.12;
+          const early = el.hasAttribute("data-early");
+          const at = early ? 0 : base + (index === 2 ? CAPTION_LEAD : 0);
           // About's copy and controls arrive from the left, following him in.
           const split = addEntrance(
             enter,
@@ -70,7 +76,7 @@ export default function PageMotion() {
                 duration: 0.5,
                 ease: "power2.in",
               },
-              at * 0.6
+              base * 0.6
             );
             return;
           }
@@ -85,7 +91,7 @@ export default function PageMotion() {
               ease: "power3.in",
               stagger: 0.06,
             },
-            at * 0.6
+            base * 0.6
           );
         });
 
@@ -187,6 +193,9 @@ export default function PageMotion() {
           gsap.set(rig.page, { y: y - rig.page.offsetTop });
           // Projects' programme animates itself (ProjectsPanel); the trailer keeps playing behind as light.
           if (i === 1) rig.page.inert = pos < 0.9 || pos >= 1.12;
+          // Inert, not just pointer-events none: a panel that opts back into pointer events must not catch clicks meant for the page in front. Set before any early return below: a copy entrance still playing must not leave the page it landed on unclickable.
+          if (i !== 1)
+            rig.page.inert = Math.abs(pos - i) >= 0.5 || caseState.open;
           if (!rig.tl) return;
           // The page the visitor lands on keeps its copy away until they are past the loader.
           if (!started && i === Math.round(pos)) {
@@ -205,8 +214,6 @@ export default function PageMotion() {
           const time =
             pos < i ? seg(pos, [i - arrive, i]) : 1 + seg(pos, [i, i + out]);
           rig.tl.time(time);
-          // Inert, not just pointer-events none: a panel that opts back into pointer events must not catch clicks meant for the page in front.
-          rig.page.inert = Math.abs(pos - i) >= 0.5 || caseState.open;
         });
       };
       gsap.ticker.add(tick);

@@ -20,16 +20,19 @@ import {
   ZOOM,
 } from "./walkPose";
 import { blobTexture, spillMaterial, sweepGeometry } from "./aboutRoom";
+import { CONTACT_AT } from "./contactShot";
 import { FLOOR_Y } from "./HeroLight";
 import { warm } from "./Warmup";
 
 const KEY = 520;
-const FILL = 26;
+const FILL = 40;
 const RIM = 120;
 /** Neutral daylight bouncing in the room: lifts the sweep to cream without a second key. */
-const SKY = 0.5;
+const SKY = 0.8;
+/** A broad soft light on the wall to his right, behind the text column: it keeps the wall cream where the key's cone falls off, so the ink reads. */
+const WALL = 110;
 /** The glint: one small cold light in front of his face that outlives the room while the lens pushes in. */
-const GLINT = 14;
+const GLINT = 30;
 /** The close-up's light on his face. */
 const CLOSE = 70;
 
@@ -43,6 +46,7 @@ export default function AboutScene() {
   const glint = useRef<THREE.PointLight>(null);
   const lens = useRef<THREE.PointLight>(null);
   const sky = useRef<THREE.HemisphereLight>(null);
+  const wall = useRef<THREE.PointLight>(null);
   const room = useRef<THREE.Group>(null);
   const blob = useRef<THREE.Mesh>(null);
   const target = useMemo(() => new THREE.Object3D(), []);
@@ -66,6 +70,8 @@ export default function AboutScene() {
       rim.current.intensity =
         RIM * Math.max(d, 0.8 * ease(seg(walk(), [0, 0.12])) * (1 - d));
     if (sky.current) sky.current.intensity = SKY * d;
+    // Fades in with the daylight and out with it for Contact, like every other light here.
+    if (wall.current) wall.current.intensity = WALL * d;
     // The soft light of the close-up: on his face while the lens is on him, gone as he walks off. It stays where it is; only its strength follows the shot.
     if (lens.current) lens.current.intensity = CLOSE * closeUp();
     if (glint.current) {
@@ -77,7 +83,7 @@ export default function AboutScene() {
       glint.current.intensity =
         GLINT *
         ease(seg(pos, [ZOOM[0] + 0.04, ZOOM[0] + 0.24])) *
-        (1 - ease(seg(pos, [ZOOM[1] - 0.06, ZOOM[1] + 0.04])));
+        (1 - ease(seg(pos, [CONTACT_AT - 0.2, CONTACT_AT - 0.03])));
     }
     // Drawn from the first frame of the walk: it is transparent where the daylight has not reached yet, so nothing switches on.
     if (room.current) room.current.visible = journey.current > 1 || warm.on;
@@ -117,6 +123,14 @@ export default function AboutScene() {
         decay={2}
       />
       <hemisphereLight ref={sky} args={["#fff8ee", "#d8cfba", 0]} />
+      <pointLight
+        ref={wall}
+        position={[MARK_X + 13, 4.5, -8]}
+        color="#fff4e2"
+        intensity={0}
+        distance={60}
+        decay={2}
+      />
       <pointLight
         ref={lens}
         position={[2.5, 1.8, 4.5]}

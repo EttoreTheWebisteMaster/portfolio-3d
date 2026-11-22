@@ -30,12 +30,13 @@ export const SHOT = {
 } as const;
 /**
  * Journey positions of About → Contact. He stays on his mark and looks down the lens: the copy goes, the camera pushes
- * in on his eye, the room's light dies down to that one glint, and the picture falls to black just before the cut.
+ * in on his eye without ever stopping, the room's light dies down to that one glint, and the picture falls to black just before the cut.
  */
-export const ZOOM = [2, 2.44] as const;
+export const ZOOM = [2, 2.45] as const;
 /** The copy is out of the way before the lens is close enough to touch it. */
 export const COPY_GONE = 2.14;
-export const DIM = [2.1, 2.44] as const;
+/** The room's lights go down with the push-in, to nothing as it ends, and come back up the same way from Contact. */
+export const DIM = ZOOM;
 
 /** Distance travelled by his walk cycle's stride, in world units (measured from the Walking clip: 3.6 u/s × 0.958 s). */
 export const STRIDE = 3.48;

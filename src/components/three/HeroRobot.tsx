@@ -84,8 +84,8 @@ function steel(name: string, flatShading: boolean) {
   });
 }
 
-/** His eye in the head bone's own space (the visor's left eye, from the model's head box). */
-const EYE = { x: 0.0062, y: 0.0074, z: 0.0075 };
+/** The point between his eyes, in the head bone's own space (on the visor's centre line): the push-in ends dead centre on it. */
+const EYE = { x: 0, y: 0.0064, z: 0.0075 };
 
 export default function HeroRobot({
   progress,
