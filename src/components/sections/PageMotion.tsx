@@ -167,28 +167,80 @@ export default function PageMotion() {
       };
       window.addEventListener(CUT_EVENT, onCut);
 
-      // Depth layers: each moves against the camera and the pointer by its own amount, so the type sits in the scene.
+      // Depth layers. Home's keep their original motion (quickTo on x/y). Every other page's elements drift on their own, by their own amount and phase, through the `translate` property so they never fight the entrances' transform.
       const layers = gsap.utils
         .toArray<HTMLElement>("[data-depth]")
-        .map(el => ({
+        .map((el, n) => ({
+          el,
+          n,
           depth: Number(el.dataset.depth),
-          x: gsap.quickTo(el, "x", { duration: 1.1, ease: "power3.out" }),
-          y: gsap.quickTo(el, "y", { duration: 1.1, ease: "power3.out" }),
+          // The page the layer belongs to; the scene's own layers (the name) belong to Home.
+          page: Math.max(
+            pages.indexOf(el.closest<HTMLElement>("[data-page]")!),
+            0
+          ),
+          x: 0,
+          y: 0,
+          sx: 0,
+          sy: 0,
+        }))
+        .map(layer => ({
+          ...layer,
+          qx:
+            layer.page === 0
+              ? gsap.quickTo(layer.el, "x", {
+                  duration: 1.1,
+                  ease: "power3.out",
+                })
+              : null,
+          qy:
+            layer.page === 0
+              ? gsap.quickTo(layer.el, "y", {
+                  duration: 1.1,
+                  ease: "power3.out",
+                })
+              : null,
         }));
 
       const tick = () => {
         const pos = journey.current;
         const y = window.scrollY;
-        // The parallax rests as the journey leaves Home.
-        const live = Math.max(1 - pos * 3, 0);
         const time = gsap.ticker.time;
+        const k = 1 - Math.exp((-gsap.ticker.deltaRatio() / 60) * 2.5);
         layers.forEach(layer => {
-          layer.x(
-            (-pointer.x * 22 + Math.sin(time * 0.35) * 4) * layer.depth * live
-          );
-          layer.y(
-            (-pointer.y * 14 + Math.sin(time * 0.27) * 3) * layer.depth * live
-          );
+          // Each layer's parallax rests as the journey leaves its page.
+          const live = Math.max(1 - Math.abs(pos - layer.page) * 3, 0);
+          if (layer.qx && layer.qy) {
+            layer.qx(
+              (-pointer.x * 22 + Math.sin(time * 0.35) * 4) * layer.depth * live
+            );
+            layer.qy(
+              (-pointer.y * 14 + Math.sin(time * 0.27) * 3) * layer.depth * live
+            );
+            return;
+          }
+          const phase = layer.n * 1.7;
+          layer.x +=
+            ((-pointer.x * 14 + Math.sin(time * 0.35 + phase) * 2.5) *
+              layer.depth *
+              live -
+              layer.x) *
+            k;
+          layer.y +=
+            ((-pointer.y * 9 + Math.sin(time * 0.27 + phase) * 2) *
+              layer.depth *
+              live -
+              layer.y) *
+            k;
+          // Written only when it has moved a visible amount, so a still pointer costs nothing.
+          if (
+            Math.abs(layer.x - layer.sx) + Math.abs(layer.y - layer.sy) <
+            0.05
+          )
+            return;
+          layer.sx = layer.x;
+          layer.sy = layer.y;
+          layer.el.style.translate = `${layer.x.toFixed(1)}px ${layer.y.toFixed(1)}px`;
         });
         rigs.forEach((rig, i) => {
           // Pin the page to the viewport; the scroll only drives the journey.
@@ -229,6 +281,7 @@ export default function PageMotion() {
         stopEnter();
         gsap.killTweensOf("[data-name],[data-depth]");
         gsap.set("[data-name],[data-depth]", { clearProps: "all" });
+        layers.forEach(layer => layer.el.style.removeProperty("translate"));
         rigs.forEach(rig => {
           rig.tl?.kill();
           gsap.set(rig.page, { clearProps: "y,opacity" });

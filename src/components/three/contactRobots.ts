@@ -70,7 +70,7 @@ export default class Crowd {
     let best = { x: 0, z: 0 };
     let room = -1;
     for (let i = 0; i < 10; i++) {
-      const z = rand(-4, 1);
+      const z = rand(-2.7, 1);
       const half = halfView(depthAt(z), width / height);
       const spot = { x: rand(-0.6, 0.6) * half, z };
       const gap = Math.min(
@@ -109,15 +109,20 @@ export default class Crowd {
 
   /** A robot that just got up, or finished a pause: start a new huddle with another walker while the room has fewer than GROUPS, else join the smallest open one, else wander. */
   private direct(bot: Bot) {
-    const other = this.bots.find(
-      b => b !== bot && b.mode === "walk" && b.active && !b.group
-    );
+    // Huddles stand on the near floor; a robot behind the copy only wanders, so nobody crosses the text plane.
+    const other = bot.front
+      ? this.bots.find(
+          b => b !== bot && b.front && b.mode === "walk" && b.active && !b.group
+        )
+      : undefined;
     if (other && this.huddles.length < GROUPS) {
       return this.form(bot, other);
     }
-    const open = this.huddles
-      .filter(h => h.members.length < HUDDLE_MAX)
-      .sort((a, b) => a.members.length - b.members.length)[0];
+    const open = bot.front
+      ? this.huddles
+          .filter(h => h.members.length < HUDDLE_MAX)
+          .sort((a, b) => a.members.length - b.members.length)[0]
+      : undefined;
     if (open) return this.join(bot, open);
     if (other) {
       return this.form(bot, other);
