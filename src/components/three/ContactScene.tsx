@@ -10,7 +10,15 @@ import ContactAir from "./ContactAir";
 import ContactBeam from "./ContactBeam";
 import ContactCrowd from "./ContactCrowd";
 import { stage } from "./contactRobots";
-import { AIM, flash, lampRise, LAMP, onContact, ORIGIN } from "./contactShot";
+import {
+  AIM,
+  flash,
+  lampRise,
+  LAMP,
+  onContact,
+  ORIGIN,
+  presence,
+} from "./contactShot";
 import { warm } from "./Warmup";
 
 const KEY = 240;
@@ -82,7 +90,7 @@ export default function ContactScene({
   useFrame(({ clock }) => {
     const on = onContact();
     const t = clock.elapsedTime;
-    const rise = lampRise();
+    const rise = lampRise() * presence();
     // The lamp breathes a hair, like a bulb on a long cable.
     const breath = 1 + 0.025 * Math.sin(t * 1.3) + 0.012 * Math.sin(t * 5.7);
     if (group.current) group.current.visible = on || warm.on;

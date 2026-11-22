@@ -2,7 +2,7 @@ import * as THREE from "three";
 import type { GLTF } from "three/examples/jsm/loaders/GLTFLoader.js";
 
 import { Bot, type Huddle, rand } from "./contactBot";
-import { depthAt, halfView, onContact } from "./contactShot";
+import { depthAt, halfView, onContact, presence } from "./contactShot";
 import { warm } from "./Warmup";
 
 /** Where the Contact set's two halves live: the near one is in the canvas over the copy, the far one in the canvas behind it. The pool is drawn in both, each showing its own half. */
@@ -184,7 +184,11 @@ export default class Crowd {
     this.view = { width, height };
     this.tidy();
     for (const bot of this.bots) if (bot.ready && bot.active) this.direct(bot);
-    for (const bot of this.bots) bot.step(dt, this.sound, time);
+    const here = presence();
+    for (const bot of this.bots) {
+      bot.dim(here);
+      bot.step(dt, this.sound, time);
+    }
   }
 
   /** The robots the visitor can pick up right now. */
@@ -247,6 +251,12 @@ export default class Crowd {
   /** Called while the camera is elsewhere, so the next visit starts its timing afresh. */
   leave() {
     this.primed = false;
+    // Off the page every robot is gone, so the next visit starts with none.
+    this.huddles = [];
+    for (const bot of this.bots) {
+      bot.vanish();
+      bot.dim(1);
+    }
     // The warm-up draws them once so their shaders are compiled before the first fall.
     for (const bot of this.bots)
       bot.root.visible = bot.blob.visible = bot.mode !== "idle" || warm.on;

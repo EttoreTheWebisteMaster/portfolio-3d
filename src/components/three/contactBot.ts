@@ -155,6 +155,7 @@ export class Bot {
   blob: THREE.Mesh;
   private blobMat: THREE.MeshBasicMaterial;
   private alpha = 1;
+  private dimmed = 1;
   /** True while it is on the near half of the floor, drawn over the copy. */
   front = true;
   private bounces = 0;
@@ -454,7 +455,22 @@ export class Bot {
 
   private setOpacity(o: number) {
     this.alpha = o;
-    for (const m of this.mats) m.opacity = o;
+    for (const m of this.mats) m.opacity = o * this.dimmed;
+  }
+
+  /** Scales every robot's opacity by `v` (the page's presence), on top of its own fade. */
+  dim(v: number) {
+    this.dimmed = v;
+    for (const m of this.mats) m.opacity = this.alpha * v;
+  }
+
+  /** Gone at once, ready to be dropped afresh. */
+  vanish() {
+    this.mode = "idle";
+    this.group = null;
+    this.goal = null;
+    this.vel.set(0, 0, 0);
+    this.setOpacity(1);
   }
 
   private land(sound: { at: number }, time: number, strength: number) {
@@ -809,7 +825,7 @@ export class Bot {
     const size = (stand ? FOOT.stand : FOOT.lie) * (1 + up * 0.8);
     this.blob.position.set(this.pos.x, 0.006, this.pos.z);
     this.blob.scale.set(size, size, 1);
-    this.blobMat.opacity = BLOB * up01 * this.alpha;
+    this.blobMat.opacity = BLOB * up01 * this.alpha * this.dimmed;
   }
 
   get resting() {

@@ -24,6 +24,10 @@ export const depthAt = (z: number) => CAMERA.distance - z;
 /** 0 → 1 as Contact arrives: the lamp comes up out of the tunnel's black while the camera drifts down and in. */
 export const arrival = () => seg(journey.current, [CONTACT_AT, 3]);
 
+/** 1 → 0 as the camera leaves Contact: the robots fade with the lamp, so the next visit starts with an empty floor. */
+export const presence = () =>
+  seg(journey.current, [CONTACT_AT + 0.02, CONTACT_AT + 0.22]);
+
 /** The lamp's strength: it comes up out of the black like a big old fixture catching: a few stutters, then it holds. Driven by the journey, so it plays the same backwards. */
 export function lampRise() {
   const pos = journey.current;

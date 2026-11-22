@@ -3,7 +3,7 @@
 import { caseState } from "@/lib/caseMotion";
 import { gsap, type SplitText, useGSAP } from "@/lib/gsap";
 import { addEntrance, RISE } from "@/lib/fx";
-import { CUT_EVENT, INTRO, journey, seg } from "@/lib/journey";
+import { CUT_EVENT, heading, INTRO, journey, seg } from "@/lib/journey";
 import { COPY_GONE } from "@/components/three/walkPose";
 import { onEnter } from "@/lib/loading";
 import { pointer } from "@/lib/pointer";
@@ -14,6 +14,8 @@ const SPAN = 0.25;
 const ARRIVE = [0.367, 0.4] as const;
 /** How far into About's arrival (in entrance seconds) the copy waits after the caption: the caption (`data-early`) lands at TC 00:00:49:00 with only him on the set, and the rest follows. */
 const CAPTION_LEAD = 0.5;
+/** Contact's copy, scrolled back up: how much of the journey it takes to clear. */
+const LEAVE_BACK = 0.04;
 /** Home's copy decodes over the back half of the opening shot. */
 const INTRO_SECONDS = 2;
 /** A page opened by its URL arrives slower, and later, so the eye finds the scene first. */
@@ -211,8 +213,11 @@ export default function PageMotion() {
           const out = i === 2 ? COPY_GONE - i : SPAN;
           // About and Contact start their copy early, so it is already rising while the light comes up.
           const arrive = i >= 2 ? ARRIVE[i - 2] : SPAN;
-          const time =
+          let time =
             pos < i ? seg(pos, [i - arrive, i]) : 1 + seg(pos, [i, i + out]);
+          // Scrolling back up from Contact, its copy is gone the moment the scroll starts.
+          if (i === 3 && heading.dir < 0 && pos < i)
+            time = Math.min(time, seg(pos, [i - LEAVE_BACK, i]));
           rig.tl.time(time);
         });
       };
