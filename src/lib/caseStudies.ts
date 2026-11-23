@@ -1,5 +1,5 @@
 import type { PROJECTS } from "@/lib/projects";
-import { slugOf, TRAILER_SRC } from "@/lib/projects";
+import { slugOf } from "@/lib/projects";
 
 type Project = (typeof PROJECTS)[number];
 
@@ -11,30 +11,31 @@ export type CaseStudyContent = {
   stack: string;
   platform: string;
   status: string;
-  /** The chapters, as a short list: `still` picks the thumbnail drawn in the stylesheet. */
+  /** The chapters, as a short list. */
   episodes: readonly {
     id: string;
     title: string;
     line: string;
-    still: string;
   }[];
-  /** Footage and stills shown in the final result; `wide` tiles take two thirds of the row. */
+  /** Footage and stills shown in the final result. */
   gallery: readonly {
     kind: "video" | "image";
     src: string;
     alt: string;
-    wide?: boolean;
   }[];
   /** Palette, in the order they are shown. `tone` picks the colour in the stylesheet; `hex` is the same colour, written out. */
-  swatches: readonly { name: string; tone: string; hex: string }[];
+  swatches: readonly {
+    name: string;
+    tone: string;
+    hex: string;
+  }[];
   typeface: string;
   typeNote: string;
-  /** One line set in every weight, top to bottom. */
   weights: readonly { name: string; value: number }[];
   weightSample: string;
   /** Every character of the face, set as one drifting line. */
   glyphs: string;
-  /** The type scale: `step` picks the size in the stylesheet. */
+  /** The type scale: `step` picks the size and weight in the stylesheet. */
   scale: readonly {
     step: string;
     role: string;
@@ -43,14 +44,6 @@ export type CaseStudyContent = {
   }[];
   /** The shape language, each drawn in the stylesheet by `kind`. */
   shape: readonly { kind: string; label: string; value: string }[];
-  /** Drawn interface stills, for projects that have an app to show. */
-  popover?: {
-    label: string;
-    value: string;
-    primary: string;
-    secondary: string;
-  };
-  notification?: { app: string; text: string };
 };
 
 /** A scene's heading is the name of its button in the hero. */
@@ -59,103 +52,109 @@ export const episodeTitle = (content: CaseStudyContent, id: string) =>
 
 const pausa: CaseStudyContent = {
   statement:
-    "Breaks fail when they feel like orders. Pausa turns the pause into a small event: a wheel in the menu bar picks what you do next, and rest stops being a chore and becomes something you look forward to.",
-  role: "Product, design & code",
+    "Breaks fail when they feel like orders. Pausa lets a wheel choose, so there is nothing to decide. WHO guidelines (2020) advise limiting sedentary time, and any activity that replaces sitting helps.",
+  role: "Solo: product, design & code",
   stack: "SwiftUI",
   platform: "macOS 14+",
-  status: "In production",
+  status: "Live · free",
   episodes: [
     {
       id: "idea",
       title: "The idea",
-      line: "Make the pause something you are curious about, not something you are told.",
-      still: "wheel",
+      line: "A small 2012 study (Dunstan et al.) found 2-minute walking breaks lowered the glucose response after a drink.",
     },
     {
       id: "system",
       title: "Design system",
-      line: "One colour per break, on a warm paper base.",
-      still: "swatches",
+      line: "One blue accent, two signals and a soft colour for every break.",
     },
     {
       id: "result",
       title: "Final result",
-      line: "The finished app, in use.",
-      still: "popover",
+      line: "Free, 4.2 MB, no account. English, Italian, French and Chinese.",
     },
   ],
   gallery: [
-    { kind: "video", src: "/video/pausa.mp4", alt: "Pausa in use", wide: true },
-    { kind: "image", src: "/projects/pausa.jpg", alt: "Pausa on a desk" },
+    {
+      kind: "video",
+      src: "/projects/pausa/trailer.mp4",
+      alt: "Pausa trailer",
+    },
     {
       kind: "image",
-      src: "/projects/morning-ledger.jpg",
-      alt: "Interface study",
+      src: "/projects/pausa/thumbnail.webp",
+      alt: "Pausa, free for Mac",
     },
     {
       kind: "video",
-      src: "/video/test-1280.mp4",
-      alt: "Interaction study",
-      wide: true,
+      src: "/projects/pausa/case-study/video-2.mp4",
+      alt: "The wheel picking one of eight kinds of break",
+    },
+    {
+      kind: "video",
+      src: "/projects/pausa/case-study/video-1.mp4",
+      alt: "Translating Pausa into Traditional Chinese",
+    },
+    {
+      kind: "image",
+      src: "/projects/pausa/case-study/photo-4.webp",
+      alt: "Pausa screens: settings, activities, quiz and break timer",
+    },
+    {
+      kind: "video",
+      src: "/projects/pausa/case-study/video-3.mp4",
+      alt: "Break reminders arriving as notifications",
+    },
+    {
+      kind: "image",
+      src: "/projects/pausa/case-study/photo-2.webp",
+      alt: "Every break lasts 15 seconds",
     },
   ],
   swatches: [
-    { name: "Move", tone: "move", hex: "#B02624" },
-    { name: "Breathe", tone: "breathe", hex: "#E8A43C" },
-    { name: "Snack", tone: "snack", hex: "#FFD957" },
-    { name: "Outside", tone: "outside", hex: "#8FBC85" },
-    { name: "Water", tone: "water", hex: "#5F9DC8" },
-    { name: "Eyes off", tone: "eyes", hex: "#1F1B19" },
-    { name: "Talk", tone: "talk", hex: "#E58E72" },
-    { name: "Tidy", tone: "tidy", hex: "#F6F0E3" },
-    { name: "Paper", tone: "paper", hex: "#EFE6D3" },
-    { name: "Panel", tone: "panel", hex: "#FAF7F0" },
+    { name: "Primary", tone: "brand", hex: "#0058BC" },
+    { name: "Secondary", tone: "gold", hex: "#C9A200" },
+    { name: "Tertiary", tone: "ring", hex: "#CC2200" },
+    { name: "Background", tone: "bg", hex: "#FDFCFF" },
+    { name: "Typography", tone: "ink", hex: "#1A1A33" },
   ],
   typeface: "SF Pro",
   typeNote:
-    "The system face of the Mac. Native to the menu bar, so Pausa never looks like a guest.",
+    "The system font of the Mac in three cuts: Rounded for headings, Text for reading, Mono for the timer.",
   weights: [
-    { name: "Light", value: 300 },
     { name: "Regular", value: 400 },
     { name: "Medium", value: 500 },
     { name: "Semibold", value: 600 },
     { name: "Bold", value: 700 },
-    { name: "Heavy", value: 800 },
   ],
   weightSample: "Rest makes you better",
   glyphs:
     "ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrstuvwxyz 0123456789 &?!@#%→",
   scale: [
-    { step: "display", role: "Display", size: "72 / 76", sample: "Pause well" },
-    { step: "title", role: "Title", size: "34 / 40", sample: "Time to move" },
-    {
-      step: "body",
-      role: "Body",
-      size: "15 / 22",
-      sample: "Stand up, stretch your arms and look out of the window.",
-    },
+    { step: "record", role: "Display", size: "52", sample: "New record" },
+    { step: "title", role: "Title", size: "20", sample: "Well done" },
+    { step: "body", role: "Body", size: "13", sample: "Activity description" },
     {
       step: "caption",
       role: "Caption",
-      size: "11 / 14",
+      size: "11",
       sample: "Next pause in 18 min",
     },
   ],
   shape: [
-    { kind: "radius", label: "Radius", value: "8 · 16 · pill" },
-    { kind: "grid", label: "Spacing", value: "4 px grid" },
-    { kind: "shadow", label: "Elevation", value: "Soft, warm, one level" },
+    {
+      kind: "radius",
+      label: "Radius",
+      value: "7 to 12 px",
+    },
+    { kind: "grid", label: "Spacing", value: "4 px base" },
+    {
+      kind: "shadow",
+      label: "Elevation",
+      value: "Soft blue glow",
+    },
+    { kind: "window", label: "Window", value: "320 × 450" },
   ],
-  popover: {
-    label: "Next pause in",
-    value: "18 min",
-    primary: "Spin now",
-    secondary: "Snooze",
-  },
-  notification: {
-    app: "Pausa · now",
-    text: "The wheel picked “Move”. Stand up and stretch for 3 minutes.",
-  },
 };
 
 const bySlug: Readonly<Record<string, CaseStudyContent>> = { pausa };
@@ -176,27 +175,23 @@ function template(project: Project): CaseStudyContent {
         id: "idea",
         title: "The idea",
         line: "What it is, and why it is worth making.",
-        still: "wheel",
       },
       {
         id: "system",
         title: "Design system",
         line: "Colour, type and shape.",
-        still: "swatches",
       },
       {
         id: "result",
         title: "Final result",
         line: "The finished project, in use.",
-        still: "popover",
       },
     ],
     gallery: [
       {
         kind: "video",
-        src: TRAILER_SRC,
+        src: project.trailer,
         alt: `${project.title} in use`,
-        wide: true,
       },
       ...(project.image
         ? [{ kind: "image" as const, src: project.image, alt: project.title }]
@@ -215,9 +210,7 @@ function template(project: Project): CaseStudyContent {
     weights: pausa.weights,
     weightSample: project.title,
     glyphs: pausa.glyphs,
-    scale: pausa.scale.map(row =>
-      row.step === "display" ? { ...row, sample: project.title } : row
-    ),
+    scale: pausa.scale,
     shape: pausa.shape,
   };
 }

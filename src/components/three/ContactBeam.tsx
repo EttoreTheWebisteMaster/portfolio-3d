@@ -4,8 +4,6 @@ import { useFrame } from "@react-three/fiber";
 import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 
-import { beamPulse } from "@/lib/contact";
-
 import { lampRise, onContact } from "./contactShot";
 
 const COLOR = "#dfe9ec";
@@ -77,8 +75,8 @@ export default function ContactBeam({
   useEffect(() => () => geometry.dispose(), [geometry]);
 
   useFrame(() => {
-    // It comes up with the lamp, and a copy lifts it for a beat.
-    const k = onContact() ? lampRise() * (1 + 0.9 * beamPulse()) : 0;
+    // It comes up with the lamp.
+    const k = onContact() ? lampRise() : 0;
     if (cone.current) cone.current.uniforms.uStrength.value = CONE * k;
   });
 

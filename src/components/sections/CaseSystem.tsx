@@ -27,8 +27,10 @@ export default function CaseSystem({
           >
             {content.swatches.map(({ name, tone, hex }) => (
               <li key={tone} className="swatch" data-tone={tone}>
-                <span className="swatch-name">{name}</span>
-                <span className="swatch-hex">{hex}</span>
+                <span className="swatch-label">
+                  <span className="swatch-name">{name}</span>
+                  <span className="swatch-hex">{hex}</span>
+                </span>
               </li>
             ))}
           </ul>
@@ -69,41 +71,43 @@ export default function CaseSystem({
         {glyphs}
       </p>
 
-      <div className="system-block">
-        <p data-reveal="up" className="system-label">
-          <span>03</span> Scale
-        </p>
-        <ul data-reveal="rows" className="case-scale">
-          {scale.map(({ step, role, size, sample }) => (
-            <li key={step} className="scale-row">
-              <span className="scale-role">
-                {role} <b>{size}</b>
-              </span>
-              <span className="scale-sample" data-step={step}>
-                {sample}
-              </span>
-            </li>
-          ))}
-        </ul>
-      </div>
+      <div className="system-pair">
+        <div className="system-block">
+          <p data-reveal="up" className="system-label">
+            <span>03</span> Scale
+          </p>
+          <ul data-reveal="rows" className="case-scale">
+            {scale.map(({ step, role, size, sample }) => (
+              <li key={step} className="scale-row">
+                <span className="scale-role">
+                  {role} <b>{size}</b>
+                </span>
+                <span className="scale-sample" data-step={step}>
+                  {sample}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
 
-      <div className="system-block">
-        <p data-reveal="up" className="system-label">
-          <span>04</span> Shape
-        </p>
-        <ul data-reveal="stagger" className="case-shape">
-          {shape.map(({ kind, label, value }) => (
-            <li key={kind} className="shape-card">
-              <span
-                className="shape-demo"
-                data-kind={kind}
-                aria-hidden="true"
-              />
-              <span className="shape-label">{label}</span>
-              <span className="shape-value">{value}</span>
-            </li>
-          ))}
-        </ul>
+        <div className="system-block">
+          <p data-reveal="up" className="system-label">
+            <span>04</span> Shape
+          </p>
+          <ul data-reveal="rows" className="case-shape">
+            {shape.map(({ kind, label, value }) => (
+              <li key={kind} className="shape-card">
+                <span
+                  className="shape-demo"
+                  data-kind={kind}
+                  aria-hidden="true"
+                />
+                <span className="shape-label">{label}</span>
+                <span className="shape-value">{value}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
       </div>
     </section>
   );

@@ -18,7 +18,7 @@ import {
 
 import { caseState } from "@/lib/caseMotion";
 import { onEnter } from "@/lib/loading";
-import { TRAILER_SRC, view } from "@/lib/projects";
+import { PROJECTS, view } from "@/lib/projects";
 import { subscribeMuted, volumeGain } from "@/lib/sound";
 
 import { dustTexture } from "./HeroLight";
@@ -33,7 +33,7 @@ const HALF_FOV = THREE.MathUtils.degToRad(SCREEN_FOV) / 2;
 /** The trailer: one muted, inline video shared with the panel, which reads its clock for the Next timer. */
 function trailer() {
   const video = document.createElement("video");
-  video.src = TRAILER_SRC;
+  video.src = PROJECTS[view.index].trailer;
   video.muted = true;
   video.playsInline = true;
   // Held back until the visitor is in, so the 9 MB film never competes with the robot the loader waits for.
@@ -155,7 +155,14 @@ export default function ProjectsScreen({
     // The panel picked another trailer: start it from the top.
     if (shown.current !== view.index) {
       shown.current = view.index;
-      if (video) video.currentTime = 0;
+      if (video) {
+        const src = PROJECTS[view.index].trailer;
+        if (!video.src.endsWith(src)) {
+          video.src = src;
+          video.load();
+        }
+        video.currentTime = 0;
+      }
     }
     const draw = ease(seg(progress.current, BEAT.line));
     const open = ease(seg(progress.current, BEAT.picture));

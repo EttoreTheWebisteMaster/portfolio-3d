@@ -5,7 +5,7 @@ const LEVEL_KEY = "sound-volume";
 export const DEFAULT_VOLUME = 0.75;
 /** The quietest audible level: dragging below it is the same as muting. */
 export const MIN_VOLUME = 0.25;
-type Kind = "pop" | "thud" | "clang" | "ooh" | "step";
+type Kind = "pop" | "thud" | "ooh" | "step";
 
 let ctx: AudioContext | null = null;
 let armed = false;
@@ -172,9 +172,6 @@ export function play(kind: Kind) {
   else if (kind === "thud") {
     tone("sine", 140, 40, 0.22, 0.25);
     tone("triangle", 90, 35, 0.12, 0.12);
-  } else if (kind === "clang") {
-    tone("square", 1700, 650, 0.14, 0.05);
-    tone("triangle", 520, 240, 0.3, 0.07);
   } else if (kind === "step") {
     // A soft metallic footfall: a short ring over a low tap.
     tone("triangle", 1100, 520, 0.05, 0.02);

@@ -142,8 +142,8 @@ export function startShot(w: Walker) {
 }
 
 const headAt = new THREE.Vector3();
-export const feet = new THREE.Vector3();
-export const top = new THREE.Vector3();
+const feet = new THREE.Vector3();
+const top = new THREE.Vector3();
 
 /** How close the cursor (x, y in -1..1, y up) is to the capsule from `feet` to `top` (projected here), `fat` wide in screen terms: 0 on its axis, 1 at its edge, above 1 outside. */
 function capsuleFit(
@@ -165,17 +165,6 @@ function capsuleFit(
   const t = THREE.MathUtils.clamp((px * dx + py * dy) / len2, 0, 1);
   const r = fat * Math.sqrt(len2) + 0.02;
   return Math.hypot(px - dx * t, py - dy * t) / r;
-}
-
-/** Is the cursor on the capsule? */
-export function overCapsule(
-  x: number,
-  y: number,
-  camera: THREE.Camera,
-  aspect: number,
-  fat: number
-) {
-  return capsuleFit(x, y, camera, aspect, fat) < 1;
 }
 
 /** How well the cursor lands on this robot: a capsule from its feet to its head, so it holds however the robot is tilted. Under 1 is a hit. */

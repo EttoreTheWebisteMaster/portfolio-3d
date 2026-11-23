@@ -142,11 +142,6 @@ function prime(limb: Limb) {
   limb.primed = true;
 }
 
-/** Puts every foot back where it sits on the model. */
-export function restFeet(limp: Limp) {
-  for (const limb of limp) limb.foot?.bone.position.copy(limb.foot.rest);
-}
-
 /** Remembers where the animation put the foot, in the shin's frame, as the shin is let go. */
 function noteFoot(foot: Foot, shinBone: THREE.Object3D) {
   shinBone.getWorldQuaternion(shin).invert();

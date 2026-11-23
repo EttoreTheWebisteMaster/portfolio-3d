@@ -27,9 +27,7 @@ export default function Contact() {
           className="fx contact-headline"
           aria-hidden
         >
-          Let&apos;s work
-          <br />
-          <mark>together</mark>
+          Let&rsquo;s work <mark>together</mark>
         </p>
         <p data-fx="text" data-depth="0.3" className="fx contact-pitch">
           Open to frontend and full-stack roles. Turin or remote, employee or

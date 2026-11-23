@@ -1,5 +1,6 @@
 import { Button as HeadlessButton, type ButtonProps } from "@headlessui/react";
 import Link from "next/link";
+import type { ComponentProps } from "react";
 
 import { cn } from "@/lib/cn";
 
@@ -79,6 +80,7 @@ export default function Button({
         href={href}
         scroll={false}
         className={cls}
+        {...(props as unknown as ComponentProps<"a">)}
         {...(external ? { target: "_blank", rel: "noreferrer" } : {})}
       >
         {inner}
