@@ -49,7 +49,7 @@
     "jscpd": "^5.4.3",
     "knip": "^5.88.1",
     "lefthook": "^2.2.2",
-    "playwright": "^1.65.0",
+    "playwright": "^1.65.1",
     "prettier": "^3.10.1",
     "prettier-plugin-tailwindcss": "^0.8.1",
     "tailwindcss": "^4",
