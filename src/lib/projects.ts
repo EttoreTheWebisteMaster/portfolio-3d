@@ -3,87 +3,32 @@ type Project = {
   /** Facts line, e.g. platform · stack · year. */
   facts: string;
   discipline: string;
-  /** Hover thumbnail in /public. Rows without one show the felt card. */
-  image?: string;
-  /** The case study backdrop once its trailer has softened away: a still of the trailer. Falls back to nothing (the footage keeps playing). */
-  poster?: string;
+  /** The trailer in /public: it plays on the Projects screen and as the case study backdrop. */
+  trailer: string;
+  /** Hover thumbnail in /public, also the case study backdrop once its trailer has softened away. */
+  image: string;
+  /** The live site, shown as a link in the case study hero. */
+  url?: string;
   /** Two lines at most. */
   lead: string;
   /** The longer description on the case study hero; falls back to `lead`. */
   summary?: string;
 };
 
-/**
- * Projects, in screening order.
- * TODO(content): only Pausa's facts come from the design package. Every other facts / discipline / lead line
- * is a placeholder to replace with the real project before launch.
- */
+/** Projects, in screening order. */
 export const PROJECTS: readonly Project[] = [
   {
     title: "Pausa",
     facts: "macOS menu-bar app · SwiftUI · 2026",
     discipline: "Product",
-    image: "/projects/pausa.jpg",
-    poster: "/projects/pausa-poster.jpg",
-    lead: "Rest makes you better. A menu-bar app that turns the break into a small event.",
+    trailer: "/projects/pausa/trailer.mp4",
+    image: "/projects/pausa/thumbnail.webp",
+    url: "https://pausa.ettoreserra.it",
+    lead: "A free macOS menu-bar app that picks your next 15-second break. No account.",
     summary:
-      "Work sessions don't end; they just get interrupted. Pausa lives in the macOS menu bar and, when it's time to stop, spins a wheel across eight kinds of break: move, breathe, snack, step outside and more. I designed the product, the visual system and the SwiftUI app, so the pause stops being a chore and becomes a small event.",
-  },
-  {
-    title: "Antonino",
-    facts: "Project facts · Stack · Year",
-    discipline: "Voice · AI",
-    lead: "Placeholder copy: one sentence on what it is and why it matters.",
-  },
-  {
-    title: "Chef AI",
-    facts: "Project facts · Stack · Year",
-    discipline: "React · AI",
-    lead: "Placeholder copy: one sentence on what it is and why it matters.",
-  },
-  {
-    title: "The Morning Ledger",
-    facts: "Project facts · Stack · Year",
-    discipline: "AI · Finance",
-    image: "/projects/morning-ledger.jpg",
-    lead: "Placeholder copy: one sentence on what it is and why it matters.",
-  },
-  {
-    title: "This portfolio",
-    facts: "Next.js · Three.js · GSAP · 2026",
-    discipline: "Next.js · 3D",
-    lead: "The site you are on: one persistent 3D set, scrolled like a film.",
-    summary:
-      "The site you are on. A single persistent 3D set built with React Three Fiber, where every page is a different camera and light on the same room. GSAP drives the scroll and transitions, and the whole thing stays accessible, responsive and respectful of reduced motion.",
-  },
-  {
-    title: "Photo Curator",
-    facts: "Project facts · Stack · Year",
-    discipline: "Tool",
-    lead: "Placeholder copy: one sentence on what it is and why it matters.",
-  },
-  {
-    title: "INFN",
-    facts: "Project facts · Stack · Year",
-    discipline: "Research",
-    lead: "Placeholder copy: one sentence on what it is and why it matters.",
-  },
-  {
-    title: "Mr Fruitman",
-    facts: "Project facts · Stack · Year",
-    discipline: "Brand",
-    lead: "Placeholder copy: one sentence on what it is and why it matters.",
-  },
-  {
-    title: "Local Agents",
-    facts: "Project facts · Stack · Year",
-    discipline: "AI · Tools",
-    lead: "Placeholder copy: one sentence on what it is and why it matters.",
+      "Pausa lives in the macOS menu bar. When it is time to stop, a wheel picks one of eight kinds of break: move, breathe, snack, water, step outside. Each lasts 15 seconds. Breaks of 10 minutes or less raise vigor and lower fatigue (Albulescu et al., 2022, meta-analysis). I designed and built it alone, from product to visual system to SwiftUI.",
   },
 ];
-
-/** Trailer file. Every project plays the same test clip until the real trailers exist. */
-export const TRAILER_SRC = "/video/pausa.mp4";
 
 /** Fallback length in seconds until the clip's metadata has loaded. */
 export const TRAILER_SECONDS = 10;

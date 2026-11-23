@@ -1,39 +1,72 @@
 "use client";
 
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
+import {
+  DepthOfFieldEffect,
+  EffectComposer,
+  EffectPass,
+  RenderPass,
+  ToneMappingEffect,
+  ToneMappingMode,
+} from "postprocessing";
 import { type RefObject, useEffect, useRef } from "react";
 import * as THREE from "three";
 
 import { useLoading } from "@/lib/loading";
 
 import ContactScene from "./ContactScene";
-import { stepHands, trackHands } from "./contactHands";
 import { stage } from "./contactRobots";
-import { blackout, contactCamera, onContact } from "./contactShot";
+import { contactCamera, FOCUS, onContact } from "./contactShot";
 
-/** Follows the main canvas's Contact camera, then draws only while the camera is on Contact. */
+/** Follows the main canvas's Contact camera, then draws only while the camera is on Contact: through the same lens as the set behind, so a robot goes soft with its distance from the focus. */
 function Follow({
   shown,
 }: Readonly<{ shown: RefObject<HTMLDivElement | null> }>) {
-  const { camera } = useThree();
-  useEffect(() => trackHands(camera), [camera]);
-  useFrame(({ camera, size }, dt) => {
-    if (onContact() && camera instanceof THREE.PerspectiveCamera) {
-      contactCamera(camera, performance.now() / 1000, dt, false);
-      stepHands(camera, size.width / size.height);
-    }
+  const { gl, scene, camera, size } = useThree();
+  const composer = useRef<EffectComposer | null>(null);
+  useEffect(() => {
+    const rig = new EffectComposer(gl, {
+      alpha: true,
+      multisampling: 0,
+      frameBufferType: THREE.HalfFloatType,
+    });
+    rig.addPass(new RenderPass(scene, camera));
+    const lens = new DepthOfFieldEffect(camera, {
+      bokehScale: FOCUS.bokeh,
+      resolutionScale: 0.75,
+    });
+    lens.cocMaterial.focusDistance = FOCUS.distance;
+    lens.cocMaterial.focusRange = FOCUS.range;
+    rig.addPass(
+      new EffectPass(
+        camera,
+        lens,
+        new ToneMappingEffect({ mode: ToneMappingMode.ACES_FILMIC })
+      )
+    );
+    composer.current = rig;
+    return () => {
+      rig.dispose();
+      composer.current = null;
+    };
+  }, [gl, scene, camera]);
+  useEffect(() => {
+    composer.current?.setSize(size.width, size.height, false);
+  }, [size, gl, scene, camera]);
+  useFrame(({ camera }) => {
+    if (onContact() && camera instanceof THREE.PerspectiveCamera)
+      contactCamera(camera, performance.now() / 1000);
   });
   // A render at priority 1 replaces the automatic one.
-  useFrame(({ gl, scene, camera }) => {
+  useFrame((_, dt) => {
     const on = onContact();
     const el = shown.current;
     if (el && el.getAttribute("data-on") !== String(on))
       el.setAttribute("data-on", String(on));
-    if (!on) return;
-    gl.toneMappingExposure = 1.1 * (1 - blackout());
+    if (!on || !composer.current) return;
     // This canvas draws the near half of the pool.
     if (stage.near) stage.crowd?.lend(stage.near, true);
-    gl.render(scene, camera);
+    composer.current.render(dt);
     stage.crowd?.restore();
   }, 1);
   return null;
@@ -46,13 +79,10 @@ export default function ContactFront() {
   return (
     <div ref={shown} aria-hidden data-on="false" className="contact-front">
       <Canvas
+        flat
         dpr={[1, 1.25]}
-        shadows="percentage"
         camera={{ fov: 28, position: [-200, 0.7, 7.4], near: 0.1, far: 80 }}
-        gl={{ antialias: true, alpha: true }}
-        onCreated={({ gl }) => {
-          gl.toneMappingExposure = 1.1;
-        }}
+        gl={{ antialias: false, alpha: true }}
       >
         <Follow shown={shown} />
         <ContactScene url={modelUrl} front />

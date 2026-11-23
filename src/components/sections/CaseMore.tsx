@@ -7,6 +7,7 @@ export default function CaseMore({ current }: Readonly<{ current: number }>) {
   const others = PROJECTS.map((project, i) => ({ project, i }))
     .filter(({ i }) => i !== current)
     .slice(0, 4);
+  if (others.length === 0) return null;
   return (
     <section className="case-scene case-more" aria-label="More projects">
       <h2 data-reveal="title" className="case-heading">

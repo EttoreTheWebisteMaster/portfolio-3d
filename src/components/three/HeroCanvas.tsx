@@ -106,12 +106,12 @@ function Rig({
   reduced,
   progress,
 }: Readonly<{ reduced: boolean; progress: Progress }>) {
-  useFrame(({ camera, clock, size, gl }, dt) => {
+  useFrame(({ camera, clock, size, gl }) => {
     if (!(camera instanceof THREE.PerspectiveCamera)) return;
     gl.toneMappingExposure = exposure(1.1);
     if (onContact()) {
       // The front canvas draws this same frame, so both read one wall clock.
-      contactCamera(camera, performance.now() / 1000, dt);
+      contactCamera(camera, performance.now() / 1000);
       return;
     }
     if (onAbout()) {

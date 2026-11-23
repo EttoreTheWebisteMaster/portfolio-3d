@@ -31,6 +31,7 @@ import { darken, fadeCast, fadePools, rimLit } from "./crowdLight";
 import { makeStroller, stepStroller } from "./crowdStroller";
 import { advance, plan, type Walker } from "./crowdWalk";
 import { FLOOR_Y, mulberry32 } from "./HeroLight";
+import { caseState } from "@/lib/caseMotion";
 import { PALETTE } from "./HeroRobot";
 import { CROWD_DIM } from "./robotShot";
 import { FRONT_LAYER, front } from "./frontShare";
@@ -382,7 +383,8 @@ function Crowd({
     const p = progress.current;
     const aspect = size.width / size.height;
     // The crowd is only touchable while it is in the room: once he has walked out and it has gone dark, there is nothing to grab.
-    const here = p >= LIVE_FROM && crowdFade() > CROWD_GONE;
+    // A case study over the room is its own page: the robots behind it are not touchable.
+    const here = p >= LIVE_FROM && crowdFade() > CROWD_GONE && !caseState.open;
     const live = here && target.live && !state.over;
 
     // Leaving the room mid-grab lets go.

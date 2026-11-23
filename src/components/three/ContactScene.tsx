@@ -4,15 +4,12 @@ import { useFrame, useThree } from "@react-three/fiber";
 import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 
-import { beamPulse } from "@/lib/contact";
-
 import ContactAir from "./ContactAir";
 import ContactBeam from "./ContactBeam";
 import ContactCrowd from "./ContactCrowd";
 import { stage } from "./contactRobots";
 import {
   AIM,
-  flash,
   lampRise,
   LAMP,
   onContact,
@@ -95,10 +92,7 @@ export default function ContactScene({
     const breath = 1 + 0.025 * Math.sin(t * 1.3) + 0.012 * Math.sin(t * 5.7);
     if (group.current) group.current.visible = on || warm.on;
     // The lights stay in the scene (a changing light count would recompile every material at the cut); only their strength follows the page. A copy brightens the beam for a beat.
-    if (key.current)
-      key.current.intensity = on
-        ? KEY * rise * breath * (1 + 0.8 * beamPulse() + 0.7 * flash.v)
-        : 0;
+    if (key.current) key.current.intensity = on ? KEY * rise * breath : 0;
     if (fill.current) fill.current.intensity = on ? FILL * rise : 0;
   });
 
@@ -114,9 +108,6 @@ export default function ContactScene({
         penumbra={1}
         distance={40}
         decay={2}
-        castShadow
-        shadow-mapSize={[1024, 1024]}
-        shadow-bias={-0.0004}
       />
       <pointLight
         ref={fill}
@@ -128,27 +119,19 @@ export default function ContactScene({
       />
       {/* Over the bright copy, a robot outside the lamp's pool would read as a black cut-out: a little cold bounce keeps it a robot. */}
       {front && <ambientLight color="#9fb4b8" intensity={0.9} />}
-      <mesh
-        rotation={[-Math.PI / 2, 0, 0]}
-        position={[ORIGIN.x, 0, -10]}
-        receiveShadow
-      >
-        <planeGeometry args={[80, 40]} />
-        {front ? (
-          <shadowMaterial opacity={0.55} />
-        ) : (
-          <meshStandardMaterial
-            color="#1b1c1c"
-            roughness={0.7}
-            transparent
-            alphaMap={alpha}
-          />
-        )}
-      </mesh>
       {front ? (
         url && <ContactCrowd url={url} />
       ) : (
         <>
+          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[ORIGIN.x, 0, -10]}>
+            <planeGeometry args={[80, 40]} />
+            <meshStandardMaterial
+              color="#1b1c1c"
+              roughness={0.7}
+              transparent
+              alphaMap={alpha}
+            />
+          </mesh>
           <mesh position={[ORIGIN.x, 0, -32]}>
             <planeGeometry args={[160, 80]} />
             <meshBasicMaterial color={DARK} />

@@ -10,7 +10,7 @@ import CaseStory from "@/components/sections/CaseStory";
 import CaseSystem from "@/components/sections/CaseSystem";
 import { caseStudyOf } from "@/lib/caseStudies";
 import { pad } from "@/lib/pages";
-import { PROJECTS, slugOf, TRAILER_SRC } from "@/lib/projects";
+import { PROJECTS, slugOf } from "@/lib/projects";
 
 type Project = (typeof PROJECTS)[number];
 
@@ -33,13 +33,13 @@ export default function CaseStudy({
       <header className="case-hero">
         <div className="case-backdrop" data-trailer>
           <TrailerVideo
-            src={TRAILER_SRC}
-            poster={project.poster}
+            src={project.trailer}
+            poster={project.image}
             label={`${project.title} trailer`}
           />
-          {project.poster && (
+          {project.image && (
             <Image
-              src={project.poster}
+              src={project.image}
               alt=""
               fill
               sizes="100vw"
@@ -62,22 +62,39 @@ export default function CaseStudy({
                 <dd className="fact-value">{value}</dd>
               </div>
             ))}
+            {project.url && (
+              <div className="fact">
+                <dt className="fact-label">Website</dt>
+                <dd className="fact-value">
+                  <a
+                    href={project.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="fact-link"
+                  >
+                    {project.url.replace(/^https?:\/\//, "")}
+                  </a>
+                </dd>
+              </div>
+            )}
           </dl>
           <p data-fx="text" className="fx case-lead">
             {project.summary ?? project.lead}
           </p>
         </div>
-        <CaseEpisodes content={content} image={project.image} />
+        <CaseEpisodes content={content} />
       </header>
 
       <CaseStory content={content} />
       <CaseSystem content={content} />
-      <CaseResult content={content} image={project.image} />
+      <CaseResult content={content} />
       <CaseMore current={index} />
-      <NextProject
-        href={`/projects/${slugOf(next.title)}`}
-        title={next.title}
-      />
+      {next !== project && (
+        <NextProject
+          href={`/projects/${slugOf(next.title)}`}
+          title={next.title}
+        />
+      )}
       <CaseStudyMotion index={index} />
     </article>
   );

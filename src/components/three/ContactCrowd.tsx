@@ -7,13 +7,13 @@ import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import Crowd, { stage } from "./contactRobots";
 import { onContact } from "./contactShot";
 
-/** The falling robots. The pool and its physics live in contactRobots.ts; this only steps it while the camera is on Contact. */
+/** The walking robots. The pool lives in contactRobots.ts; this only steps it while the camera is on Contact. */
 export default function ContactCrowd({ url }: Readonly<{ url: string }>) {
   const gltf = useLoader(GLTFLoader, url);
   const crowd = useMemo(() => new Crowd(gltf), [gltf]);
   const reduced = useRef(false);
   const { gl, scene, camera } = useThree();
-  // Draw the pool once, shown, so its shaders are compiled before the first fall instead of at it.
+  // Draw the pool once, shown, so its shaders are compiled before the first walker instead of at it.
   useEffect(() => {
     stage.crowd = crowd;
     stage.near = crowd.group.parent;
@@ -30,18 +30,12 @@ export default function ContactCrowd({ url }: Readonly<{ url: string }>) {
       "(prefers-reduced-motion: reduce)"
     ).matches;
   }, []);
-  useFrame(({ clock, size }, dt) => {
+  useFrame(({ size }, dt) => {
     if (!onContact()) {
       crowd.leave();
       return;
     }
-    crowd.step(
-      Math.min(dt, 0.05),
-      clock.elapsedTime,
-      size.width,
-      size.height,
-      reduced.current
-    );
+    crowd.step(dt, size.width, size.height, reduced.current);
   });
   return <primitive object={crowd.group} />;
 }
