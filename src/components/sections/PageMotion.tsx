@@ -292,7 +292,10 @@ export default function PageMotion() {
 
     // Reduced motion: no travel, pages simply cross-fade.
     mm.add("(prefers-reduced-motion: reduce)", () => {
-      gsap.set(gsap.utils.toArray("[data-fx]"), { visibility: "visible" });
+      // Only the journey pages: the case study streams in later and shows its own copy (a blanket selector would touch it before it hydrates).
+      pages.forEach(page =>
+        gsap.set(page.querySelectorAll("[data-fx]"), { visibility: "visible" })
+      );
       const tick = () => {
         const pos = journey.current;
         const y = window.scrollY;
